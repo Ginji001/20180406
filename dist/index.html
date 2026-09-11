@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#141826" />
+    <meta name="description" content="今日やることがひと目で分かる、シンプルなタスク管理PWA" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ハチワレTODO" />
+    <title>ハチワレTODO</title>
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="メインメニュー">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+          <div>
+            <strong>ハチワレTODO</strong>
+            <small>やることを、軽やかに。</small>
+          </div>
+        </div>
+
+        <nav class="nav-list" id="sideNav">
+          <button class="nav-item active" data-view="today"><span class="nav-icon">☀</span>今日<span class="count" data-count="today">0</span></button>
+          <button class="nav-item" data-view="inbox"><span class="nav-icon">⌁</span>受信箱<span class="count" data-count="inbox">0</span></button>
+          <button class="nav-item" data-view="upcoming"><span class="nav-icon">□</span>今後の予定<span class="count" data-count="upcoming">0</span></button>
+          <button class="nav-item" data-view="all"><span class="nav-icon">≡</span>すべて<span class="count" data-count="all">0</span></button>
+          <button class="nav-item" data-view="completed"><span class="nav-icon">✓</span>完了<span class="count" data-count="completed">0</span></button>
+        </nav>
+
+        <div class="sidebar-section">
+          <div class="section-heading"><span>プロジェクト</span><button id="newProjectBtn" aria-label="プロジェクトを追加">＋</button></div>
+          <div class="project-list" id="projectList"></div>
+        </div>
+
+        <div class="sidebar-footer">
+          <button class="footer-button" id="installBtn" hidden>ホーム画面に追加</button>
+          <button class="footer-button" id="themeBtn"><span aria-hidden="true">◐</span> 表示を切り替え</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" aria-label="メニューを開く">☰</button>
+          <div class="search-wrap">
+            <span aria-hidden="true">⌕</span>
+            <input id="searchInput" type="search" placeholder="タスクを検索" aria-label="タスクを検索" />
+            <kbd>⌘ K</kbd>
+          </div>
+          <button class="avatar" aria-label="プロフィール">ハ</button>
+        </header>
+
+        <section class="content">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow" id="todayLabel"></p>
+              <h1 id="viewTitle">今日</h1>
+            </div>
+            <div class="progress-card" aria-label="今日の進捗">
+              <div class="progress-ring" id="progressRing"><span id="progressValue">0%</span></div>
+              <div><strong>今日の進捗</strong><small id="progressText">0件中0件完了</small></div>
+            </div>
+          </div>
+
+          <div class="week-strip" id="weekStrip" aria-label="日付を選択"></div>
+
+          <form class="quick-add" id="quickAddForm">
+            <button type="submit" class="add-circle" aria-label="タスクを追加">＋</button>
+            <input id="quickTaskInput" required maxlength="120" placeholder="タスクを追加…" autocomplete="off" />
+            <div class="quick-actions">
+              <label class="compact-field"><span>期限</span><input id="quickDate" type="date" /></label>
+              <label class="compact-field"><span>優先度</span><select id="quickPriority"><option value="medium">普通</option><option value="high">高い</option><option value="low">低い</option></select></label>
+              <label class="compact-field"><span>分類</span><select id="quickProject"></select></label>
+            </div>
+          </form>
+
+          <div class="toolbar">
+            <div class="filter-group" id="statusFilters">
+              <button class="filter active" data-filter="open">未完了</button>
+              <button class="filter" data-filter="all">すべて</button>
+            </div>
+            <select id="priorityFilter" aria-label="優先度で絞り込み">
+              <option value="all">すべての優先度</option>
+              <option value="high">優先度：高い</option>
+              <option value="medium">優先度：普通</option>
+              <option value="low">優先度：低い</option>
+            </select>
+          </div>
+
+          <section class="task-section">
+            <div class="task-section-title">
+              <h2 id="listTitle">今日のタスク</h2>
+              <span id="visibleCount">0件</span>
+            </div>
+            <div class="task-list" id="taskList" aria-live="polite"></div>
+            <div class="empty-state" id="emptyState" hidden>
+              <div class="empty-check">✓</div>
+              <h3>ここはすっきりしています</h3>
+              <p>新しいタスクを追加すると、ここに表示されます。</p>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <nav class="mobile-nav" id="mobileNav" aria-label="モバイルメニュー">
+      <button class="active" data-view="today"><span>☀</span>今日</button>
+      <button data-view="inbox"><span>⌁</span>受信箱</button>
+      <button class="mobile-add" id="mobileAdd" aria-label="タスクを追加">＋</button>
+      <button data-view="upcoming"><span>□</span>予定</button>
+      <button data-view="all"><span>≡</span>すべて</button>
+    </nav>
+
+    <dialog id="taskDialog" class="task-dialog">
+      <form method="dialog" id="taskEditForm">
+        <div class="dialog-head"><div><small>タスクを編集</small><h2>詳細</h2></div><button value="cancel" class="icon-button" aria-label="閉じる">×</button></div>
+        <input type="hidden" id="editId" />
+        <label class="field"><span>タスク名</span><input id="editTitle" required maxlength="120" /></label>
+        <div class="field-row">
+          <label class="field"><span>期限</span><input id="editDate" type="date" /></label>
+          <label class="field"><span>優先度</span><select id="editPriority"><option value="high">高い</option><option value="medium">普通</option><option value="low">低い</option></select></label>
+        </div>
+        <label class="field"><span>プロジェクト</span><select id="editProject"></select></label>
+        <label class="field"><span>メモ</span><textarea id="editNotes" rows="4" maxlength="500" placeholder="必要な情報を残せます"></textarea></label>
+        <div class="dialog-actions"><button type="button" class="danger" id="deleteTask">削除</button><button value="save" class="primary" id="saveTask">保存</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="projectDialog" class="project-dialog">
+      <form method="dialog" id="projectForm">
+        <div class="dialog-head"><div><small>新しい分類</small><h2>プロジェクトを追加</h2></div><button value="cancel" class="icon-button" aria-label="閉じる">×</button></div>
+        <label class="field"><span>名前</span><input id="projectName" required maxlength="30" placeholder="例：美容・学習" /></label>
+        <label class="field"><span>色</span><select id="projectColor"><option value="#ffb84d">オレンジ</option><option value="#6c7cff">ブルー</option><option value="#26a269">グリーン</option><option value="#d84a7f">ピンク</option><option value="#8b5cf6">パープル</option></select></label>
+        <div class="dialog-actions"><button value="cancel">キャンセル</button><button value="save" class="primary">追加</button></div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js"></script>
+  </body>
+</html>
