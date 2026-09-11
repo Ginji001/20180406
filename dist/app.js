@@ -87,22 +87,22 @@
 
   const folderNames = {
     inbox: "受信箱",
-    next: "Next Action",
-    remind: "Remind",
-    waiting: "Waiting",
-    project: "Projects",
-    wish: "Wish List"
+    next: "次にやる",
+    remind: "リマインダー",
+    waiting: "待ち状況",
+    project: "プロジェクト",
+    wish: "いつかやりたい"
   };
   const viewNames = {
     today: "今日",
     week: "次の7日間",
     all: "すべてのタスク",
     inbox: "受信箱",
-    next: "Next Action",
-    remind: "Remind",
-    waiting: "Waiting",
-    projects: "Projects",
-    wish: "Wish List",
+    next: "次にやる",
+    remind: "リマインダー",
+    waiting: "待ち状況",
+    projects: "プロジェクト",
+    wish: "いつかやりたい",
     completed: "完了"
   };
   const descriptions = {
@@ -216,9 +216,9 @@
     let groups;
     if (state.view === "today" && !state.projectId) {
       groups = [
-        ["Pinned", tasks.filter((task) => task.pinned)],
-        ["Inbox", tasks.filter((task) => !task.pinned && task.folder === "inbox")],
-        ["Project / Action", tasks.filter((task) => !task.pinned && task.folder !== "inbox")]
+        ["固定したタスク", tasks.filter((task) => task.pinned)],
+        ["受信箱", tasks.filter((task) => !task.pinned && task.folder === "inbox")],
+        ["プロジェクト・行動", tasks.filter((task) => !task.pinned && task.folder !== "inbox")]
       ].filter(([, items]) => items.length);
     } else if (state.view === "projects" && !state.projectId) {
       const projectGroups = state.data.projects.map((project) => [project.name, tasks.filter((task) => task.projectId === project.id)]);
@@ -316,10 +316,10 @@
       ["今日まで", dueToday],
       ["受信箱", open.filter((task) => task.folder === "inbox").length],
       ["今日の完了", completedToday],
-      ["Next Action", open.filter((task) => task.folder === "next").length],
-      ["Waiting", open.filter((task) => task.folder === "waiting").length],
-      ["Projects", open.filter((task) => task.folder === "project").length],
-      ["Wish List", open.filter((task) => task.folder === "wish").length]
+      ["次にやる", open.filter((task) => task.folder === "next").length],
+      ["待ち状況", open.filter((task) => task.folder === "waiting").length],
+      ["プロジェクト", open.filter((task) => task.folder === "project").length],
+      ["いつかやりたい", open.filter((task) => task.folder === "wish").length]
     ].map(([label, value]) => `<article class="overview-card"><span>${label}</span><strong>${value}</strong></article>`).join("");
   }
 
@@ -381,7 +381,7 @@
     $("#taskRepeat").value = task?.repeat || "";
     $("#taskPinned").checked = Boolean(task?.pinned);
     $("#taskNotes").value = task?.notes || "";
-    $("#dialogKicker").textContent = task ? folderNames[task.folder] || "TASK" : "INBOX";
+    $("#dialogKicker").textContent = task ? folderNames[task.folder] || "タスク" : "受信箱";
     $("#dialogTitle").textContent = task ? "タスクを編集" : "タスクを追加";
     $("#deleteTask").hidden = !task;
     elements.taskDialog.showModal();
@@ -737,7 +737,7 @@
       {
         name: "create_task",
         title: "タスクを受信箱へ追加",
-        description: "ハチワレTODOの受信箱へ新しいタスクを追加します。",
+        description: "ハチワレトゥードゥの受信箱へ新しいタスクを追加します。",
         inputSchema: { type: "object", properties: { title: { type: "string" }, due: { type: "string" }, priority: { type: "string", enum: ["high", "medium", "low"] }, notes: { type: "string" } }, required: ["title"], additionalProperties: false },
         annotations: { readOnlyHint: false, untrustedContentHint: false },
         execute(input) {

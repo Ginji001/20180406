@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#f7f7f5" />
-    <meta name="description" content="GTDの流れで、次にやることが明確になるタスク管理PWA" />
+    <meta name="description" content="収集・整理・実行の流れで、次にやることが明確になるタスク管理アプリ" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="ハチワレTODO" />
-    <title>ハチワレTODO</title>
+    <meta name="apple-mobile-web-app-title" content="ハチワレトゥードゥ" />
+    <title>ハチワレトゥードゥ</title>
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
@@ -19,22 +19,22 @@
       <aside class="sidebar" aria-label="メインメニュー">
         <div class="brand">
           <img src="./favicon.svg" alt="" width="34" height="34" />
-          <div><strong>ハチワレTODO</strong><small>ULTIMATE TASK SYSTEM</small></div>
+          <div><strong>ハチワレトゥードゥ</strong><small>やることを整理する</small></div>
         </div>
         <button class="new-task-button" id="newTaskBtn"><span>＋</span> 新しいタスク</button>
         <nav class="nav-list" id="sideNav">
           <button class="nav-item active" data-view="today"><span>◎</span>今日<em data-count="today">0</em></button>
           <button class="nav-item" data-view="week"><span>▦</span>次の7日間<em data-count="week">0</em></button>
           <button class="nav-item" data-view="all"><span>≡</span>すべて<em data-count="all">0</em></button>
-          <div class="nav-label">GTD フォルダー</div>
+          <div class="nav-label">タスクの分類</div>
           <button class="nav-item" data-view="inbox"><span>↓</span>受信箱<em data-count="inbox">0</em></button>
-          <button class="nav-item" data-view="next"><span>→</span>Next Action<em data-count="next">0</em></button>
-          <button class="nav-item" data-view="remind"><span>◷</span>Remind<em data-count="remind">0</em></button>
-          <button class="nav-item" data-view="waiting"><span>⌛</span>Waiting<em data-count="waiting">0</em></button>
-          <button class="nav-item" data-view="projects"><span>□</span>Projects<em data-count="projects">0</em></button>
-          <button class="nav-item" data-view="wish"><span>☆</span>Wish List<em data-count="wish">0</em></button>
+          <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
+          <button class="nav-item" data-view="remind"><span>◷</span>リマインダー<em data-count="remind">0</em></button>
+          <button class="nav-item" data-view="waiting"><span>⌛</span>待ち状況<em data-count="waiting">0</em></button>
+          <button class="nav-item" data-view="projects"><span>□</span>プロジェクト<em data-count="projects">0</em></button>
+          <button class="nav-item" data-view="wish"><span>☆</span>いつかやりたい<em data-count="wish">0</em></button>
           <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
-          <button class="nav-item" data-view="overview"><span>◫</span>Overview</button>
+          <button class="nav-item" data-view="overview"><span>◫</span>全体の状況</button>
           <button class="nav-item" data-view="help"><span>?</span>使い方</button>
         </nav>
         <div class="project-area">
@@ -84,68 +84,68 @@
             </div>
             <div class="bulk-bar" id="bulkBar" hidden>
               <strong id="selectedCount">0件選択</strong>
-              <select id="bulkFolder" aria-label="移動先"><option value="">フォルダーへ移動</option><option value="inbox">受信箱</option><option value="next">Next Action</option><option value="remind">Remind</option><option value="waiting">Waiting</option><option value="project">Projects</option><option value="wish">Wish List</option></select>
+              <select id="bulkFolder" aria-label="移動先"><option value="">フォルダーへ移動</option><option value="inbox">受信箱</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select>
               <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
             </div>
             <div id="taskContent"></div>
           </section>
 
           <section id="overviewWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">GTD STATUS</p><h1>Overview</h1><p>すべてのタスクを、流れと量で把握します。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">タスクの状況</p><h1>全体の状況</h1><p>すべてのタスクを、流れと量で把握します。</p></div></div>
             <div class="overview-grid" id="overviewGrid"></div>
             <div class="gtd-flow">
               <article><span>1</span><h3>収集する</h3><p>思いついたことは、まず受信箱へ。</p></article>
               <article><span>2</span><h3>明確にする</h3><p>次にやる・待つ・いつかに振り分けます。</p></article>
-              <article><span>3</span><h3>実行する</h3><p>今日とNext Actionだけに集中します。</p></article>
+              <article><span>3</span><h3>実行する</h3><p>「今日」と「次にやる」に集中します。</p></article>
             </div>
           </section>
 
           <section id="documentsWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">REFERENCE</p><h1>ドキュメント</h1><p>タスクに関連するURLやメモをまとめます。</p></div></div>
-            <form class="mini-form" id="documentForm"><input id="documentTitle" required maxlength="80" placeholder="ドキュメント名" /><input id="documentUrl" type="url" placeholder="URL（任意）" /><button>追加</button></form>
+            <div class="page-heading"><div><p class="eyebrow">参考資料</p><h1>ドキュメント</h1><p>タスクに関連するリンクやメモをまとめます。</p></div></div>
+            <form class="mini-form" id="documentForm"><input id="documentTitle" required maxlength="80" placeholder="ドキュメント名" /><input id="documentUrl" type="url" placeholder="リンク（任意）" /><button>追加</button></form>
             <div id="documentList" class="simple-list"></div>
           </section>
 
           <section id="habitsWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">DAILY</p><h1>習慣</h1><p>今日できた習慣をチェックします。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>習慣</h1><p>今日できた習慣をチェックします。</p></div></div>
             <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しい習慣" /><button>追加</button></form>
             <div id="habitList" class="habit-list"></div>
           </section>
 
           <section id="helpWorkspace" class="special-workspace help-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">HOW TO USE</p><h1>使い方</h1><p>思いついたことを集め、整理し、今日やることに集中します。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>思いついたことを集め、整理し、今日やることに集中します。</p></div></div>
 
             <div class="help-start">
               <p class="help-kicker">まずはこの3ステップ</p>
               <div class="help-steps">
                 <article><span>1</span><h2>受信箱へ入れる</h2><p>上の入力欄へタスク名を書いて「追加」。思いついた時点では分類しなくて大丈夫です。</p></article>
                 <article><span>2</span><h2>整理する</h2><p>タスクを開き、フォルダー・期限・優先度を設定します。複数の行動が必要ならプロジェクトも作ります。</p></article>
-                <article><span>3</span><h2>実行・完了する</h2><p>「今日」または「Next Action」を確認。終わったら左側の丸をタップして完了します。</p></article>
+                <article><span>3</span><h2>実行・完了する</h2><p>「今日」または「次にやる」を確認。終わったら左側の丸をタップして完了します。</p></article>
               </div>
             </div>
 
             <div class="help-section">
-              <div class="help-section-heading"><p class="help-kicker">GTD フォルダー</p><h2>タスクの振り分け先</h2></div>
+              <div class="help-section-heading"><p class="help-kicker">タスクの分類</p><h2>タスクの振り分け先</h2></div>
               <div class="folder-guide">
                 <article><strong>受信箱</strong><p>まだ整理していないタスク</p></article>
-                <article><strong>Next Action</strong><p>次に実行できる具体的な行動</p></article>
-                <article><strong>Remind</strong><p>指定した日に思い出したいこと</p></article>
-                <article><strong>Waiting</strong><p>人からの返事や出来事を待つこと</p></article>
-                <article><strong>Projects</strong><p>完了までに複数の行動が必要なこと</p></article>
-                <article><strong>Wish List</strong><p>いつかやりたいこと・保留中の案</p></article>
+                <article><strong>次にやる</strong><p>次に実行できる具体的な行動</p></article>
+                <article><strong>リマインダー</strong><p>指定した日に思い出したいこと</p></article>
+                <article><strong>待ち状況</strong><p>人からの返事や出来事を待つこと</p></article>
+                <article><strong>プロジェクト</strong><p>完了までに複数の行動が必要なこと</p></article>
+                <article><strong>いつかやりたい</strong><p>いつかやりたいこと・保留中の案</p></article>
               </div>
             </div>
 
             <div class="help-section help-details">
               <article><h2>予定を確認する</h2><p>「今日」「次の7日間」で期限の近いタスクを確認します。「一覧・表・週・月」で見え方を切り替えられます。</p></article>
               <article><h2>まとめて整理する</h2><p>タスク左端の四角を選ぶと、一括でフォルダー移動・明日へ先送り・完了ができます。</p></article>
-              <article><h2>補助機能を使う</h2><p>ドキュメントには関連URLやメモを保存できます。習慣では、その日にできた項目をチェックします。</p></article>
-              <article><h2>データを守る</h2><p>データはこの端末のブラウザ内に保存されます。定期的に「バックアップ」からJSONを書き出してください。</p></article>
+              <article><h2>補助機能を使う</h2><p>ドキュメントには関連リンクやメモを保存できます。習慣では、その日にできた項目をチェックします。</p></article>
+              <article><h2>データを守る</h2><p>データはこの端末のブラウザ内に保存されます。定期的に「バックアップ」からファイルを書き出してください。</p></article>
             </div>
 
             <div class="help-note">
-              <strong>iPhoneのホーム画面へ追加</strong>
-              <p>Braveでこのページを開き、共有メニューから「ホーム画面に追加」を選びます。アプリのように起動できます。</p>
+              <strong>アイフォーンのホーム画面へ追加</strong>
+              <p>ブレイブでこのページを開き、共有メニューから「ホーム画面に追加」を選びます。アプリのように起動できます。</p>
             </div>
           </section>
         </div>
@@ -164,14 +164,14 @@
         <input type="hidden" id="taskId" />
         <label class="field"><span>タスク名</span><input id="taskTitle" required maxlength="120" /></label>
         <div class="field-grid">
-          <label class="field"><span>フォルダー</span><select id="taskFolder"><option value="inbox">受信箱</option><option value="next">Next Action</option><option value="remind">Remind</option><option value="waiting">Waiting</option><option value="project">Projects</option><option value="wish">Wish List</option></select></label>
+          <label class="field"><span>フォルダー</span><select id="taskFolder"><option value="inbox">受信箱</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select></label>
           <label class="field"><span>期限</span><input id="taskDue" type="date" /></label>
           <label class="field"><span>優先度</span><select id="taskPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
           <label class="field"><span>タグ</span><select id="taskTag"><option value="">なし</option><option value="work">仕事</option><option value="private">プライベート</option></select></label>
           <label class="field"><span>プロジェクト</span><select id="taskProject"></select></label>
           <label class="field"><span>繰り返し</span><select id="taskRepeat"><option value="">なし</option><option value="daily">毎日</option><option value="weekly">毎週</option><option value="monthly">毎月</option></select></label>
         </div>
-        <label class="check-field"><input id="taskPinned" type="checkbox" /> 今日の「Pinned」に固定</label>
+        <label class="check-field"><input id="taskPinned" type="checkbox" /> 今日の「固定したタスク」に表示</label>
         <label class="field"><span>メモ</span><textarea id="taskNotes" rows="4" maxlength="500" placeholder="必要な情報を残せます"></textarea></label>
         <div class="dialog-actions"><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
       </form>
@@ -179,7 +179,7 @@
 
     <dialog id="projectDialog">
       <form id="projectForm">
-        <div class="dialog-head"><div><small>PROJECT</small><h2>プロジェクトを追加</h2></div><button type="button" class="icon-button" data-close="project">×</button></div>
+        <div class="dialog-head"><div><small>プロジェクト</small><h2>プロジェクトを追加</h2></div><button type="button" class="icon-button" data-close="project">×</button></div>
         <label class="field"><span>名前</span><input id="projectName" required maxlength="40" placeholder="プロジェクト名" /></label>
         <label class="field"><span>色</span><select id="projectColor"><option value="#5074b8">ブルー</option><option value="#bd6b53">レッド</option><option value="#5d8f69">グリーン</option><option value="#9b72b0">パープル</option><option value="#b58a3b">イエロー</option></select></label>
         <div class="dialog-actions"><button type="button" data-close="project">キャンセル</button><button class="primary" type="submit">追加</button></div>
@@ -188,9 +188,9 @@
 
     <dialog id="backupDialog">
       <form>
-        <div class="dialog-head"><div><small>DATA</small><h2>バックアップ</h2></div><button type="button" class="icon-button" data-close="backup">×</button></div>
+        <div class="dialog-head"><div><small>データ管理</small><h2>バックアップ</h2></div><button type="button" class="icon-button" data-close="backup">×</button></div>
         <p class="dialog-copy">端末内のタスク・プロジェクト・習慣・ドキュメントを書き出し／復元できます。</p>
-        <div class="backup-actions"><button type="button" id="exportBtn">JSONを書き出す</button><label>JSONから復元<input id="importInput" type="file" accept="application/json,.json" /></label></div>
+        <div class="backup-actions"><button type="button" id="exportBtn">バックアップを書き出す</button><label>ファイルから復元<input id="importInput" type="file" accept="application/json,.json" /></label></div>
         <div class="dialog-actions"><button type="button" data-close="backup">閉じる</button><button type="button" class="danger" id="clearDataBtn">全データ削除</button></div>
       </form>
     </dialog>
