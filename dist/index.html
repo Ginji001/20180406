@@ -35,6 +35,7 @@
           <button class="nav-item" data-view="wish"><span>☆</span>Wish List<em data-count="wish">0</em></button>
           <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
           <button class="nav-item" data-view="overview"><span>◫</span>Overview</button>
+          <button class="nav-item" data-view="help"><span>?</span>使い方</button>
         </nav>
         <div class="project-area">
           <div class="side-heading"><span>プロジェクト</span><button id="newProjectBtn" aria-label="プロジェクトを追加">＋</button></div>
@@ -55,6 +56,7 @@
             <button data-quick="calendar"><span>▦</span>カレンダー</button>
             <button data-view="documents"><span>▤</span>ドキュメント</button>
             <button data-view="habits"><span>◉</span>習慣</button>
+            <button data-view="help"><span>?</span>使い方</button>
           </div>
           <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="タスクを検索" aria-label="タスクを検索" /></label>
         </header>
@@ -108,6 +110,43 @@
             <div class="page-heading"><div><p class="eyebrow">DAILY</p><h1>習慣</h1><p>今日できた習慣をチェックします。</p></div></div>
             <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しい習慣" /><button>追加</button></form>
             <div id="habitList" class="habit-list"></div>
+          </section>
+
+          <section id="helpWorkspace" class="special-workspace help-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">HOW TO USE</p><h1>使い方</h1><p>思いついたことを集め、整理し、今日やることに集中します。</p></div></div>
+
+            <div class="help-start">
+              <p class="help-kicker">まずはこの3ステップ</p>
+              <div class="help-steps">
+                <article><span>1</span><h2>受信箱へ入れる</h2><p>上の入力欄へタスク名を書いて「追加」。思いついた時点では分類しなくて大丈夫です。</p></article>
+                <article><span>2</span><h2>整理する</h2><p>タスクを開き、フォルダー・期限・優先度を設定します。複数の行動が必要ならプロジェクトも作ります。</p></article>
+                <article><span>3</span><h2>実行・完了する</h2><p>「今日」または「Next Action」を確認。終わったら左側の丸をタップして完了します。</p></article>
+              </div>
+            </div>
+
+            <div class="help-section">
+              <div class="help-section-heading"><p class="help-kicker">GTD フォルダー</p><h2>タスクの振り分け先</h2></div>
+              <div class="folder-guide">
+                <article><strong>受信箱</strong><p>まだ整理していないタスク</p></article>
+                <article><strong>Next Action</strong><p>次に実行できる具体的な行動</p></article>
+                <article><strong>Remind</strong><p>指定した日に思い出したいこと</p></article>
+                <article><strong>Waiting</strong><p>人からの返事や出来事を待つこと</p></article>
+                <article><strong>Projects</strong><p>完了までに複数の行動が必要なこと</p></article>
+                <article><strong>Wish List</strong><p>いつかやりたいこと・保留中の案</p></article>
+              </div>
+            </div>
+
+            <div class="help-section help-details">
+              <article><h2>予定を確認する</h2><p>「今日」「次の7日間」で期限の近いタスクを確認します。「一覧・表・週・月」で見え方を切り替えられます。</p></article>
+              <article><h2>まとめて整理する</h2><p>タスク左端の四角を選ぶと、一括でフォルダー移動・明日へ先送り・完了ができます。</p></article>
+              <article><h2>補助機能を使う</h2><p>ドキュメントには関連URLやメモを保存できます。習慣では、その日にできた項目をチェックします。</p></article>
+              <article><h2>データを守る</h2><p>データはこの端末のブラウザ内に保存されます。定期的に「バックアップ」からJSONを書き出してください。</p></article>
+            </div>
+
+            <div class="help-note">
+              <strong>iPhoneのホーム画面へ追加</strong>
+              <p>Braveでこのページを開き、共有メニューから「ホーム画面に追加」を選びます。アプリのように起動できます。</p>
+            </div>
           </section>
         </div>
       </main>

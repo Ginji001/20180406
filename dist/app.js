@@ -70,6 +70,7 @@
     overviewWorkspace: $("#overviewWorkspace"),
     documentsWorkspace: $("#documentsWorkspace"),
     habitsWorkspace: $("#habitsWorkspace"),
+    helpWorkspace: $("#helpWorkspace"),
     taskContent: $("#taskContent"),
     viewTitle: $("#viewTitle"),
     viewDescription: $("#viewDescription"),
@@ -344,11 +345,12 @@
     renderCounts();
     renderProjects();
     renderNavigation();
-    const special = ["overview", "documents", "habits"].includes(state.view);
+    const special = ["overview", "documents", "habits", "help"].includes(state.view);
     elements.taskWorkspace.hidden = special;
     elements.overviewWorkspace.hidden = state.view !== "overview";
     elements.documentsWorkspace.hidden = state.view !== "documents";
     elements.habitsWorkspace.hidden = state.view !== "habits";
+    elements.helpWorkspace.hidden = state.view !== "help";
     if (state.view === "overview") renderOverview();
     else if (state.view === "documents") renderDocuments();
     else if (state.view === "habits") renderHabits();
@@ -615,7 +617,7 @@
 
   $("#searchInput").addEventListener("input", (event) => {
     state.search = event.target.value.trim();
-    if (!["overview", "documents", "habits"].includes(state.view)) renderTasks();
+    if (!["overview", "documents", "habits", "help"].includes(state.view)) renderTasks();
   });
   $("#tagFilter").addEventListener("change", (event) => { state.tag = event.target.value; renderTasks(); });
   $("#priorityFilter").addEventListener("change", (event) => { state.priority = event.target.value; renderTasks(); });
