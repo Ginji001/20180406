@@ -4,6 +4,7 @@
 
   const STORAGE_KEY = "hachiware-todo-gtd-v2";
   const SETTINGS_KEY = "hachiware-todo-settings-v2";
+  const GOOGLE_CLIENT_ID = "238820536565-803hh23m11f37hhie8oimt9i2kv53tfa.apps.googleusercontent.com";
   const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
   const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
   const GOOGLE_TYPE_PROPERTY = "hachiwareTechoType";
@@ -40,7 +41,7 @@
     const value = loadJSON(SETTINGS_KEY, {});
     const settings = value && typeof value === "object" ? value : {};
     settings.google = settings.google && typeof settings.google === "object" ? settings.google : {};
-    settings.google.clientId = typeof settings.google.clientId === "string" ? settings.google.clientId : "";
+    settings.google.clientId = GOOGLE_CLIENT_ID;
     settings.google.calendarId = "primary";
     settings.google.known = Array.isArray(settings.google.known) ? settings.google.known : [];
     return settings;
