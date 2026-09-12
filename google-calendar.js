@@ -5,7 +5,7 @@
   const STORAGE_KEY = "hachiware-todo-gtd-v2";
   const SETTINGS_KEY = "hachiware-todo-settings-v2";
   const GOOGLE_CLIENT_ID = "238820536565-803hh23m11f37hhie8oimt9i2kv53tfa.apps.googleusercontent.com";
-  const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned";
+  const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events";
   const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
   const GOOGLE_TYPE_PROPERTY = "hachiwareTechoType";
   const GOOGLE_ID_PROPERTY = "hachiwareTechoId";
@@ -479,4 +479,3 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
-
