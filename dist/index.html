@@ -34,6 +34,7 @@
           <button class="nav-item" data-view="projects"><span>□</span>プロジェクト<em data-count="projects">0</em></button>
           <button class="nav-item" data-view="wish"><span>☆</span>いつかやりたい<em data-count="wish">0</em></button>
           <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
+          <button class="nav-item" data-view="reflection"><span>☾</span>振り返り</button>
           <button class="nav-item" data-view="overview"><span>◫</span>全体の状況</button>
           <button class="nav-item" data-view="help"><span>?</span>使い方</button>
         </nav>
@@ -56,6 +57,7 @@
             <button data-quick="calendar"><span>▦</span>カレンダー</button>
             <button data-view="documents"><span>▤</span>ドキュメント</button>
             <button data-view="habits"><span>◉</span>習慣</button>
+            <button data-view="reflection"><span>☾</span>振り返り</button>
             <button data-view="help"><span>?</span>使い方</button>
           </div>
           <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="タスクを検索" aria-label="タスクを検索" /></label>
@@ -112,6 +114,45 @@
             <div id="habitList" class="habit-list"></div>
           </section>
 
+          <section id="reflectionWorkspace" class="special-workspace reflection-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">一日の記録</p><h1>振り返り</h1><p>できたことを確認し、明日へつなげます。</p></div></div>
+
+            <div class="reflection-week" id="reflectionWeek" aria-label="直近7日間の振り返り"></div>
+
+            <div class="reflection-summary" id="reflectionSummary"></div>
+
+            <form class="reflection-form" id="reflectionForm">
+              <div class="reflection-form-head">
+                <div><p class="help-kicker">記録する日</p><input id="reflectionDate" type="date" required /></div>
+                <button class="primary-save" type="submit">振り返りを保存</button>
+              </div>
+
+              <fieldset class="mood-field">
+                <legend>今日の気分</legend>
+                <div class="mood-options">
+                  <label><input type="radio" name="reflectionMood" value="1" /><span>😣<small>重い</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="2" /><span>😕<small>いまひとつ</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="3" checked /><span>😐<small>普通</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="4" /><span>🙂<small>良い</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="5" /><span>😊<small>とても良い</small></span></label>
+                </div>
+              </fieldset>
+
+              <div class="reflection-fields">
+                <label><span>よかったこと</span><textarea id="reflectionGood" rows="3" maxlength="500" placeholder="できたこと、うれしかったこと"></textarea></label>
+                <label><span>気づいたこと</span><textarea id="reflectionLearned" rows="3" maxlength="500" placeholder="学んだこと、改善したいこと"></textarea></label>
+                <label><span>明日やること</span><textarea id="reflectionTomorrow" rows="3" maxlength="500" placeholder="明日いちばん大切にすること"></textarea></label>
+                <label><span>ひとことメモ</span><textarea id="reflectionNote" rows="3" maxlength="500" placeholder="自由に残せます"></textarea></label>
+              </div>
+              <p class="reflection-save-note" id="reflectionSaveNote">同じ日を保存すると、以前の内容を更新します。</p>
+            </form>
+
+            <section class="reflection-history-section">
+              <div class="reflection-history-head"><div><p class="help-kicker">これまでの記録</p><h2>振り返り履歴</h2></div><span id="reflectionHistoryCount"></span></div>
+              <div class="reflection-history" id="reflectionHistory"></div>
+            </section>
+          </section>
+
           <section id="helpWorkspace" class="special-workspace help-workspace" hidden>
             <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>思いついたことを集め、整理し、今日やることに集中します。</p></div></div>
 
@@ -140,6 +181,7 @@
               <article><h2>予定を確認する</h2><p>「今日」「次の7日間」で期限の近いタスクを確認します。「一覧・表・週・月」で見え方を切り替えられます。</p></article>
               <article><h2>まとめて整理する</h2><p>タスク左端の四角を選ぶと、一括でフォルダー移動・明日へ先送り・完了ができます。</p></article>
               <article><h2>補助機能を使う</h2><p>ドキュメントには関連リンクやメモを保存できます。習慣では、その日にできた項目をチェックします。</p></article>
+              <article><h2>一日を振り返る</h2><p>完了したタスクと習慣を確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
               <article><h2>データを守る</h2><p>データはこの端末のブラウザ内に保存されます。定期的に「バックアップ」からファイルを書き出してください。</p></article>
             </div>
 
@@ -155,7 +197,7 @@
     <nav class="mobile-nav" aria-label="モバイルメニュー">
       <button class="active" data-view="today"><span>◎</span>今日</button><button data-view="inbox"><span>↓</span>受信箱</button>
       <button class="mobile-add" id="mobileAdd" aria-label="タスクを追加">＋</button>
-      <button data-view="next"><span>→</span>次にやる</button><button data-view="overview"><span>◫</span>全体</button>
+      <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
 
     <dialog id="taskDialog">

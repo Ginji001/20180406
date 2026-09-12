@@ -147,6 +147,55 @@ h1 { margin: 0; font-family: Georgia, "Yu Mincho", serif; font-size: clamp(2rem,
 .habit-item input { width: 21px; height: 21px; accent-color: var(--accent); }
 .habit-item label { flex: 1; font-size: .78rem; }
 
+.reflection-workspace { max-width: 980px; }
+.reflection-week { margin-top: 24px; padding: 8px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; border: 1px solid var(--line); border-radius: 11px; background: var(--paper); }
+.reflection-day { min-height: 72px; padding: 7px 3px; display: grid; place-items: center; gap: 2px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; }
+.reflection-day:hover { background: var(--paper-2); }
+.reflection-day.active { color: var(--text); background: var(--accent-soft); }
+.reflection-day span { font-size: .66rem; }
+.reflection-day strong { font-size: .9rem; }
+.reflection-day small { min-height: 20px; font-size: .9rem; }
+.reflection-summary { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.reflection-summary article { min-height: 118px; padding: 17px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.reflection-summary span { color: var(--muted); font-size: .72rem; }
+.reflection-summary strong { display: block; margin: 8px 0 5px; font-family: Georgia, serif; font-size: 1.65rem; font-weight: 550; }
+.reflection-summary p { margin: 0; overflow: hidden; color: var(--muted); font-size: .72rem; line-height: 1.5; text-overflow: ellipsis; white-space: nowrap; }
+.reflection-form { margin-top: 20px; padding: 22px; border: 1px solid var(--strong-line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow); }
+.reflection-form-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.reflection-form-head input { min-height: 39px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--bg); font-size: .82rem; }
+.primary-save { min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; color: white; background: var(--text); font-size: .78rem; font-weight: 720; }
+.mood-field { margin: 22px 0 18px; padding: 0; border: 0; }
+.mood-field legend { margin-bottom: 9px; color: var(--muted); font-size: .72rem; font-weight: 700; }
+.mood-options { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.mood-options label { cursor: pointer; }
+.mood-options input { position: absolute; opacity: 0; pointer-events: none; }
+.mood-options span { min-height: 68px; padding: 8px 3px; display: grid; place-items: center; align-content: center; gap: 3px; border: 1px solid var(--line); border-radius: 9px; background: var(--bg); font-size: 1.35rem; transition: .15s ease; }
+.mood-options small { color: var(--muted); font-size: .66rem; }
+.mood-options input:checked + span { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.mood-options input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+.reflection-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; }
+.reflection-fields label { display: grid; gap: 6px; }
+.reflection-fields label > span { color: var(--muted); font-size: .72rem; font-weight: 700; }
+.reflection-fields textarea { width: 100%; min-height: 92px; padding: 10px; resize: vertical; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--bg); font-size: .82rem; line-height: 1.55; }
+.reflection-save-note { margin: 12px 0 0; color: var(--muted); font-size: .68rem; }
+.reflection-history-section { margin-top: 34px; }
+.reflection-history-head { margin-bottom: 12px; display: flex; align-items: end; justify-content: space-between; }
+.reflection-history-head .help-kicker { margin-bottom: 4px; }
+.reflection-history-head h2 { margin: 0; font-family: Georgia, "Yu Mincho", serif; font-size: 1.25rem; font-weight: 600; }
+.reflection-history-head > span { color: var(--muted); font-size: .72rem; }
+.reflection-history { display: grid; gap: 9px; }
+.reflection-card { padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.reflection-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.reflection-card-head > div { display: flex; align-items: center; gap: 9px; }
+.reflection-face { font-size: 1.5rem; }
+.reflection-card-head strong { display: block; font-size: .82rem; }
+.reflection-card-head small { display: block; margin-top: 3px; color: var(--muted); font-size: .66rem; }
+.reflection-card-head button { min-height: 30px; padding: 0 7px; border: 0; color: var(--muted); background: transparent; font-size: .68rem; }
+.reflection-card-head .danger-text { color: var(--danger); }
+.reflection-card > p { margin: 12px 0; color: var(--text); font-size: .82rem; line-height: 1.65; white-space: pre-wrap; }
+.reflection-card footer { display: flex; gap: 6px; }
+.reflection-card footer span { padding: 3px 7px; border-radius: 999px; color: var(--muted); background: var(--paper-2); font-size: .66rem; }
+
 .help-workspace { max-width: 980px; }
 .help-start { margin-top: 24px; padding: 24px; border: 1px solid var(--strong-line); border-radius: 12px; background: var(--paper); box-shadow: var(--shadow); }
 .help-kicker { margin: 0 0 12px; color: var(--accent); font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
@@ -245,6 +294,19 @@ body.dark .calendar-day.today { background: #353224; }
   .calendar-task { padding: 3px; font-size: .5rem; }
   .overview-grid { grid-template-columns: 1fr 1fr; }
   .gtd-flow { grid-template-columns: 1fr; }
+  .reflection-week { gap: 2px; padding: 5px; }
+  .reflection-day { min-height: 62px; }
+  .reflection-day span { font-size: .62rem; }
+  .reflection-day small { font-size: .88rem; }
+  .reflection-summary { grid-template-columns: 1fr; }
+  .reflection-summary article { min-height: 94px; }
+  .reflection-form { padding: 17px; }
+  .reflection-form-head { align-items: stretch; flex-direction: column; }
+  .primary-save { width: 100%; }
+  .mood-options { gap: 4px; }
+  .mood-options span { min-height: 62px; font-size: 1.2rem; }
+  .mood-options small { font-size: .55rem; }
+  .reflection-fields { grid-template-columns: 1fr; }
   .help-start { padding: 18px; }
   .help-steps, .folder-guide, .help-details { grid-template-columns: 1fr; }
   .help-steps { gap: 22px; }

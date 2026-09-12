@@ -22,22 +22,24 @@
   const todayISO = toISO(today);
 
   const emptyData = () => ({
-    version: 2,
+    version: 3,
     tasks: [],
     projects: [],
     documents: [],
-    habits: []
+    habits: [],
+    reflections: []
   });
 
   function normalizeData(value) {
     const base = emptyData();
     if (!value || typeof value !== "object") return base;
     return {
-      version: 2,
+      version: 3,
       tasks: Array.isArray(value.tasks) ? value.tasks : [],
       projects: Array.isArray(value.projects) ? value.projects : [],
       documents: Array.isArray(value.documents) ? value.documents : [],
-      habits: Array.isArray(value.habits) ? value.habits : []
+      habits: Array.isArray(value.habits) ? value.habits : [],
+      reflections: Array.isArray(value.reflections) ? value.reflections : []
     };
   }
 
@@ -70,6 +72,7 @@
     overviewWorkspace: $("#overviewWorkspace"),
     documentsWorkspace: $("#documentsWorkspace"),
     habitsWorkspace: $("#habitsWorkspace"),
+    reflectionWorkspace: $("#reflectionWorkspace"),
     helpWorkspace: $("#helpWorkspace"),
     taskContent: $("#taskContent"),
     viewTitle: $("#viewTitle"),
@@ -119,6 +122,8 @@
   };
   const priorityNames = { high: "高", medium: "中", low: "低" };
   const tagNames = { work: "仕事", private: "プライベート" };
+  const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
+  const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
 
   function persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
@@ -155,6 +160,12 @@
     const date = fromISO(due);
     if (!date) return "期限なし";
     return `${date.getMonth() + 1}/${date.getDate()}（${"日月火水木金土"[date.getDay()]}）`;
+  }
+
+  function formatFullDate(value) {
+    const date = fromISO(value);
+    if (!date) return value;
+    return new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "short" }).format(date);
   }
 
   function filteredTasks() {
@@ -334,6 +345,68 @@
     }).join("") || emptyState();
   }
 
+  function reflectionDataFor(date) {
+    const completedTasks = state.data.tasks.filter((task) => task.completedAt && toISO(new Date(task.completedAt)) === date).map((task) => task.title);
+    const completedHabits = state.data.habits.filter((habit) => Array.isArray(habit.dates) && habit.dates.includes(date)).map((habit) => habit.name);
+    return { completedTasks, completedHabits };
+  }
+
+  function renderReflectionWeek(selectedDate) {
+    const selected = fromISO(selectedDate) || today;
+    const days = Array.from({ length: 7 }, (_, index) => addDays(selected, index - 6));
+    $("#reflectionWeek").innerHTML = days.map((date) => {
+      const iso = toISO(date);
+      const record = state.data.reflections.find((item) => item.date === iso);
+      return `<button type="button" class="reflection-day ${iso === selectedDate ? "active" : ""}" data-reflection-date="${iso}"><span>${"日月火水木金土"[date.getDay()]}</span><strong>${date.getDate()}</strong><small>${record ? moodFaces[record.mood] || "●" : "・"}</small></button>`;
+    }).join("");
+  }
+
+  function renderReflectionSummary(date) {
+    const { completedTasks, completedHabits } = reflectionDataFor(date);
+    const start = toISO(addDays(fromISO(date) || today, -6));
+    const recentCount = state.data.reflections.filter((item) => item.date >= start && item.date <= date).length;
+    $("#reflectionSummary").innerHTML = [
+      ["完了したタスク", completedTasks.length, completedTasks.slice(0, 3).join("、") || "まだありません"],
+      ["達成した習慣", completedHabits.length, completedHabits.slice(0, 3).join("、") || "まだありません"],
+      ["7日間の記録", `${recentCount}/7`, recentCount ? "記録を積み重ねています" : "今日から始めましょう"]
+    ].map(([label, value, detail]) => `<article><span>${label}</span><strong>${value}</strong><p>${escapeHTML(detail)}</p></article>`).join("");
+  }
+
+  function loadReflectionForm(date) {
+    const record = state.data.reflections.find((item) => item.date === date);
+    $("#reflectionDate").value = date;
+    const mood = String(record?.mood || 3);
+    const moodInput = $(`[name="reflectionMood"][value="${mood}"]`);
+    if (moodInput) moodInput.checked = true;
+    $("#reflectionGood").value = record?.good || "";
+    $("#reflectionLearned").value = record?.learned || "";
+    $("#reflectionTomorrow").value = record?.tomorrow || "";
+    $("#reflectionNote").value = record?.note || "";
+    $("#reflectionSaveNote").textContent = record ? "この日の振り返りを編集中です。保存すると内容を更新します。" : "同じ日を保存すると、以前の内容を更新します。";
+  }
+
+  function renderReflectionHistory() {
+    const records = [...state.data.reflections].sort((a, b) => b.date.localeCompare(a.date));
+    $("#reflectionHistoryCount").textContent = `${records.length}日分`;
+    $("#reflectionHistory").innerHTML = records.map((record) => {
+      const details = [record.good, record.learned, record.tomorrow, record.note].filter(Boolean);
+      const completed = Number(record.completedCount) || 0;
+      const habits = Number(record.habitCount) || 0;
+      return `<article class="reflection-card">
+        <div class="reflection-card-head"><div><span class="reflection-face">${moodFaces[record.mood] || moodFaces[3]}</span><div><strong>${formatFullDate(record.date)}</strong><small>${moodNames[record.mood] || moodNames[3]}</small></div></div><div><button type="button" data-edit-reflection="${record.date}">編集</button><button type="button" class="danger-text" data-delete-reflection="${record.id}">削除</button></div></div>
+        <p>${escapeHTML(details[0] || "記録があります")}</p>
+        <footer><span>完了 ${completed}件</span><span>習慣 ${habits}件</span></footer>
+      </article>`;
+    }).join("") || '<div class="empty-state"><strong>振り返りはまだありません</strong><span>今日の気分や、よかったことから記録してみましょう。</span></div>';
+  }
+
+  function renderReflection(date = $("#reflectionDate").value || todayISO) {
+    renderReflectionWeek(date);
+    renderReflectionSummary(date);
+    loadReflectionForm(date);
+    renderReflectionHistory();
+  }
+
   function renderBulkBar() {
     const visibleSelected = [...state.selected].filter((id) => state.data.tasks.some((task) => task.id === id));
     state.selected = new Set(visibleSelected);
@@ -345,16 +418,18 @@
     renderCounts();
     renderProjects();
     renderNavigation();
-    const special = ["overview", "documents", "habits", "help"].includes(state.view);
+    const special = ["overview", "documents", "habits", "reflection", "help"].includes(state.view);
     elements.taskWorkspace.hidden = special;
     elements.overviewWorkspace.hidden = state.view !== "overview";
     elements.documentsWorkspace.hidden = state.view !== "documents";
     elements.habitsWorkspace.hidden = state.view !== "habits";
+    elements.reflectionWorkspace.hidden = state.view !== "reflection";
     elements.helpWorkspace.hidden = state.view !== "help";
     if (state.view === "overview") renderOverview();
     else if (state.view === "documents") renderDocuments();
     else if (state.view === "habits") renderHabits();
-    else {
+    else if (state.view === "reflection") renderReflection();
+    else if (state.view !== "help") {
       renderHeading();
       renderTasks();
     }
@@ -617,7 +692,7 @@
 
   $("#searchInput").addEventListener("input", (event) => {
     state.search = event.target.value.trim();
-    if (!["overview", "documents", "habits", "help"].includes(state.view)) renderTasks();
+    if (!["overview", "documents", "habits", "reflection", "help"].includes(state.view)) renderTasks();
   });
   $("#tagFilter").addEventListener("change", (event) => { state.tag = event.target.value; renderTasks(); });
   $("#priorityFilter").addEventListener("change", (event) => { state.priority = event.target.value; renderTasks(); });
@@ -666,6 +741,54 @@
     state.data.habits = state.data.habits.filter((item) => item.id !== id);
     persist();
     renderHabits();
+  });
+
+  $("#reflectionForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const date = $("#reflectionDate").value;
+    if (!date) return;
+    const summary = reflectionDataFor(date);
+    const values = {
+      date,
+      mood: Number($("[name='reflectionMood']:checked")?.value || 3),
+      good: $("#reflectionGood").value.trim(),
+      learned: $("#reflectionLearned").value.trim(),
+      tomorrow: $("#reflectionTomorrow").value.trim(),
+      note: $("#reflectionNote").value.trim(),
+      completedTasks: summary.completedTasks,
+      completedCount: summary.completedTasks.length,
+      completedHabits: summary.completedHabits,
+      habitCount: summary.completedHabits.length,
+      updatedAt: new Date().toISOString()
+    };
+    const existing = state.data.reflections.find((item) => item.date === date);
+    if (existing) Object.assign(existing, values);
+    else state.data.reflections.push({ id: uid(), ...values, createdAt: new Date().toISOString() });
+    persist();
+    renderReflection(date);
+    showToast(existing ? "振り返りを更新しました" : "振り返りを保存しました");
+  });
+
+  $("#reflectionDate").addEventListener("change", (event) => renderReflection(event.target.value || todayISO));
+
+  $("#reflectionWeek").addEventListener("click", (event) => {
+    const date = event.target.closest("[data-reflection-date]")?.dataset.reflectionDate;
+    if (date) renderReflection(date);
+  });
+
+  $("#reflectionHistory").addEventListener("click", (event) => {
+    const editDate = event.target.closest("[data-edit-reflection]")?.dataset.editReflection;
+    if (editDate) {
+      renderReflection(editDate);
+      elements.reflectionWorkspace.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+    const id = event.target.closest("[data-delete-reflection]")?.dataset.deleteReflection;
+    if (!id || !window.confirm("この振り返りを削除しますか？")) return;
+    state.data.reflections = state.data.reflections.filter((item) => item.id !== id);
+    persist();
+    renderReflection($("#reflectionDate").value || todayISO);
+    showToast("振り返りを削除しました");
   });
 
   const settings = loadJSON(SETTINGS_KEY, {});
