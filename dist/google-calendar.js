@@ -269,7 +269,7 @@
     local.googleSyncedAt = remote.updated || new Date().toISOString();
   }
 
-  function importRemote(remote, kind) {
+  function importRemote(data, remote, kind) {
     const props = remotePrivate(remote);
     const id = props[GOOGLE_ID_PROPERTY] || uid();
     const date = remoteDate(remote);
@@ -326,7 +326,7 @@
         const id = key.slice(separator + 1);
         let local = localByKey.get(key);
         if (!local) {
-          const created = importRemote(remote, kind);
+          const created = importRemote(data, remote, kind);
           if (created) {
             local = { kind, id: created.id, item: created, date: kind === "task" ? created.due : created.date, title: created.title };
             localByKey.set(key, local);
