@@ -306,6 +306,9 @@ h1 { margin: 0; font-family: var(--font-friendly); font-size: clamp(2rem, 4.5vw,
 .help-details article { padding: 19px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); }
 .help-note { margin-top: 28px; padding: 18px 20px; border-left: 4px solid var(--accent); border-radius: 0 9px 9px 0; background: var(--accent-soft); }
 .help-note strong { display: block; margin-bottom: 5px; font-size: .84rem; }
+.paper-guide { margin-top: 34px; }
+.paper-download { margin-top: 14px; min-height: 42px; padding: 0 16px; display: inline-flex; align-items: center; border-radius: 9px; color: white; background: var(--accent); box-shadow: 0 5px 14px rgba(178, 82, 63, .18); font-size: .75rem; font-weight: 750; text-decoration: none; }
+.paper-download:hover { filter: brightness(.96); }
 
 dialog { width: min(560px, calc(100% - 24px)); padding: 0; border: 0; border-radius: 14px; color: var(--text); background: var(--paper); box-shadow: 0 24px 80px rgba(30,29,26,.22); }
 dialog::backdrop { background: rgba(30,29,26,.38); backdrop-filter: blur(2px); }
