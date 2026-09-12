@@ -1158,7 +1158,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=13"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=14"));
 
   function registerWebMCP() {
     const context = document.modelContext;
