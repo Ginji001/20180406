@@ -1,8 +1,8 @@
-const CACHE = "hachiroku-techo-v15";
-const ASSETS = ["./", "./index.html?v=15", "./styles.css?v=15", "./app.js?v=15", "./manifest.webmanifest?v=15", "./favicon.svg", "./icon-192.png", "./icon-512.png", "./paper-sheet.pdf"];
+const CACHE = "hachiroku-techo-v17";
+const ASSETS = ["./", "./index.html??v=17", "./styles.css??v=17", "./app.js??v=17", "./manifest.webmanifest??v=17", "./favicon.svg", "./icon-192.png", "./icon-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=17"];
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))));
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))));
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
+  if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(fetch(event.request).then((response) => { const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put(event.request, copy)); return response; }).catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))));
 });
