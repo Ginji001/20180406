@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=19" />
+    <link rel="manifest" href="./manifest.webmanifest?v=20" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=19" />
+    <link rel="stylesheet" href="./styles.css?v=20" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -155,11 +155,13 @@
               </div>
               <div class="google-calendar-controls">
                 <input id="googleClientId" type="hidden" value="238820536565-803hh23m11f37hhie8oimt9i2kv53tfa.apps.googleusercontent.com" />
-                <label><span>同期先</span><input id="googleCalendarId" type="text" value="主カレンダー" disabled /></label>
+                <label><span>同期先</span><input id="googleCalendarId" type="text" value="ハチロク手帳（専用カレンダー）" disabled /></label>
               </div>
               <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
-              <p class="google-calendar-note">接続すると、タイトル・日付・タスクのメモ・完了状態をGoogleへ送信し、接続直後に同期します。<a href="./privacy.html" target="_blank" rel="noopener">データの取り扱い</a></p>
+              <p class="google-calendar-note">初回接続時にGoogle内へ「ハチロク手帳」専用カレンダーを作成します。タイトル・日付・タスクのメモ・完了状態を送信し、接続直後に同期します。<a href="./privacy.html" target="_blank" rel="noopener">データの取り扱い</a></p>
               <p class="google-calendar-note">同期対象は、期限のあるタスクとこの画面の「予定」です。すべて終日の予定として登録されます。</p>
+              <p class="google-calendar-note">以前の主カレンダーの予定は残ります。今後は専用カレンダーだけに同期します。両方を表示すると同じ予定が重なる場合があります。</p>
+              <details class="google-calendar-help"><summary>別の端末で同じ専用カレンダーを使う</summary><p>接続後に表示されるIDを控え、別の端末で接続する前に保存してください。Googleカレンダーの設定からも確認できます。IDがない端末では新しく作成します。</p><label>専用カレンダーID<input id="googleDedicatedCalendarId" type="text" autocomplete="off" placeholder="…@group.calendar.google.com" /></label><button type="button" id="googleUseCalendarBtn">このIDを保存</button></details>
               <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押します。</li><li>Googleアカウントを選び、カレンダーへのアクセスを許可します。</li><li>「今すぐ同期」で期限付きタスクと予定を同期できます。</li></ol></details>
             </section>
             <div class="combined-calendar" id="combinedCalendar"></div>
@@ -360,8 +362,8 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=19"></script>
-    <script src="./google-calendar.js?v=19"></script>
+    <script src="./app.js?v=20"></script>
+    <script src="./google-calendar.js?v=20"></script>
   </body>
 </html>
 

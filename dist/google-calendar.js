@@ -5,12 +5,14 @@
   const STORAGE_KEY = "hachiware-todo-gtd-v2";
   const SETTINGS_KEY = "hachiware-todo-settings-v2";
   const GOOGLE_CLIENT_ID = "238820536565-803hh23m11f37hhie8oimt9i2kv53tfa.apps.googleusercontent.com";
-  const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.events.owned";
+  const GOOGLE_SCOPE = "https://www.googleapis.com/auth/calendar.app.created";
+  const CALENDAR_MARKER = "hachiroku-techo-dedicated-v1";
   const GOOGLE_API_BASE = "https://www.googleapis.com/calendar/v3";
   const GOOGLE_TYPE_PROPERTY = "hachiwareTechoType";
   const GOOGLE_ID_PROPERTY = "hachiwareTechoId";
   const GOOGLE_COMPLETED_PROPERTY = "hachiwareTechoCompleted";
   const googleState = { token: null, expiresAt: 0, syncing: false, queued: false, statusMessage: "", statusTone: "", timer: null };
+  googleState.calendarId = "";
 
   const $ = (selector) => document.querySelector(selector);
   const pad = (value) => String(value).padStart(2, "0");
@@ -42,7 +44,6 @@
     const settings = value && typeof value === "object" ? value : {};
     settings.google = settings.google && typeof settings.google === "object" ? settings.google : {};
     settings.google.clientId = GOOGLE_CLIENT_ID;
-    settings.google.calendarId = "primary";
     settings.google.known = Array.isArray(settings.google.known) ? settings.google.known : [];
     return settings;
   }
@@ -88,7 +89,11 @@
     const disconnectButton = $("#googleDisconnectBtn");
     if (!clientInput || !calendarInput || !connectButton || !syncButton || !disconnectButton) return;
     if (document.activeElement !== clientInput) clientInput.value = settings.google.clientId;
-    calendarInput.value = "主カレンダー";
+    calendarInput.value = "ハチロク手帳（専用カレンダー）";
+    const restoreInput = $("#googleDedicatedCalendarId");
+    if (restoreInput && document.activeElement !== restoreInput) restoreInput.value = settings.google.dedicatedCalendarId || "";
+    connectButton.disabled = googleState.syncing;
+    disconnectButton.disabled = googleState.syncing;
     connectButton.textContent = connected() ? "接続を更新" : "Googleカレンダーに接続";
     syncButton.disabled = !connected() || googleState.syncing;
     disconnectButton.hidden = !googleState.token;
@@ -132,6 +137,7 @@
         const client = window.google.accounts.oauth2.initTokenClient({
           client_id: settings.google.clientId,
           scope: GOOGLE_SCOPE,
+          include_granted_scopes: false,
           callback: (response) => {
             if (!response || response.error || !response.access_token) {
               reject(new Error(response?.error_description || "Googleの接続が許可されませんでした"));
@@ -156,6 +162,9 @@
 
   async function googleRequest(path, options) {
     if (!connected()) throw new Error("Googleカレンダーの接続が必要です");
+    // Even a previously granted broad token must never reach the old primary calendar.
+    if (path !== "/calendars" && !/^\/calendars\/[^/?]+(?:\/events(?:\/[^/?]+)?(?:\?.*)?)?$/.test(path)) throw new Error("許可されていないカレンダー操作です");
+    if (path !== "/calendars" && !decodeURIComponent(path.split("/")[2]).endsWith("@group.calendar.google.com")) throw new Error("専用カレンダー以外にはアクセスできません");
     const requestOptions = options || {};
     const headers = new Headers(requestOptions.headers || {});
     headers.set("Authorization", "Bearer " + googleState.token);
@@ -174,6 +183,53 @@
       throw error;
     }
     return body;
+  }
+
+  function calendarPath() {
+    if (!googleState.calendarId.endsWith("@group.calendar.google.com")) throw new Error("専用カレンダーを先に接続してください");
+    return "/calendars/" + encodeURIComponent(googleState.calendarId);
+  }
+
+  async function ensureDedicatedCalendar() {
+    const settings = appSettings();
+    const savedId = settings.google.dedicatedCalendarId;
+    if (savedId) {
+      if (!savedId.endsWith("@group.calendar.google.com")) throw new Error("専用カレンダーIDを確認してください");
+      try {
+        const calendar = await googleRequest("/calendars/" + encodeURIComponent(savedId));
+        if (calendar.id !== savedId || !String(calendar.description || "").includes(CALENDAR_MARKER)) throw new Error("ハチロク手帳の専用カレンダーではありません");
+      } catch (error) {
+        if (error.status === 403 || error.status === 404) throw new Error("保存済みの専用カレンダーに接続できません。同じGoogleアカウントを選び直すか、カレンダーIDを確認してください。既存の予定は変更していません。");
+        throw error;
+      }
+      googleState.calendarId = savedId;
+      return savedId;
+    }
+    const calendar = await googleRequest("/calendars", { method: "POST", body: JSON.stringify({ summary: "ハチロク手帳", description: "ハチロク手帳の同期専用カレンダー。\n" + CALENDAR_MARKER, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Tokyo" }) });
+    if (!calendar?.id?.endsWith("@group.calendar.google.com")) throw new Error("専用カレンダーの作成結果を確認できませんでした");
+    settings.google.dedicatedCalendarId = calendar.id;
+    saveSettings(settings);
+    googleState.calendarId = calendar.id;
+    return calendar.id;
+  }
+
+  function migrateCalendarLinks(data, settings) {
+    const id = googleState.calendarId;
+    if (!id) throw new Error("専用カレンダーが未確認です");
+    for (const item of [...data.tasks, ...data.events]) {
+      if (item.googleEventId && item.googleCalendarId !== id) {
+        item.googlePreviousLinks = Array.isArray(item.googlePreviousLinks) ? item.googlePreviousLinks : [];
+        item.googlePreviousLinks.push({ calendarId: item.googleCalendarId || "primary", eventId: item.googleEventId, syncedAt: item.googleSyncedAt || "" });
+        item.googleEventId = "";
+        item.googleCalendarId = "";
+        item.googleSyncedAt = "";
+      }
+    }
+    if (settings.google.knownCalendarId !== id) {
+      settings.google.previousKnown = settings.google.known;
+      settings.google.known = [];
+      settings.google.knownCalendarId = id;
+    }
   }
 
   function remoteDate(remote) {
@@ -229,7 +285,7 @@
     do {
       const params = new URLSearchParams({ showDeleted: "false", singleEvents: "true", maxResults: "2500", privateExtendedProperty: GOOGLE_TYPE_PROPERTY + "=" + kind });
       if (pageToken) params.set("pageToken", pageToken);
-      const result = await googleRequest("/calendars/primary/events?" + params.toString());
+      const result = await googleRequest(calendarPath() + "/events?" + params.toString());
       events.push(...(result?.items || []));
       pageToken = result?.nextPageToken || "";
     } while (pageToken);
@@ -244,10 +300,10 @@
 
   async function deleteRemote(eventId) {
     try {
-      await googleRequest("/calendars/primary/events/" + encodeURIComponent(eventId), { method: "DELETE" });
+      await googleRequest(calendarPath() + "/events/" + encodeURIComponent(eventId), { method: "DELETE" });
       return true;
     } catch (error) {
-      if (error.status === 404) return true;
+      if (error.status === 404 || error.status === 410) return true;
       throw error;
     }
   }
@@ -266,7 +322,7 @@
       local.date = date;
     }
     local.googleEventId = remote.id;
-    local.googleCalendarId = "primary";
+    local.googleCalendarId = googleState.calendarId;
     local.googleSyncedAt = remote.updated || new Date().toISOString();
   }
 
@@ -279,16 +335,21 @@
     const title = remoteTitle(remote);
     if (kind === "task") {
       const completed = props[GOOGLE_COMPLETED_PROPERTY] === "1" || /^✓\s*/.test(String(remote.summary || ""));
-      const task = { id, title, folder: "inbox", due: date, priority: "medium", tag: "", projectId: null, repeat: "", pinned: false, notes: "", completed, completedAt: completed ? now : null, order: Date.now(), createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: "primary", googleSyncedAt: now };
+      const task = { id, title, folder: "inbox", due: date, priority: "medium", tag: "", projectId: null, repeat: "", pinned: false, notes: "", completed, completedAt: completed ? now : null, order: Date.now(), createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
       data.tasks.push(task);
       return task;
     }
-    const item = { id, date, title, createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: "primary", googleSyncedAt: now };
+    const item = { id, date, title, createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
     data.events.push(item);
     return item;
   }
 
   async function syncGoogleCalendar(silent) {
+    if (navigator.locks) return navigator.locks.request("hachiroku-google-sync", () => runGoogleSync(silent));
+    return runGoogleSync(silent);
+  }
+
+  async function runGoogleSync(silent) {
     if (!connected()) {
       if (!silent) window.alert("先にGoogleカレンダーへ接続してください");
       return false;
@@ -300,9 +361,11 @@
     googleState.syncing = true;
     renderPanel();
     const stats = { created: 0, updated: 0, imported: 0, deleted: 0, pulled: 0 };
-    const data = appData();
-    const settings = appSettings();
     try {
+      await ensureDedicatedCalendar();
+      const data = appData();
+      const settings = appSettings();
+      migrateCalendarLinks(data, settings);
       const remoteEvents = (await Promise.all(["task", "event"].map((kind) => listManaged(kind)))).flat();
       const remoteByKey = new Map(remoteEvents.map((remote) => [remoteKey(remote), remote]).filter(([key]) => key));
       const localKeys = new Set(descriptors(data).map((item) => item.kind + ":" + item.id));
@@ -342,7 +405,7 @@
             stats.pulled += 1;
           } else {
             local.item.googleEventId = remote.id;
-            local.item.googleCalendarId = "primary";
+            local.item.googleCalendarId = googleState.calendarId;
           }
         }
       }
@@ -350,7 +413,7 @@
       for (const descriptor of descriptors(data)) {
         const item = descriptor.item;
         if (!descriptor.date) {
-          if (item.googleEventId) {
+          if (item.googleEventId && item.googleCalendarId === googleState.calendarId) {
             await deleteRemote(item.googleEventId);
             item.googleEventId = "";
             item.googleCalendarId = "";
@@ -365,31 +428,31 @@
         let response = remote;
         if (remote) {
           if (!matches(remote, body)) {
-            response = await googleRequest("/calendars/primary/events/" + encodeURIComponent(remote.id), { method: "PUT", body: JSON.stringify(body) });
+            response = await googleRequest(calendarPath() + "/events/" + encodeURIComponent(remote.id), { method: "PUT", body: JSON.stringify(body) });
             stats.updated += 1;
           }
-        } else if (item.googleEventId && item.googleCalendarId === "primary") {
+        } else if (item.googleEventId && item.googleCalendarId === googleState.calendarId) {
           try {
-            response = await googleRequest("/calendars/primary/events/" + encodeURIComponent(item.googleEventId), { method: "PUT", body: JSON.stringify(body) });
+            response = await googleRequest(calendarPath() + "/events/" + encodeURIComponent(item.googleEventId), { method: "PUT", body: JSON.stringify(body) });
             stats.updated += 1;
           } catch (error) {
             if (error.status !== 404) throw error;
-            response = await googleRequest("/calendars/primary/events", { method: "POST", body: JSON.stringify(body) });
+            response = await googleRequest(calendarPath() + "/events", { method: "POST", body: JSON.stringify(body) });
             stats.created += 1;
           }
         } else {
-          response = await googleRequest("/calendars/primary/events", { method: "POST", body: JSON.stringify(body) });
+          response = await googleRequest(calendarPath() + "/events", { method: "POST", body: JSON.stringify(body) });
           stats.created += 1;
         }
         item.googleEventId = response?.id || item.googleEventId;
-        item.googleCalendarId = "primary";
+        item.googleCalendarId = googleState.calendarId;
         item.googleSyncedAt = response?.updated || new Date().toISOString();
       }
 
       saveData(data);
       settings.google.known = descriptors(data).filter((item) => item.item.googleEventId).map((item) => ({ kind: item.kind, id: item.id, googleEventId: item.item.googleEventId }));
       saveSettings(settings);
-      const summary = "同期完了：追加" + stats.created + "・更新" + stats.updated + "・取り込み" + stats.imported + "・削除" + stats.deleted;
+      const summary = "専用カレンダーに同期完了：追加" + stats.created + "・更新" + stats.updated + "・取り込み" + stats.imported + "・削除" + stats.deleted;
       setStatus(summary, "connected");
       renderPanel();
       if (!silent) window.alert(summary);
@@ -469,8 +532,20 @@
       if (googleState.token && window.google?.accounts?.oauth2?.revoke) window.google.accounts.oauth2.revoke(googleState.token, () => {});
       googleState.token = null;
       googleState.expiresAt = 0;
+      googleState.calendarId = "";
       googleState.statusMessage = "接続を解除しました。Googleカレンダーの予定は削除していません。";
       googleState.statusTone = "";
+      renderPanel();
+    });
+    $("#googleUseCalendarBtn")?.addEventListener("click", () => {
+      if (googleState.syncing) return;
+      const id = $("#googleDedicatedCalendarId").value.trim();
+      if (!id.endsWith("@group.calendar.google.com")) { window.alert("Googleカレンダーの設定にある専用カレンダーIDを入力してください"); return; }
+      const settings = appSettings();
+      settings.google.dedicatedCalendarId = id;
+      saveSettings(settings);
+      googleState.calendarId = "";
+      setStatus("カレンダーIDを保存しました。接続または同期時に専用カレンダーか確認します。", "");
       renderPanel();
     });
     renderPanel();
@@ -479,4 +554,3 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();
-
