@@ -79,7 +79,7 @@
             </div>
             <form class="capture" id="quickAddForm">
               <span class="capture-icon">＋</span>
-              <select id="quickType" aria-label="登録する種類"><option value="task">・ タスク</option><option value="event">○ 予定</option><option value="memo">💡 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+              <select id="quickType" aria-label="登録する種類"><option value="task">・ タスク</option><option value="event">○ 予定</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
               <input id="quickTaskInput" required maxlength="120" autocomplete="off" placeholder="タスク・予定・記録を追加…" />
               <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
               <button type="submit">追加</button>
@@ -131,7 +131,7 @@
             <div class="page-heading"><div><p class="eyebrow">デイリーログ</p><h1>記録</h1><p>出来事・メモ・アイデアを、記号と一緒に残します。</p></div></div>
             <form class="journal-form" id="logForm">
               <input id="logDate" type="date" required />
-              <select id="logType" aria-label="記録の種類"><option value="memo">💡 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
               <input id="logText" required maxlength="300" placeholder="記録する内容" />
               <button type="submit">記録する</button>
             </form>
@@ -246,7 +246,8 @@
               <div class="folder-guide">
                 <article><strong>・ タスク</strong><p>受信箱へ追加し、あとで期限や分類を整えます。</p></article>
                 <article><strong>○ 予定</strong><p>今日の予定としてカレンダーへ追加します。</p></article>
-                <article><strong>💡 メモ・アイデア</strong><p>今日のデイリーログへ記録します。</p></article>
+                <article><strong>📝 メモ</strong><p>覚えておきたい情報を今日のデイリーログへ記録します。</p></article>
+                <article><strong>💡 アイデア</strong><p>思いついたことを今日のデイリーログへ記録します。</p></article>
                 <article><strong>× 完了</strong><p>今日できたこととして記録します。</p></article>
                 <article><strong>＞ 先送り</strong><p>先送りしたことと、その判断を記録します。</p></article>
                 <article><strong>－ キャンセル</strong><p>やらないと決めたことを記録します。</p></article>
@@ -339,6 +340,6 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=14"></script>
+    <script src="./app.js?v=15"></script>
   </body>
 </html>

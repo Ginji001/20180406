@@ -148,7 +148,7 @@
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
   const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと" };
-  const logSymbols = { memo: "💡", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－" };
+  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－" };
 
   function persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
