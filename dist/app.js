@@ -1091,7 +1091,7 @@
     const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `hachiware-todo-backup-${todayISO}.json`;
+    link.download = `ハチロク手帳_バックアップ_${todayISO}.json`;
     link.click();
     URL.revokeObjectURL(link.href);
     showToast("バックアップを書き出しました");
@@ -1167,7 +1167,7 @@
       {
         name: "create_task",
         title: "タスクを受信箱へ追加",
-        description: "ハチワレトゥードゥの受信箱へ新しいタスクを追加します。",
+        description: "ハチロク手帳の受信箱へ新しいタスクを追加します。",
         inputSchema: { type: "object", properties: { title: { type: "string" }, due: { type: "string" }, priority: { type: "string", enum: ["high", "medium", "low"] }, notes: { type: "string" } }, required: ["title"], additionalProperties: false },
         annotations: { readOnlyHint: false, untrustedContentHint: false },
         execute(input) {
