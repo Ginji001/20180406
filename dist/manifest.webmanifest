@@ -1,7 +1,7 @@
 {
   "name": "ハチワレトゥードゥ",
   "short_name": "ハチワレトゥードゥ",
-  "description": "収集・整理・実行の流れで、次にやることが明確になるタスク管理アプリ",
+  "description": "タスク、予定、記録、習慣、家計を一つにまとめる日本語のデジタル手帳",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

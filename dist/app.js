@@ -22,24 +22,38 @@
   const todayISO = toISO(today);
 
   const emptyData = () => ({
-    version: 3,
+    version: 4,
     tasks: [],
     projects: [],
     documents: [],
     habits: [],
-    reflections: []
+    reflections: [],
+    logs: [],
+    events: [],
+    futureItems: [],
+    collectionItems: [],
+    transactions: [],
+    budgets: {},
+    monthlyGoals: {}
   });
 
   function normalizeData(value) {
     const base = emptyData();
     if (!value || typeof value !== "object") return base;
     return {
-      version: 3,
+      version: 4,
       tasks: Array.isArray(value.tasks) ? value.tasks : [],
       projects: Array.isArray(value.projects) ? value.projects : [],
       documents: Array.isArray(value.documents) ? value.documents : [],
       habits: Array.isArray(value.habits) ? value.habits : [],
-      reflections: Array.isArray(value.reflections) ? value.reflections : []
+      reflections: Array.isArray(value.reflections) ? value.reflections : [],
+      logs: Array.isArray(value.logs) ? value.logs : [],
+      events: Array.isArray(value.events) ? value.events : [],
+      futureItems: Array.isArray(value.futureItems) ? value.futureItems : [],
+      collectionItems: Array.isArray(value.collectionItems) ? value.collectionItems : [],
+      transactions: Array.isArray(value.transactions) ? value.transactions : [],
+      budgets: value.budgets && typeof value.budgets === "object" ? value.budgets : {},
+      monthlyGoals: value.monthlyGoals && typeof value.monthlyGoals === "object" ? value.monthlyGoals : {}
     };
   }
 
@@ -61,6 +75,9 @@
     search: "",
     tag: "all",
     priority: "all",
+    calendarMonth: todayISO.slice(0, 7),
+    logDate: todayISO,
+    showAllLogs: false,
     selected: new Set(),
     draggedId: null
   };
@@ -72,6 +89,12 @@
     overviewWorkspace: $("#overviewWorkspace"),
     documentsWorkspace: $("#documentsWorkspace"),
     habitsWorkspace: $("#habitsWorkspace"),
+    recordsWorkspace: $("#recordsWorkspace"),
+    calendarWorkspace: $("#calendarWorkspace"),
+    futureWorkspace: $("#futureWorkspace"),
+    collectionsWorkspace: $("#collectionsWorkspace"),
+    budgetWorkspace: $("#budgetWorkspace"),
+    dataWorkspace: $("#dataWorkspace"),
     reflectionWorkspace: $("#reflectionWorkspace"),
     helpWorkspace: $("#helpWorkspace"),
     taskContent: $("#taskContent"),
@@ -124,6 +147,8 @@
   const tagNames = { work: "仕事", private: "プライベート" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
+  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと" };
+  const logSymbols = { memo: "💡", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－" };
 
   function persist() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
@@ -345,6 +370,105 @@
     }).join("") || emptyState();
   }
 
+  function createLog(type, text, date = todayISO) {
+    const value = String(text || "").trim();
+    if (!value) return null;
+    const record = { id: uid(), date, type: logTypeNames[type] ? type : "memo", text: value, createdAt: new Date().toISOString() };
+    state.data.logs.push(record);
+    persist();
+    return record;
+  }
+
+  function renderTodayJournal() {
+    const area = $("#todayJournal");
+    area.hidden = state.view !== "today" || Boolean(state.projectId);
+    if (area.hidden) return;
+    const events = state.data.events.filter((item) => item.date === todayISO);
+    const logs = state.data.logs.filter((item) => item.date === todayISO);
+    const habits = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(todayISO));
+    const card = (title, items, empty, view) => `<article><div><strong>${title}</strong><span>${items.length}件</span></div>${items.length ? `<ul>${items.slice(0, 4).map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>` : `<p>${empty}</p>`}<button type="button" data-view="${view}">開く</button></article>`;
+    $("#todayJournalGrid").innerHTML = [
+      card("今日の予定", events.map((item) => item.title), "予定はありません", "calendar"),
+      card("今日の記録", logs.map((item) => `${logSymbols[item.type] || "・"} ${item.text}`), "記録はありません", "records"),
+      card("達成した習慣", habits.map((item) => item.name), "達成した習慣はありません", "habits")
+    ].join("");
+  }
+
+  function renderLogs() {
+    $("#logDate").value ||= todayISO;
+    $("#logFilterDate").value = state.logDate;
+    const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
+    $("#logList").innerHTML = logs.map((item) => `<article class="journal-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}・${logTypeNames[item.type] || "記録"}</small></div><button type="button" data-delete-log="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
+    $("#showAllLogs").textContent = state.showAllLogs ? "日付で絞る" : "すべて表示";
+  }
+
+  function changeMonth(month, amount) {
+    const [year, value] = month.split("-").map(Number);
+    const date = new Date(year, value - 1 + amount, 1);
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}`;
+  }
+
+  function renderCombinedCalendar() {
+    const [year, month] = state.calendarMonth.split("-").map(Number);
+    const first = new Date(year, month - 1, 1);
+    const start = addDays(first, -first.getDay());
+    const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
+    $("#calendarMonthLabel").textContent = `${year}年${month}月`;
+    $("#monthGoal").value = state.data.monthlyGoals[state.calendarMonth] || "";
+    $("#eventDate").value ||= todayISO;
+    $("#combinedCalendar").innerHTML = `<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
+      const iso = toISO(date);
+      const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
+      const events = state.data.events.filter((item) => item.date === iso);
+      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
+    }).join("")}</div>`;
+    const monthEvents = state.data.events.filter((item) => item.date.startsWith(state.calendarMonth)).sort((a, b) => a.date.localeCompare(b.date));
+    $("#eventList").innerHTML = monthEvents.map((item) => `<article class="journal-row"><span class="journal-symbol">○</span><div><strong>${escapeHTML(item.title)}</strong><small>${formatFullDate(item.date)}</small></div><button type="button" data-delete-event="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>この月の予定はありません</strong><span>下の入力欄から追加できます。</span></div>';
+  }
+
+  function renderFuture() {
+    const start = new Date(today.getFullYear(), today.getMonth(), 1);
+    const months = Array.from({ length: 6 }, (_, index) => changeMonth(toISO(start).slice(0, 7), index));
+    $("#futureMonth").min = months[0];
+    $("#futureMonth").max = months[5];
+    $("#futureMonth").value ||= months[0];
+    $("#futureList").innerHTML = months.map((month) => {
+      const [year, value] = month.split("-");
+      const items = state.data.futureItems.filter((item) => item.month === month);
+      return `<section><header><span>${year}年</span><strong>${Number(value)}月</strong></header><div>${items.map((item) => `<article><span>○</span><p>${escapeHTML(item.title)}</p><button type="button" data-delete-future="${item.id}">削除</button></article>`).join("") || '<p class="future-empty">予定はありません</p>'}</div></section>`;
+    }).join("");
+  }
+
+  function renderCollections() {
+    const groups = [...new Set(state.data.collectionItems.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "ja"));
+    $("#collectionList").innerHTML = groups.map((category) => {
+      const items = state.data.collectionItems.filter((item) => item.category === category);
+      return `<section><header><strong>${escapeHTML(category)}</strong><span>${items.length}件</span></header>${items.map((item) => `<article><input type="checkbox" data-collection-check="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text)}を完了" /><p class="${item.done ? "done" : ""}">${escapeHTML(item.text)}</p><button type="button" data-delete-collection="${item.id}">削除</button></article>`).join("")}</section>`;
+    }).join("") || '<div class="empty-state"><strong>コレクションはまだありません</strong><span>欲しい物や読みたい物など、自由な一覧を作れます。</span></div>';
+  }
+
+  function money(value) {
+    return `${new Intl.NumberFormat("ja-JP").format(Number(value) || 0)}円`;
+  }
+
+  function renderBudget() {
+    $("#budgetMonth").value ||= todayISO.slice(0, 7);
+    const month = $("#budgetMonth").value;
+    const items = state.data.transactions.filter((item) => item.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date));
+    const income = items.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+    const expense = items.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+    const limit = Number(state.data.budgets[month]) || 0;
+    $("#budgetLimit").value = limit || "";
+    $("#transactionDate").value ||= todayISO;
+    $("#budgetSummary").innerHTML = [["予算", money(limit)], ["収入", money(income)], ["支出", money(expense)], ["残り", money(limit ? limit - expense : income - expense)]].map(([label, value]) => `<article><span>${label}</span><strong>${value}</strong></article>`).join("");
+    $("#transactionList").innerHTML = items.map((item) => `<article><span class="transaction-kind ${item.type}">${item.type === "income" ? "収入" : "支出"}</span><div><strong>${escapeHTML(item.category)}</strong><small>${formatFullDate(item.date)}${item.note ? `・${escapeHTML(item.note)}` : ""}</small></div><b>${item.type === "income" ? "+" : "−"}${money(item.amount)}</b><button type="button" data-delete-transaction="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>この月の収支はありません</strong><span>収入や支出を登録してください。</span></div>';
+  }
+
+  function renderDataSummary() {
+    const counts = [["タスク", state.data.tasks.length], ["記録", state.data.logs.length], ["予定", state.data.events.length + state.data.futureItems.length], ["振り返り", state.data.reflections.length], ["コレクション", state.data.collectionItems.length], ["家計簿", state.data.transactions.length]];
+    $("#dataSummary").innerHTML = counts.map(([label, value]) => `<article><span>${label}</span><strong>${value}</strong></article>`).join("");
+  }
+
   function reflectionDataFor(date) {
     const completedTasks = state.data.tasks.filter((task) => task.completedAt && toISO(new Date(task.completedAt)) === date).map((task) => task.title);
     const completedHabits = state.data.habits.filter((habit) => Array.isArray(habit.dates) && habit.dates.includes(date)).map((habit) => habit.name);
@@ -418,20 +542,33 @@
     renderCounts();
     renderProjects();
     renderNavigation();
-    const special = ["overview", "documents", "habits", "reflection", "help"].includes(state.view);
+    const special = ["overview", "documents", "habits", "records", "calendar", "future", "collections", "budget", "data", "reflection", "help"].includes(state.view);
     elements.taskWorkspace.hidden = special;
     elements.overviewWorkspace.hidden = state.view !== "overview";
     elements.documentsWorkspace.hidden = state.view !== "documents";
     elements.habitsWorkspace.hidden = state.view !== "habits";
+    elements.recordsWorkspace.hidden = state.view !== "records";
+    elements.calendarWorkspace.hidden = state.view !== "calendar";
+    elements.futureWorkspace.hidden = state.view !== "future";
+    elements.collectionsWorkspace.hidden = state.view !== "collections";
+    elements.budgetWorkspace.hidden = state.view !== "budget";
+    elements.dataWorkspace.hidden = state.view !== "data";
     elements.reflectionWorkspace.hidden = state.view !== "reflection";
     elements.helpWorkspace.hidden = state.view !== "help";
     if (state.view === "overview") renderOverview();
     else if (state.view === "documents") renderDocuments();
     else if (state.view === "habits") renderHabits();
+    else if (state.view === "records") renderLogs();
+    else if (state.view === "calendar") renderCombinedCalendar();
+    else if (state.view === "future") renderFuture();
+    else if (state.view === "collections") renderCollections();
+    else if (state.view === "budget") renderBudget();
+    else if (state.view === "data") renderDataSummary();
     else if (state.view === "reflection") renderReflection();
     else if (state.view !== "help") {
       renderHeading();
       renderTasks();
+      renderTodayJournal();
     }
   }
 
@@ -561,9 +698,26 @@
 
   $("#quickAddForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    createTask({ title: $("#quickTaskInput").value, priority: $("#quickPriority").value, folder: "inbox" });
+    const text = $("#quickTaskInput").value.trim();
+    const type = $("#quickType").value;
+    if (type === "task") {
+      createTask({ title: text, priority: $("#quickPriority").value, folder: "inbox" });
+      showToast("受信箱へ追加しました");
+    } else if (type === "event") {
+      state.data.events.push({ id: uid(), date: todayISO, title: text, createdAt: new Date().toISOString() });
+      persist();
+      render();
+      showToast("今日の予定へ追加しました");
+    } else {
+      createLog(type, text, todayISO);
+      render();
+      showToast("今日の記録へ追加しました");
+    }
     $("#quickTaskInput").value = "";
-    showToast("受信箱へ追加しました");
+  });
+
+  $("#quickType").addEventListener("change", (event) => {
+    $("#quickPriority").hidden = event.target.value !== "task";
   });
 
   $("#taskForm").addEventListener("submit", (event) => {
@@ -692,7 +846,7 @@
 
   $("#searchInput").addEventListener("input", (event) => {
     state.search = event.target.value.trim();
-    if (!["overview", "documents", "habits", "reflection", "help"].includes(state.view)) renderTasks();
+    if (!["overview", "documents", "habits", "records", "calendar", "future", "collections", "budget", "data", "reflection", "help"].includes(state.view)) renderTasks();
   });
   $("#tagFilter").addEventListener("change", (event) => { state.tag = event.target.value; renderTasks(); });
   $("#priorityFilter").addEventListener("change", (event) => { state.priority = event.target.value; renderTasks(); });
@@ -741,6 +895,140 @@
     state.data.habits = state.data.habits.filter((item) => item.id !== id);
     persist();
     renderHabits();
+  });
+
+  $("#logForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const date = $("#logDate").value;
+    if (!createLog($("#logType").value, $("#logText").value, date)) return;
+    $("#logText").value = "";
+    state.logDate = date;
+    state.showAllLogs = false;
+    renderLogs();
+    showToast("記録を追加しました");
+  });
+  $("#logFilterDate").addEventListener("change", (event) => {
+    state.logDate = event.target.value || todayISO;
+    state.showAllLogs = false;
+    renderLogs();
+  });
+  $("#showAllLogs").addEventListener("click", () => {
+    state.showAllLogs = !state.showAllLogs;
+    renderLogs();
+  });
+  $("#logList").addEventListener("click", (event) => {
+    const id = event.target.closest("[data-delete-log]")?.dataset.deleteLog;
+    if (!id || !window.confirm("この記録を削除しますか？")) return;
+    state.data.logs = state.data.logs.filter((item) => item.id !== id);
+    persist();
+    renderLogs();
+    showToast("記録を削除しました");
+  });
+
+  $("#calendarPrev").addEventListener("click", () => { state.calendarMonth = changeMonth(state.calendarMonth, -1); renderCombinedCalendar(); });
+  $("#calendarNext").addEventListener("click", () => { state.calendarMonth = changeMonth(state.calendarMonth, 1); renderCombinedCalendar(); });
+  $("#monthGoalForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    state.data.monthlyGoals[state.calendarMonth] = $("#monthGoal").value.trim();
+    persist();
+    showToast("月間目標を保存しました");
+  });
+  $("#eventForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const date = $("#eventDate").value;
+    const title = $("#eventTitle").value.trim();
+    if (!date || !title) return;
+    state.data.events.push({ id: uid(), date, title, createdAt: new Date().toISOString() });
+    state.calendarMonth = date.slice(0, 7);
+    $("#eventTitle").value = "";
+    persist();
+    renderCombinedCalendar();
+    showToast("予定を追加しました");
+  });
+  $("#eventList").addEventListener("click", (event) => {
+    const id = event.target.closest("[data-delete-event]")?.dataset.deleteEvent;
+    if (!id || !window.confirm("この予定を削除しますか？")) return;
+    state.data.events = state.data.events.filter((item) => item.id !== id);
+    persist();
+    renderCombinedCalendar();
+    showToast("予定を削除しました");
+  });
+
+  $("#futureForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const month = $("#futureMonth").value;
+    const title = $("#futureTitle").value.trim();
+    if (!month || !title) return;
+    state.data.futureItems.push({ id: uid(), month, title, createdAt: new Date().toISOString() });
+    $("#futureTitle").value = "";
+    persist();
+    renderFuture();
+    showToast("未来の予定を追加しました");
+  });
+  $("#futureList").addEventListener("click", (event) => {
+    const id = event.target.closest("[data-delete-future]")?.dataset.deleteFuture;
+    if (!id || !window.confirm("この未来の予定を削除しますか？")) return;
+    state.data.futureItems = state.data.futureItems.filter((item) => item.id !== id);
+    persist();
+    renderFuture();
+  });
+
+  $("#collectionForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const category = $("#collectionCategory").value.trim();
+    const text = $("#collectionItem").value.trim();
+    if (!category || !text) return;
+    state.data.collectionItems.push({ id: uid(), category, text, done: false, createdAt: new Date().toISOString() });
+    $("#collectionItem").value = "";
+    persist();
+    renderCollections();
+    showToast("コレクションへ追加しました");
+  });
+  $("#collectionList").addEventListener("change", (event) => {
+    const id = event.target.dataset.collectionCheck;
+    const item = state.data.collectionItems.find((entry) => entry.id === id);
+    if (!item) return;
+    item.done = event.target.checked;
+    persist();
+    renderCollections();
+  });
+  $("#collectionList").addEventListener("click", (event) => {
+    const id = event.target.closest("[data-delete-collection]")?.dataset.deleteCollection;
+    if (!id || !window.confirm("この項目を削除しますか？")) return;
+    state.data.collectionItems = state.data.collectionItems.filter((item) => item.id !== id);
+    persist();
+    renderCollections();
+  });
+
+  $("#budgetMonth").addEventListener("change", renderBudget);
+  $("#budgetPlanForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const month = $("#budgetMonth").value;
+    state.data.budgets[month] = Math.max(0, Number($("#budgetLimit").value) || 0);
+    persist();
+    renderBudget();
+    showToast("予算を保存しました");
+  });
+  $("#transactionForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const date = $("#transactionDate").value;
+    const amount = Math.max(0, Number($("#transactionAmount").value) || 0);
+    const category = $("#transactionCategory").value.trim();
+    if (!date || !amount || !category) return;
+    state.data.transactions.push({ id: uid(), date, type: $("#transactionType").value, category, amount, note: $("#transactionNote").value.trim(), createdAt: new Date().toISOString() });
+    $("#budgetMonth").value = date.slice(0, 7);
+    $("#transactionAmount").value = "";
+    $("#transactionNote").value = "";
+    persist();
+    renderBudget();
+    showToast("家計簿へ登録しました");
+  });
+  $("#transactionList").addEventListener("click", (event) => {
+    const id = event.target.closest("[data-delete-transaction]")?.dataset.deleteTransaction;
+    if (!id || !window.confirm("この収支を削除しますか？")) return;
+    state.data.transactions = state.data.transactions.filter((item) => item.id !== id);
+    persist();
+    renderBudget();
   });
 
   $("#reflectionForm").addEventListener("submit", (event) => {
@@ -818,6 +1106,25 @@
         persist();
         render();
         elements.backupDialog.close();
+        showToast("バックアップを復元しました");
+      } catch (_) {
+        showToast("このファイルは読み込めません");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
+  });
+  $("#dataExportBtn").addEventListener("click", () => $("#exportBtn").click());
+  $("#dataBackupBtn").addEventListener("click", () => elements.backupDialog.showModal());
+  $("#dataImportInput").addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        state.data = normalizeData(JSON.parse(reader.result));
+        persist();
+        render();
         showToast("バックアップを復元しました");
       } catch (_) {
         showToast("このファイルは読み込めません");
