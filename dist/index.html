@@ -143,6 +143,19 @@
             <div class="page-heading"><div><p class="eyebrow">月間予定</p><h1>カレンダー</h1><p>タスクと予定を、月ごとに確認します。</p></div></div>
             <div class="calendar-controls"><button type="button" id="calendarPrev" aria-label="前の月">‹</button><strong id="calendarMonthLabel"></strong><button type="button" id="calendarNext" aria-label="次の月">›</button></div>
             <form class="month-goal-form" id="monthGoalForm"><label><span>今月の目標</span><input id="monthGoal" maxlength="200" placeholder="今月大切にすること" /></label><button type="submit">保存</button></form>
+            <section class="google-calendar-panel" id="googleCalendarPanel">
+              <div class="google-calendar-head">
+                <div><p class="help-kicker">Googleカレンダー連携</p><h2>予定を同期</h2><p id="googleCalendarStatus">未接続です。接続すると、期限のあるタスクと予定を同期できます。</p></div>
+                <span class="google-calendar-badge" id="googleCalendarBadge">未接続</span>
+              </div>
+              <div class="google-calendar-controls">
+                <label><span>GoogleクライアントID（初回のみ）</span><input id="googleClientId" type="text" inputmode="url" autocomplete="off" placeholder="数字.apps.googleusercontent.com" /></label>
+                <label><span>同期先</span><input id="googleCalendarId" type="text" value="主カレンダー" disabled /></label>
+              </div>
+              <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
+              <p class="google-calendar-note">同期対象は、期限のあるタスクとこの画面の「予定」です。すべて終日の予定として登録されます。</p>
+              <details class="google-calendar-help"><summary>初回設定について</summary><ol><li>Google CloudでGoogle Calendar APIを有効にします。</li><li>認証情報から「ウェブアプリ」のクライアントIDを作成します。</li><li>承認済みのJavaScript生成元に <code>https://ginji001.github.io</code> を追加します。</li><li>表示されたクライアントIDを上の欄へ貼り付けて接続します。</li></ol><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloudの認証情報を開く</a></details>
+            </section>
             <div class="combined-calendar" id="combinedCalendar"></div>
             <form class="journal-form event-form" id="eventForm">
               <input id="eventDate" type="date" required />
@@ -270,6 +283,7 @@
               <article><h2>タスクを整理する</h2><p>受信箱に集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。左端の四角を選ぶと一括操作もできます。</p></article>
               <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
               <article><h2>月と未来を見通す</h2><p>「カレンダー」では月間目標、予定、期限つきタスクを確認できます。「未来の予定」には6か月先まで月単位で置けます。</p></article>
+              <article><h2>Googleカレンダーと同期する</h2><p>「カレンダー」の連携欄で一度接続すると、期限のあるタスクと予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
               <article><h2>習慣と一覧を育てる</h2><p>「習慣」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを好きな分類でまとめられます。</p></article>
               <article><h2>家計を把握する</h2><p>「家計簿」で月の予算を決め、収入と支出を登録します。月を切り替えると、その月の残り金額が分かります。</p></article>
               <article><h2>一日を振り返る</h2><p>完了したタスクと習慣を確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
@@ -341,5 +355,6 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="./app.js?v=15"></script>
+    <script src="./google-calendar.js?v=17"></script>
   </body>
 </html>
