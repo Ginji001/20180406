@@ -150,12 +150,12 @@
                 <span class="google-calendar-badge" id="googleCalendarBadge">未接続</span>
               </div>
               <div class="google-calendar-controls">
-                <label><span>GoogleクライアントID（初回のみ）</span><input id="googleClientId" type="text" inputmode="url" autocomplete="off" placeholder="数字.apps.googleusercontent.com" /></label>
+                <input id="googleClientId" type="hidden" value="238820536565-803hh23m11f37hhie8oimt9i2kv53tfa.apps.googleusercontent.com" />
                 <label><span>同期先</span><input id="googleCalendarId" type="text" value="主カレンダー" disabled /></label>
               </div>
               <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
               <p class="google-calendar-note">同期対象は、期限のあるタスクとこの画面の「予定」です。すべて終日の予定として登録されます。</p>
-              <details class="google-calendar-help"><summary>初回設定について</summary><ol><li>Google CloudでGoogle Calendar APIを有効にします。</li><li>認証情報から「ウェブアプリ」のクライアントIDを作成します。</li><li>承認済みのJavaScript生成元に <code>https://ginji001.github.io</code> を追加します。</li><li>表示されたクライアントIDを上の欄へ貼り付けて接続します。</li></ol><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloudの認証情報を開く</a></details>
+              <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押します。</li><li>Googleアカウントを選び、カレンダーへのアクセスを許可します。</li><li>「今すぐ同期」で期限付きタスクと予定を同期できます。</li></ol></details>
             </section>
             <div class="combined-calendar" id="combinedCalendar"></div>
             <form class="journal-form event-form" id="eventForm">
@@ -355,7 +355,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=17"></script>
-    <script src="./google-calendar.js?v=17"></script>
+    <script src="./app.js?v=18"></script>
+    <script src="./google-calendar.js?v=18"></script>
   </body>
 </html>
