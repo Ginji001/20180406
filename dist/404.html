@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#b2553f" />
+    <meta name="description" content="タスク、予定、記録、習慣、家計を一つにまとめる日本語のデジタル手帳" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
+    <title>ハチロク手帳</title>
+    <link rel="manifest" href="./manifest.webmanifest?v=14" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./icon-192.png" />
+    <link rel="stylesheet" href="./styles.css?v=14" />
+    <script src="https://accounts.google.com/gsi/client" defer></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="メインメニュー">
+        <div class="brand">
+          <img src="./favicon.svg" alt="" width="34" height="34" />
+          <div><strong>ハチロク手帳</strong><small>やることと毎日を記録する</small></div>
+        </div>
+        <button class="new-task-button" id="newTaskBtn"><span>＋</span> 新しいタスク</button>
+        <nav class="nav-list" id="sideNav">
+          <button class="nav-item active" data-view="today"><span>◎</span>今日<em data-count="today">0</em></button>
+          <button class="nav-item" data-view="week"><span>▦</span>次の7日間<em data-count="week">0</em></button>
+          <button class="nav-item" data-view="all"><span>≡</span>すべて<em data-count="all">0</em></button>
+          <div class="nav-label">タスクの分類</div>
+          <button class="nav-item" data-view="inbox"><span>↓</span>受信箱<em data-count="inbox">0</em></button>
+          <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
+          <button class="nav-item" data-view="remind"><span>◷</span>リマインダー<em data-count="remind">0</em></button>
+          <button class="nav-item" data-view="waiting"><span>⌛</span>待ち状況<em data-count="waiting">0</em></button>
+          <button class="nav-item" data-view="projects"><span>□</span>プロジェクト<em data-count="projects">0</em></button>
+          <button class="nav-item" data-view="wish"><span>☆</span>いつかやりたい<em data-count="wish">0</em></button>
+          <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
+          <div class="nav-label">デジタル手帳</div>
+          <button class="nav-item" data-view="records"><span>✎</span>記録</button>
+          <button class="nav-item" data-view="calendar"><span>▦</span>カレンダー</button>
+          <button class="nav-item" data-view="future"><span>◷</span>未来の予定</button>
+          <button class="nav-item" data-view="habits"><span>◉</span>習慣</button>
+          <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
+          <button class="nav-item" data-view="documents"><span>⌑</span>ドキュメント</button>
+          <button class="nav-item" data-view="budget"><span>￥</span>家計簿</button>
+          <button class="nav-item" data-view="reflection"><span>☾</span>振り返り</button>
+          <button class="nav-item" data-view="overview"><span>◫</span>全体の状況</button>
+          <button class="nav-item" data-view="data"><span>⇩</span>データ管理</button>
+          <button class="nav-item" data-view="help"><span>?</span>使い方</button>
+        </nav>
+        <div class="project-area">
+          <div class="side-heading"><span>プロジェクト</span><button id="newProjectBtn" aria-label="プロジェクトを追加">＋</button></div>
+          <div id="projectList" class="project-list"></div>
+        </div>
+        <div class="sidebar-footer">
+          <button id="backupBtn">⇩ バックアップ</button>
+          <button id="themeBtn">◐ 表示を切り替え</button>
+          <button id="installBtn" hidden>⊕ ホーム画面に追加</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <button class="mobile-menu" id="mobileMenu" aria-label="メニューを開く">☰</button>
+          <div class="quick-links" aria-label="クイック操作">
+            <button data-quick="postpone"><span>↷</span>先送り</button>
+            <button data-view="calendar"><span>▦</span>カレンダー</button>
+            <button data-view="records"><span>✎</span>記録</button>
+            <button data-view="reflection"><span>☾</span>振り返り</button>
+            <button data-view="help"><span>?</span>使い方</button>
+          </div>
+          <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="タスクを検索" aria-label="タスクを検索" /></label>
+        </header>
+
+        <div class="content">
+          <section id="taskWorkspace">
+            <div class="page-heading">
+              <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">今日</h1><p id="viewDescription"></p></div>
+              <button class="outline-button" id="headingAddBtn">＋ タスクを追加</button>
+            </div>
+            <form class="capture" id="quickAddForm">
+              <span class="capture-icon">＋</span>
+              <select id="quickType" aria-label="登録する種類"><option value="task">・ タスク</option><option value="event">○ 予定</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+              <input id="quickTaskInput" required maxlength="120" autocomplete="off" placeholder="タスク・予定・記録を追加…" />
+              <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
+              <button type="submit">追加</button>
+            </form>
+            <div class="toolbar">
+              <div class="view-switch" id="viewSwitch" aria-label="表示形式">
+                <button class="active" data-mode="list">一覧</button><button data-mode="table">表</button><button data-mode="week">週</button><button data-mode="month">月</button>
+              </div>
+              <div class="filters">
+                <select id="tagFilter" aria-label="タグで絞り込み"><option value="all">すべてのタグ</option><option value="work">仕事</option><option value="private">プライベート</option><option value="none">タグなし</option></select>
+                <select id="priorityFilter" aria-label="優先度で絞り込み"><option value="all">すべての優先度</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select>
+              </div>
+            </div>
+            <div class="bulk-bar" id="bulkBar" hidden>
+              <strong id="selectedCount">0件選択</strong>
+              <select id="bulkFolder" aria-label="移動先"><option value="">フォルダーへ移動</option><option value="inbox">受信箱</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select>
+              <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
+            </div>
+            <div id="taskContent"></div>
+            <section class="today-journal" id="todayJournal" hidden>
+              <div class="today-journal-head"><div><p class="help-kicker">今日の手帳</p><h2>予定・記録・習慣</h2></div><button type="button" data-view="records">記録を開く</button></div>
+              <div class="today-journal-grid" id="todayJournalGrid"></div>
+            </section>
+          </section>
+
+          <section id="overviewWorkspace" class="special-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">タスクの状況</p><h1>全体の状況</h1><p>すべてのタスクを、流れと量で把握します。</p></div></div>
+            <div class="overview-grid" id="overviewGrid"></div>
+            <div class="gtd-flow">
+              <article><span>1</span><h3>収集する</h3><p>思いついたことは、まず受信箱へ。</p></article>
+              <article><span>2</span><h3>明確にする</h3><p>次にやる・待つ・いつかに振り分けます。</p></article>
+              <article><span>3</span><h3>実行する</h3><p>「今日」と「次にやる」に集中します。</p></article>
+            </div>
+          </section>
+
+          <section id="documentsWorkspace" class="special-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">参考資料</p><h1>ドキュメント</h1><p>タスクに関連するリンクやメモをまとめます。</p></div></div>
+            <form class="mini-form" id="documentForm"><input id="documentTitle" required maxlength="80" placeholder="ドキュメント名" /><input id="documentUrl" type="url" placeholder="リンク（任意）" /><button>追加</button></form>
+            <div id="documentList" class="simple-list"></div>
+          </section>
+
+          <section id="habitsWorkspace" class="special-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>習慣</h1><p>今日できた習慣をチェックします。</p></div></div>
+            <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しい習慣" /><button>追加</button></form>
+            <div id="habitList" class="habit-list"></div>
+          </section>
+
+          <section id="recordsWorkspace" class="special-workspace journal-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">デイリーログ</p><h1>記録</h1><p>出来事・メモ・アイデアを、記号と一緒に残します。</p></div></div>
+            <form class="journal-form" id="logForm">
+              <input id="logDate" type="date" required />
+              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+              <input id="logText" required maxlength="300" placeholder="記録する内容" />
+              <button type="submit">記録する</button>
+            </form>
+            <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="showAllLogs">すべて表示</button></div>
+            <div class="journal-list" id="logList"></div>
+          </section>
+
+          <section id="calendarWorkspace" class="special-workspace calendar-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">月間予定</p><h1>カレンダー</h1><p>タスクと予定を、月ごとに確認します。</p></div></div>
+            <div class="calendar-controls"><button type="button" id="calendarPrev" aria-label="前の月">‹</button><strong id="calendarMonthLabel"></strong><button type="button" id="calendarNext" aria-label="次の月">›</button></div>
+            <form class="month-goal-form" id="monthGoalForm"><label><span>今月の目標</span><input id="monthGoal" maxlength="200" placeholder="今月大切にすること" /></label><button type="submit">保存</button></form>
+            <section class="google-calendar-panel" id="googleCalendarPanel">
+              <div class="google-calendar-head">
+                <div><p class="help-kicker">Googleカレンダー連携</p><h2>予定を同期</h2><p id="googleCalendarStatus">未接続です。接続すると、期限のあるタスクと予定を同期できます。</p></div>
+                <span class="google-calendar-badge" id="googleCalendarBadge">未接続</span>
+              </div>
+              <div class="google-calendar-controls">
+                <label><span>GoogleクライアントID（初回のみ）</span><input id="googleClientId" type="text" inputmode="url" autocomplete="off" placeholder="数字.apps.googleusercontent.com" /></label>
+                <label><span>同期先</span><input id="googleCalendarId" type="text" value="主カレンダー" disabled /></label>
+              </div>
+              <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
+              <p class="google-calendar-note">同期対象は、期限のあるタスクとこの画面の「予定」です。すべて終日の予定として登録されます。</p>
+              <details class="google-calendar-help"><summary>初回設定について</summary><ol><li>Google CloudでGoogle Calendar APIを有効にします。</li><li>認証情報から「ウェブアプリ」のクライアントIDを作成します。</li><li>承認済みのJavaScript生成元に <code>https://ginji001.github.io</code> を追加します。</li><li>表示されたクライアントIDを上の欄へ貼り付けて接続します。</li></ol><a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener">Google Cloudの認証情報を開く</a></details>
+            </section>
+            <div class="combined-calendar" id="combinedCalendar"></div>
+            <form class="journal-form event-form" id="eventForm">
+              <input id="eventDate" type="date" required />
+              <input id="eventTitle" required maxlength="120" placeholder="予定の内容" />
+              <button type="submit">予定を追加</button>
+            </form>
+            <div class="journal-list" id="eventList"></div>
+          </section>
+
+          <section id="futureWorkspace" class="special-workspace future-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">6か月の見通し</p><h1>未来の予定</h1><p>まだ日付が決まっていない予定も、月単位で置いておけます。</p></div></div>
+            <form class="journal-form future-form" id="futureForm"><input id="futureMonth" type="month" required /><input id="futureTitle" required maxlength="160" placeholder="未来の予定" /><button type="submit">追加</button></form>
+            <div class="future-grid" id="futureList"></div>
+          </section>
+
+          <section id="collectionsWorkspace" class="special-workspace collections-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">自由な一覧</p><h1>コレクション</h1><p>欲しい物・読みたい物などを、好きな名前でまとめます。</p></div></div>
+            <form class="journal-form collection-form" id="collectionForm"><input id="collectionCategory" required maxlength="50" placeholder="一覧の名前（例：読みたい本）" /><input id="collectionItem" required maxlength="180" placeholder="追加する内容" /><button type="submit">追加</button></form>
+            <div class="collection-grid" id="collectionList"></div>
+          </section>
+
+          <section id="budgetWorkspace" class="special-workspace budget-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">月のお金</p><h1>家計簿</h1><p>予算・収入・支出を、月ごとに確認します。</p></div><input class="heading-month" id="budgetMonth" type="month" aria-label="表示する月" /></div>
+            <form class="budget-form" id="budgetPlanForm"><label><span>今月の予算</span><input id="budgetLimit" type="number" min="0" step="1" placeholder="0" /></label><button type="submit">予算を保存</button></form>
+            <div class="budget-summary" id="budgetSummary"></div>
+            <form class="transaction-form" id="transactionForm">
+              <input id="transactionDate" type="date" required />
+              <select id="transactionType" aria-label="収支"><option value="expense">支出</option><option value="income">収入</option></select>
+              <input id="transactionCategory" required maxlength="40" placeholder="分類" />
+              <input id="transactionAmount" type="number" min="1" step="1" required placeholder="金額" />
+              <input id="transactionNote" maxlength="120" placeholder="メモ（任意）" />
+              <button type="submit">登録</button>
+            </form>
+            <div class="transaction-list" id="transactionList"></div>
+          </section>
+
+          <section id="dataWorkspace" class="special-workspace data-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">保存と復元</p><h1>データ管理</h1><p>この端末に保存されている内容を確認し、まとめてバックアップします。</p></div></div>
+            <div class="data-summary" id="dataSummary"></div>
+            <div class="data-actions">
+              <button type="button" id="dataExportBtn">バックアップを書き出す</button>
+              <label>ファイルから復元<input id="dataImportInput" type="file" accept="application/json,.json" /></label>
+              <button type="button" id="dataBackupBtn">詳細を開く</button>
+            </div>
+            <p class="data-note">データはこの端末のブラウザ内に保存されます。別の端末へ移す場合は、書き出したファイルを新しい端末で復元してください。</p>
+          </section>
+
+          <section id="reflectionWorkspace" class="special-workspace reflection-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">一日の記録</p><h1>振り返り</h1><p>できたことを確認し、明日へつなげます。</p></div></div>
+
+            <div class="reflection-week" id="reflectionWeek" aria-label="直近7日間の振り返り"></div>
+
+            <div class="reflection-summary" id="reflectionSummary"></div>
+
+            <form class="reflection-form" id="reflectionForm">
+              <div class="reflection-form-head">
+                <div><p class="help-kicker">記録する日</p><input id="reflectionDate" type="date" required /></div>
+                <button class="primary-save" type="submit">振り返りを保存</button>
+              </div>
+
+              <fieldset class="mood-field">
+                <legend>今日の気分</legend>
+                <div class="mood-options">
+                  <label><input type="radio" name="reflectionMood" value="1" /><span>😣<small>重い</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="2" /><span>😕<small>いまひとつ</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="3" checked /><span>😐<small>普通</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="4" /><span>🙂<small>良い</small></span></label>
+                  <label><input type="radio" name="reflectionMood" value="5" /><span>😊<small>とても良い</small></span></label>
+                </div>
+              </fieldset>
+
+              <div class="reflection-fields">
+                <label><span>よかったこと</span><textarea id="reflectionGood" rows="3" maxlength="500" placeholder="できたこと、うれしかったこと"></textarea></label>
+                <label><span>気づいたこと</span><textarea id="reflectionLearned" rows="3" maxlength="500" placeholder="学んだこと、改善したいこと"></textarea></label>
+                <label><span>明日やること</span><textarea id="reflectionTomorrow" rows="3" maxlength="500" placeholder="明日いちばん大切にすること"></textarea></label>
+                <label><span>ひとことメモ</span><textarea id="reflectionNote" rows="3" maxlength="500" placeholder="自由に残せます"></textarea></label>
+              </div>
+              <p class="reflection-save-note" id="reflectionSaveNote">同じ日を保存すると、以前の内容を更新します。</p>
+            </form>
+
+            <section class="reflection-history-section">
+              <div class="reflection-history-head"><div><p class="help-kicker">これまでの記録</p><h2>振り返り履歴</h2></div><span id="reflectionHistoryCount"></span></div>
+              <div class="reflection-history" id="reflectionHistory"></div>
+            </section>
+          </section>
+
+          <section id="helpWorkspace" class="special-workspace help-workspace" hidden>
+            <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>思いついたことを集め、整理し、今日やることに集中します。</p></div></div>
+
+            <div class="help-start">
+              <p class="help-kicker">一日の基本の流れ</p>
+              <div class="help-steps">
+                <article><span>1</span><h2>朝に確認する</h2><p>「今日」でタスクと予定を確認し、取り組む順番を決めます。</p></article>
+                <article><span>2</span><h2>日中に残す</h2><p>上の入力欄で種類を選び、タスク・予定・メモ・出来事をその場で登録します。</p></article>
+                <article><span>3</span><h2>夜に振り返る</h2><p>完了したことと習慣を確認し、気分・気づき・明日やることを保存します。</p></article>
+              </div>
+            </div>
+
+            <div class="help-section">
+              <div class="help-section-heading"><p class="help-kicker">すばやく登録</p><h2>記号と登録先</h2></div>
+              <div class="folder-guide">
+                <article><strong>・ タスク</strong><p>受信箱へ追加し、あとで期限や分類を整えます。</p></article>
+                <article><strong>○ 予定</strong><p>今日の予定としてカレンダーへ追加します。</p></article>
+                <article><strong>📝 メモ</strong><p>覚えておきたい情報を今日のデイリーログへ記録します。</p></article>
+                <article><strong>💡 アイデア</strong><p>思いついたことを今日のデイリーログへ記録します。</p></article>
+                <article><strong>× 完了</strong><p>今日できたこととして記録します。</p></article>
+                <article><strong>＞ 先送り</strong><p>先送りしたことと、その判断を記録します。</p></article>
+                <article><strong>－ キャンセル</strong><p>やらないと決めたことを記録します。</p></article>
+              </div>
+            </div>
+
+            <div class="help-section">
+              <div class="help-section-heading"><p class="help-kicker">タスクの分類</p><h2>タスクの振り分け先</h2></div>
+              <div class="folder-guide">
+                <article><strong>受信箱</strong><p>まだ整理していないタスク</p></article>
+                <article><strong>次にやる</strong><p>次に実行できる具体的な行動</p></article>
+                <article><strong>リマインダー</strong><p>指定した日に思い出したいこと</p></article>
+                <article><strong>待ち状況</strong><p>人からの返事や出来事を待つこと</p></article>
+                <article><strong>プロジェクト</strong><p>完了までに複数の行動が必要なこと</p></article>
+                <article><strong>いつかやりたい</strong><p>いつかやりたいこと・保留中の案</p></article>
+              </div>
+            </div>
+
+            <div class="help-section help-details">
+              <article><h2>タスクを整理する</h2><p>受信箱に集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。左端の四角を選ぶと一括操作もできます。</p></article>
+              <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
+              <article><h2>月と未来を見通す</h2><p>「カレンダー」では月間目標、予定、期限つきタスクを確認できます。「未来の予定」には6か月先まで月単位で置けます。</p></article>
+              <article><h2>Googleカレンダーと同期する</h2><p>「カレンダー」の連携欄で一度接続すると、期限のあるタスクと予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
+              <article><h2>習慣と一覧を育てる</h2><p>「習慣」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを好きな分類でまとめられます。</p></article>
+              <article><h2>家計を把握する</h2><p>「家計簿」で月の予算を決め、収入と支出を登録します。月を切り替えると、その月の残り金額が分かります。</p></article>
+              <article><h2>一日を振り返る</h2><p>完了したタスクと習慣を確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
+              <article><h2>データを守る</h2><p>「データ管理」から全内容を一つのファイルへ書き出せます。別の端末では、そのファイルを選んで復元します。</p></article>
+            </div>
+
+            <div class="help-note">
+              <strong>アイフォーンのホーム画面へ追加</strong>
+              <p>Safari・Chrome・Edge・Firefoxなどの対応ブラウザでこのページを開き、ブラウザのメニューから「ホーム画面に追加」を選びます。アプリのように起動できます。</p>
+            </div>
+
+            <div class="help-section paper-guide">
+              <div class="help-section-heading"><p class="help-kicker">アナログでも続ける</p><h2>紙のノートで記録する方法</h2></div>
+              <div class="help-details">
+                <article><h2>1. 受信箱を作る</h2><p>思いついたことは紙の空いている場所へすぐ書き、あとで「今日やる」「次にやる」「いつかやりたい」に振り分けます。</p></article>
+                <article><h2>2. 今日の3つを選ぶ</h2><p>その日に進めたいことを3つだけ選び、終わったら四角にチェックを入れます。全部できなくても、1つ進めれば十分です。</p></article>
+                <article><h2>3. 夜に振り返る</h2><p>できたこと・よかったこと・気づき・明日やることを1行ずつ書きます。アプリの「振り返り」と同じ流れです。</p></article>
+                <article><h2>4. 週に一度見直す</h2><p>残った項目を翌週へ移し、不要なものは取り消します。紙は処分せず、週ごとに保管すると履歴になります。</p></article>
+              </div>
+              <a class="paper-download" href="./paper-sheet.pdf" target="_blank" rel="noopener">白紙の記録シートを印刷する（PDF）</a>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <nav class="mobile-nav" aria-label="モバイルメニュー">
+      <button class="active" data-view="today"><span>◎</span>今日</button><button data-view="inbox"><span>↓</span>受信箱</button>
+      <button class="mobile-add" id="mobileAdd" aria-label="タスクを追加">＋</button>
+      <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
+    </nav>
+
+    <dialog id="taskDialog">
+      <form id="taskForm">
+        <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">タスクを追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
+        <input type="hidden" id="taskId" />
+        <label class="field"><span>タスク名</span><input id="taskTitle" required maxlength="120" /></label>
+        <div class="field-grid">
+          <label class="field"><span>フォルダー</span><select id="taskFolder"><option value="inbox">受信箱</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select></label>
+          <label class="field"><span>期限</span><input id="taskDue" type="date" /></label>
+          <label class="field"><span>優先度</span><select id="taskPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
+          <label class="field"><span>タグ</span><select id="taskTag"><option value="">なし</option><option value="work">仕事</option><option value="private">プライベート</option></select></label>
+          <label class="field"><span>プロジェクト</span><select id="taskProject"></select></label>
+          <label class="field"><span>繰り返し</span><select id="taskRepeat"><option value="">なし</option><option value="daily">毎日</option><option value="weekly">毎週</option><option value="monthly">毎月</option></select></label>
+        </div>
+        <label class="check-field"><input id="taskPinned" type="checkbox" /> 今日の「固定したタスク」に表示</label>
+        <label class="field"><span>メモ</span><textarea id="taskNotes" rows="4" maxlength="500" placeholder="必要な情報を残せます"></textarea></label>
+        <div class="dialog-actions"><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="projectDialog">
+      <form id="projectForm">
+        <div class="dialog-head"><div><small>プロジェクト</small><h2>プロジェクトを追加</h2></div><button type="button" class="icon-button" data-close="project">×</button></div>
+        <label class="field"><span>名前</span><input id="projectName" required maxlength="40" placeholder="プロジェクト名" /></label>
+        <label class="field"><span>色</span><select id="projectColor"><option value="#5074b8">ブルー</option><option value="#bd6b53">レッド</option><option value="#5d8f69">グリーン</option><option value="#9b72b0">パープル</option><option value="#b58a3b">イエロー</option></select></label>
+        <div class="dialog-actions"><button type="button" data-close="project">キャンセル</button><button class="primary" type="submit">追加</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="backupDialog">
+      <form>
+        <div class="dialog-head"><div><small>データ管理</small><h2>バックアップ</h2></div><button type="button" class="icon-button" data-close="backup">×</button></div>
+        <p class="dialog-copy">端末内のタスク・予定・記録・習慣・コレクション・家計簿・振り返りをまとめて書き出し／復元できます。</p>
+        <div class="backup-actions"><button type="button" id="exportBtn">バックアップを書き出す</button><label>ファイルから復元<input id="importInput" type="file" accept="application/json,.json" /></label></div>
+        <div class="dialog-actions"><button type="button" data-close="backup">閉じる</button><button type="button" class="danger" id="clearDataBtn">全データ削除</button></div>
+      </form>
+    </dialog>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="./app.js?v=17"></script>
+    <script src="./google-calendar.js?v=17"></script>
+  </body>
+</html>
