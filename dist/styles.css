@@ -169,8 +169,9 @@ body.home-page { height: 100dvh; overflow: hidden; }
 body.home-page .main { height: 100dvh; overflow: hidden; }
 body.home-page .content { height: calc(100dvh - 62px); padding: 24px 0 18px; overflow: hidden; }
 .home-mode .page-heading { min-height: 74px; }
-.home-mode .home-columns { height: calc(100dvh - 178px); display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, .82fr); gap: 18px; align-items: stretch; }
-.home-mode .home-section { min-width: 0; min-height: 0; height: 100%; padding: 18px; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 8px 24px rgba(116, 82, 56, .07); }
+.home-mode .home-columns { height: calc(100dvh - 178px); display: grid; grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1.08fr); gap: 0; align-items: stretch; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 8px 24px rgba(116, 82, 56, .07); }
+.home-mode .home-section { min-width: 0; min-height: 0; height: 100%; padding: 16px 18px; overflow: auto; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
+.home-mode .home-journal { border-top: 1px solid var(--line); }
 .home-section-head { display: none; }
 .home-mode .home-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .home-section-head .help-kicker { margin-bottom: 4px; }
@@ -427,7 +428,7 @@ body.dark .habit-calendar-item { color: #ffd0bd; background: #51362f; }
   .gtd-flow { grid-template-columns: 1fr; }
   body.home-page .content { height: calc(100dvh - 58px); padding: 14px 0 78px; }
   .home-mode .page-heading { min-height: 64px; }
-  .home-mode .home-columns { height: calc(100dvh - 214px); grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr); gap: 10px; }
+  .home-mode .home-columns { height: calc(100dvh - 214px); grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) minmax(0, 1.15fr); gap: 0; }
   .home-mode .home-section { padding: 13px; }
   .home-mode .home-section-head h2 { font-size: 1.05rem; }
   .home-mode .home-section-copy { display: none; }
