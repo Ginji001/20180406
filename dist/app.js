@@ -69,7 +69,7 @@
 
   const state = {
     data: normalizeData(loadJSON(STORAGE_KEY, emptyData())),
-    view: "today",
+    view: "inbox",
     mode: "list",
     projectId: null,
     search: "",
@@ -112,7 +112,7 @@
   };
 
   const folderNames = {
-    inbox: "受信箱",
+    inbox: "INBOX",
     next: "次にやる",
     remind: "リマインダー",
     waiting: "待ち状況",
@@ -123,7 +123,7 @@
     today: "今日",
     week: "次の7日間",
     all: "すべてのタスク",
-    inbox: "受信箱",
+    inbox: "INBOX",
     next: "次にやる",
     remind: "リマインダー",
     waiting: "待ち状況",
@@ -236,7 +236,7 @@
         <div class="task-meta">
           <span>${formatDate(task.due)}</span>
           ${remaining ? `<span class="${remainingClass}">${remaining}</span>` : ""}
-          <span class="pill">${folderNames[task.folder] || "受信箱"}</span>
+          <span class="pill">${folderNames[task.folder] || "INBOX"}</span>
           ${task.tag ? `<span class="pill tag-${task.tag}">${tagNames[task.tag]}</span>` : ""}
           <span class="pill ${task.priority === "high" ? "priority-high" : task.priority === "low" ? "priority-low" : ""}">優先度 ${priorityNames[task.priority] || "中"}</span>
           ${project ? `<span class="pill"><i class="project-dot" style="display:inline-block;background:${project.color}"></i> ${escapeHTML(project.name)}</span>` : ""}
@@ -253,7 +253,7 @@
     if (state.view === "today" && !state.projectId) {
       groups = [
         ["固定したタスク", tasks.filter((task) => task.pinned)],
-        ["受信箱", tasks.filter((task) => !task.pinned && task.folder === "inbox")],
+        ["INBOX", tasks.filter((task) => !task.pinned && task.folder === "inbox")],
         ["プロジェクト・行動", tasks.filter((task) => !task.pinned && task.folder !== "inbox")]
       ].filter(([, items]) => items.length);
     } else if (state.view === "projects" && !state.projectId) {
@@ -268,7 +268,7 @@
 
   function renderTable(tasks) {
     if (!tasks.length) return emptyState();
-    return `<table class="task-table"><thead><tr><th>タスク</th><th>フォルダー</th><th>期限</th><th>残り</th><th>タグ</th><th>優先度</th></tr></thead><tbody>${tasks.map((task) => `<tr data-id="${task.id}"><td>${escapeHTML(task.title)}</td><td>${folderNames[task.folder] || "受信箱"}</td><td>${formatDate(task.due)}</td><td>${daysText(task.due)}</td><td>${tagNames[task.tag] || "—"}</td><td>${priorityNames[task.priority] || "中"}</td></tr>`).join("")}</tbody></table>`;
+    return `<table class="task-table"><thead><tr><th>タスク</th><th>フォルダー</th><th>期限</th><th>残り</th><th>タグ</th><th>優先度</th></tr></thead><tbody>${tasks.map((task) => `<tr data-id="${task.id}"><td>${escapeHTML(task.title)}</td><td>${folderNames[task.folder] || "INBOX"}</td><td>${formatDate(task.due)}</td><td>${daysText(task.due)}</td><td>${tagNames[task.tag] || "—"}</td><td>${priorityNames[task.priority] || "中"}</td></tr>`).join("")}</tbody></table>`;
   }
 
   function renderWeek(tasks) {
@@ -292,7 +292,7 @@
   }
 
   function emptyState() {
-    return '<div class="empty-state"><strong>タスクはありません</strong><span>思いついたことを受信箱へ追加してください。</span></div>';
+    return '<div class="empty-state"><strong>タスクはありません</strong><span>思いついたことをINBOXへ追加してください。</span></div>';
   }
 
   function renderTasks() {
@@ -350,7 +350,7 @@
     $("#overviewGrid").innerHTML = [
       ["未完了", open.length],
       ["今日まで", dueToday],
-      ["受信箱", open.filter((task) => task.folder === "inbox").length],
+      ["INBOX", open.filter((task) => task.folder === "inbox").length],
       ["今日の完了", completedToday],
       ["次にやる", open.filter((task) => task.folder === "next").length],
       ["待ち状況", open.filter((task) => task.folder === "waiting").length],
@@ -428,7 +428,7 @@
 
   function renderFuture() {
     const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    const months = Array.from({ length: 6 }, (_, index) => changeMonth(toISO(start).slice(0, 7), index));
+    const months = [...new Set([...Array.from({ length: 6 }, (_, index) => changeMonth(toISO(start).slice(0, 7), index)), ...state.data.futureItems.map(item => item.month)])].sort();
     $("#futureMonth").min = months[0];
     $("#futureMonth").max = months[5];
     $("#futureMonth").value ||= months[0];
@@ -585,7 +585,7 @@
     const task = state.data.tasks.find((item) => item.id === id);
     $("#taskId").value = task?.id || "";
     $("#taskTitle").value = task?.title || "";
-    $("#taskFolder").value = task?.folder || (state.view === "projects" ? "project" : folderNames[state.view] ? state.view : "inbox");
+    $("#taskFolder").value = task?.folder || "inbox";
     $("#taskDue").value = task?.due || "";
     $("#taskPriority").value = task?.priority || "medium";
     $("#taskTag").value = task?.tag || "";
@@ -593,8 +593,8 @@
     $("#taskRepeat").value = task?.repeat || "";
     $("#taskPinned").checked = Boolean(task?.pinned);
     $("#taskNotes").value = task?.notes || "";
-    $("#dialogKicker").textContent = task ? folderNames[task.folder] || "タスク" : "受信箱";
-    $("#dialogTitle").textContent = task ? "タスクを編集" : "タスクを追加";
+    $("#dialogKicker").textContent = task ? folderNames[task.folder] || "タスク" : "INBOX";
+    $("#dialogTitle").textContent = task ? "INBOXの内容を編集" : "INBOXに追加";
     $("#deleteTask").hidden = !task;
     elements.taskDialog.showModal();
     setTimeout(() => $("#taskTitle").focus(), 50);
@@ -702,7 +702,7 @@
     const type = $("#quickType").value;
     if (type === "task") {
       createTask({ title: text, priority: $("#quickPriority").value, folder: "inbox" });
-      showToast("受信箱へ追加しました");
+      showToast("INBOXへ追加しました");
     } else if (type === "event") {
       state.data.events.push({ id: uid(), date: todayISO, title: text, createdAt: new Date().toISOString() });
       persist();
@@ -818,12 +818,81 @@
   $("#bulkFolder").addEventListener("change", (event) => {
     const folder = event.target.value;
     if (!folder) return;
+    if (!folderNames[folder]) { openRoute([...state.selected], folder); event.target.value = ""; return; }
     state.data.tasks.forEach((task) => { if (state.selected.has(task.id)) task.folder = folder; });
     state.selected.clear();
     event.target.value = "";
     persist();
     render();
     showToast("フォルダーを移動しました");
+  });
+
+
+  let routeIds = [];
+  function openRoute(ids, destination = "records") {
+    routeIds = ids;
+    $("#routeDestination").value = destination;
+    $("#routeDate").value = state.data.tasks.find(t => t.id === ids[0])?.due || todayISO;
+    $("#routeSummary").textContent = ids.length + "件を振り分けます";
+    $("#routeError").textContent = "";
+    $("#routeMoney").hidden = destination !== "budget";
+    $("#routeAmount").required = destination === "budget";
+    $("#routeDialog").showModal();
+  }
+  $("#routeCancel").addEventListener("click", () => $("#routeDialog").close());
+  $("#routeDestination").addEventListener("change", e => {
+    $("#routeMoney").hidden = e.target.value !== "budget";
+    $("#routeAmount").required = e.target.value === "budget";
+  });
+  $("#routeItemBtn").addEventListener("click", () => {
+    if (!$("#taskTitle").value.trim()) { $("#taskTitle").focus(); return; }
+    const before = new Set(state.data.tasks.map(t => t.id));
+    const id = $("#taskId").value;
+    $("#taskForm").requestSubmit();
+    if (elements.taskDialog.open) return;
+    openRoute([id || state.data.tasks.find(t => !before.has(t.id)).id]);
+  });
+  $("#routeForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const destination = $("#routeDestination").value;
+    const date = $("#routeDate").value;
+    const category = $("#routeCategory").value.trim() || "INBOXから";
+    const amount = Number($("#routeAmount").value);
+    const next = JSON.parse(JSON.stringify(state.data));
+    try {
+      if (!date || !["records","calendar","future","habits","collections","documents","budget","reflection"].includes(destination)) throw new Error("振り分け先と日付を確認してください");
+      if (destination === "budget" && (!Number.isSafeInteger(amount) || amount <= 0)) throw new Error("金額は1円以上の整数で入力してください");
+      const items = next.tasks.filter(t => routeIds.includes(t.id));
+      if (!items.length) throw new Error("振り分ける項目がありません");
+      for (const item of items) {
+        const text = [item.title, item.notes, item.url].filter(Boolean).join("\n");
+        const base = { id: uid(), createdAt: new Date().toISOString(), inboxSource: item };
+        if (destination === "records") next.logs.push({...base, date, type:"memo", text});
+        if (destination === "calendar") next.events.push({...base, date, title:text});
+        if (destination === "future") next.futureItems.push({...base, month:date.slice(0,7), title:text});
+        if (destination === "habits") next.habits.push({...base, name:text, dates:[]});
+        if (destination === "collections") next.collectionItems.push({...base, category, text, done:Boolean(item.completed)});
+        if (destination === "documents") next.documents.push({...base, title:text, url:/^https?:\/\//i.test(item.url || "") ? item.url : ""});
+        if (destination === "budget") next.transactions.push({...base, date, category, amount, type:$("#routeMoneyType").value, note:text});
+        if (destination === "reflection") {
+          const old = next.reflections.find(r => r.date === date);
+          if (old) { old.note = [old.note,text].filter(Boolean).join("\n"); (old.inboxSources ||= []).push(item); }
+          else next.reflections.push({...base, date, mood:3, good:"", learned:"", tomorrow:"", note:text});
+        }
+      }
+      next.tasks = next.tasks.filter(t => !routeIds.includes(t.id));
+      // Write the complete result before replacing the live state; quota errors leave it intact.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      state.data = next;
+      state.selected.clear();
+      state.calendarMonth = date.slice(0,7);
+      state.logDate = date;
+      if (destination === "reflection") $("#reflectionDate").value = date;
+      if (destination === "budget") $("#budgetMonth").value = date.slice(0,7);
+      $("#routeDialog").close();
+      setView(destination);
+      showToast(items.length + "件を振り分けました");
+    } catch (error) { $("#routeError").textContent = error.message; }
   });
 
   $("#newTaskBtn").addEventListener("click", () => openTask());
@@ -1158,7 +1227,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=20"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=21"));
 
   function registerWebMCP() {
     const context = document.modelContext;
@@ -1166,8 +1235,8 @@
     const tools = [
       {
         name: "create_task",
-        title: "タスクを受信箱へ追加",
-        description: "ハチロク手帳の受信箱へ新しいタスクを追加します。",
+        title: "タスクをINBOXへ追加",
+        description: "ハチロク手帳のINBOXへ新しいタスクを追加します。",
         inputSchema: { type: "object", properties: { title: { type: "string" }, due: { type: "string" }, priority: { type: "string", enum: ["high", "medium", "low"] }, notes: { type: "string" } }, required: ["title"], additionalProperties: false },
         annotations: { readOnlyHint: false, untrustedContentHint: false },
         execute(input) {

@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=20" />
+    <link rel="manifest" href="./manifest.webmanifest?v=21" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=20" />
+    <link rel="stylesheet" href="./styles.css?v=21" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -23,13 +23,13 @@
           <img src="./favicon.svg" alt="" width="34" height="34" />
           <div><strong>ハチロク手帳</strong><small>やることと毎日を記録する</small></div>
         </div>
-        <button class="new-task-button" id="newTaskBtn"><span>＋</span> 新しいタスク</button>
+        <button class="new-task-button" id="newTaskBtn"><span>＋</span> INBOXに追加</button>
         <nav class="nav-list" id="sideNav">
           <button class="nav-item active" data-view="today"><span>◎</span>今日<em data-count="today">0</em></button>
           <button class="nav-item" data-view="week"><span>▦</span>次の7日間<em data-count="week">0</em></button>
           <button class="nav-item" data-view="all"><span>≡</span>すべて<em data-count="all">0</em></button>
-          <div class="nav-label">タスクの分類</div>
-          <button class="nav-item" data-view="inbox"><span>↓</span>受信箱<em data-count="inbox">0</em></button>
+          <div class="nav-label">INBOXから振り分け</div>
+          <button class="nav-item" data-view="inbox"><span>↓</span>INBOX<em data-count="inbox">0</em></button>
           <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
           <button class="nav-item" data-view="remind"><span>◷</span>リマインダー<em data-count="remind">0</em></button>
           <button class="nav-item" data-view="waiting"><span>⌛</span>待ち状況<em data-count="waiting">0</em></button>
@@ -80,11 +80,11 @@
           <section id="taskWorkspace">
             <div class="page-heading">
               <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">今日</h1><p id="viewDescription"></p></div>
-              <button class="outline-button" id="headingAddBtn">＋ タスクを追加</button>
+              <button class="outline-button" id="headingAddBtn">＋ INBOXに追加</button>
             </div>
             <form class="capture" id="quickAddForm">
               <span class="capture-icon">＋</span>
-              <select id="quickType" aria-label="登録する種類"><option value="task">・ タスク</option><option value="event">○ 予定</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+              <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="event">○ 予定</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
               <input id="quickTaskInput" required maxlength="120" autocomplete="off" placeholder="タスク・予定・記録を追加…" />
               <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
               <button type="submit">追加</button>
@@ -100,7 +100,7 @@
             </div>
             <div class="bulk-bar" id="bulkBar" hidden>
               <strong id="selectedCount">0件選択</strong>
-              <select id="bulkFolder" aria-label="移動先"><option value="">フォルダーへ移動</option><option value="inbox">受信箱</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select>
+              <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：カレンダーの予定</option><option value="future">手帳：未来の予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
               <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
             </div>
             <div id="taskContent"></div>
@@ -114,7 +114,7 @@
             <div class="page-heading"><div><p class="eyebrow">タスクの状況</p><h1>全体の状況</h1><p>すべてのタスクを、流れと量で把握します。</p></div></div>
             <div class="overview-grid" id="overviewGrid"></div>
             <div class="gtd-flow">
-              <article><span>1</span><h3>収集する</h3><p>思いついたことは、まず受信箱へ。</p></article>
+              <article><span>1</span><h3>収集する</h3><p>思いついたことは、まずINBOXへ。</p></article>
               <article><span>2</span><h3>明確にする</h3><p>次にやる・待つ・いつかに振り分けます。</p></article>
               <article><span>3</span><h3>実行する</h3><p>「今日」と「次にやる」に集中します。</p></article>
             </div>
@@ -265,7 +265,7 @@
             <div class="help-section">
               <div class="help-section-heading"><p class="help-kicker">すばやく登録</p><h2>記号と登録先</h2></div>
               <div class="folder-guide">
-                <article><strong>・ タスク</strong><p>受信箱へ追加し、あとで期限や分類を整えます。</p></article>
+                <article><strong>・ タスク</strong><p>INBOXへ追加し、あとで期限や分類を整えます。</p></article>
                 <article><strong>○ 予定</strong><p>今日の予定としてカレンダーへ追加します。</p></article>
                 <article><strong>📝 メモ</strong><p>覚えておきたい情報を今日のデイリーログへ記録します。</p></article>
                 <article><strong>💡 アイデア</strong><p>思いついたことを今日のデイリーログへ記録します。</p></article>
@@ -278,7 +278,7 @@
             <div class="help-section">
               <div class="help-section-heading"><p class="help-kicker">タスクの分類</p><h2>タスクの振り分け先</h2></div>
               <div class="folder-guide">
-                <article><strong>受信箱</strong><p>まだ整理していないタスク</p></article>
+                <article><strong>INBOX</strong><p>まだ整理していないタスク</p></article>
                 <article><strong>次にやる</strong><p>次に実行できる具体的な行動</p></article>
                 <article><strong>リマインダー</strong><p>指定した日に思い出したいこと</p></article>
                 <article><strong>待ち状況</strong><p>人からの返事や出来事を待つこと</p></article>
@@ -288,7 +288,7 @@
             </div>
 
             <div class="help-section help-details">
-              <article><h2>タスクを整理する</h2><p>受信箱に集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。左端の四角を選ぶと一括操作もできます。</p></article>
+              <article><h2>タスクを整理する</h2><p>INBOXに集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。項目を開いて「手帳へ振り分け」を押すと、記録・予定・習慣・コレクション・ドキュメント・家計簿・振り返りへ移せます。左端の四角を選ぶと一括操作もできます。</p></article>
               <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
               <article><h2>月と未来を見通す</h2><p>「カレンダー」では月間目標、予定、期限つきタスクを確認できます。「未来の予定」には6か月先まで月単位で置けます。</p></article>
               <article><h2>Googleカレンダーと同期する</h2><p>「カレンダー」の連携欄で一度接続すると、期限のあるタスクと予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
@@ -306,7 +306,7 @@
             <div class="help-section paper-guide">
               <div class="help-section-heading"><p class="help-kicker">アナログでも続ける</p><h2>紙のノートで記録する方法</h2></div>
               <div class="help-details">
-                <article><h2>1. 受信箱を作る</h2><p>思いついたことは紙の空いている場所へすぐ書き、あとで「今日やる」「次にやる」「いつかやりたい」に振り分けます。</p></article>
+                <article><h2>1. INBOXを作る</h2><p>思いついたことは紙の空いている場所へすぐ書き、あとで「今日やる」「次にやる」「いつかやりたい」に振り分けます。</p></article>
                 <article><h2>2. 今日の3つを選ぶ</h2><p>その日に進めたいことを3つだけ選び、終わったら四角にチェックを入れます。全部できなくても、1つ進めれば十分です。</p></article>
                 <article><h2>3. 夜に振り返る</h2><p>できたこと・よかったこと・気づき・明日やることを1行ずつ書きます。アプリの「振り返り」と同じ流れです。</p></article>
                 <article><h2>4. 週に一度見直す</h2><p>残った項目を翌週へ移し、不要なものは取り消します。紙は処分せず、週ごとに保管すると履歴になります。</p></article>
@@ -319,18 +319,18 @@
     </div>
 
     <nav class="mobile-nav" aria-label="モバイルメニュー">
-      <button class="active" data-view="today"><span>◎</span>今日</button><button data-view="inbox"><span>↓</span>受信箱</button>
-      <button class="mobile-add" id="mobileAdd" aria-label="タスクを追加">＋</button>
+      <button class="active" data-view="today"><span>◎</span>今日</button><button data-view="inbox"><span>↓</span>INBOX</button>
+      <button class="mobile-add" id="mobileAdd" aria-label="INBOXに追加">＋</button>
       <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
 
-    <dialog id="taskDialog">
+    <dialog id="routeDialog"><form id="routeForm"><h2>INBOXから振り分け</h2><p id="routeSummary"></p><label class="field">振り分け先<select id="routeDestination"><option value="records">手帳：記録</option><option value="calendar">手帳：カレンダーの予定</option><option value="future">手帳：未来の予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select></label><label class="field">日付<input id="routeDate" type="date" required /></label><label class="field">分類<input id="routeCategory" value="INBOXから" maxlength="80" /></label><div id="routeMoney" hidden><label class="field">収支<select id="routeMoneyType"><option value="expense">支出</option><option value="income">収入</option></select></label><label class="field">金額（1件あたり）<input id="routeAmount" type="number" min="1" step="1" /></label></div><p>内容とメモを移動します。振り返りは同じ日の内容に追記します。</p><p id="routeError" role="alert"></p><div class="dialog-actions"><button type="button" id="routeCancel">キャンセル</button><button type="submit">振り分ける</button></div></form></dialog><dialog id="taskDialog">
       <form id="taskForm">
-        <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">タスクを追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
+        <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">INBOXに追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
         <input type="hidden" id="taskId" />
-        <label class="field"><span>タスク名</span><input id="taskTitle" required maxlength="120" /></label>
+        <label class="field"><span>内容</span><input id="taskTitle" required maxlength="120" /></label>
         <div class="field-grid">
-          <label class="field"><span>フォルダー</span><select id="taskFolder"><option value="inbox">受信箱</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select></label>
+          <label class="field"><span>フォルダー</span><select id="taskFolder"><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select></label>
           <label class="field"><span>期限</span><input id="taskDue" type="date" /></label>
           <label class="field"><span>優先度</span><select id="taskPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
           <label class="field"><span>タグ</span><select id="taskTag"><option value="">なし</option><option value="work">仕事</option><option value="private">プライベート</option></select></label>
@@ -339,7 +339,7 @@
         </div>
         <label class="check-field"><input id="taskPinned" type="checkbox" /> 今日の「固定したタスク」に表示</label>
         <label class="field"><span>メモ</span><textarea id="taskNotes" rows="4" maxlength="500" placeholder="必要な情報を残せます"></textarea></label>
-        <div class="dialog-actions"><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
+        <div class="dialog-actions"><button type="button" id="routeItemBtn">手帳へ振り分け</button><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
       </form>
     </dialog>
 
@@ -362,8 +362,8 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=20"></script>
-    <script src="./google-calendar.js?v=20"></script>
+    <script src="./app.js?v=21"></script>
+    <script src="./google-calendar.js?v=21"></script>
   </body>
 </html>
 
