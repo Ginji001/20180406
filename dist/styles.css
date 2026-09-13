@@ -33,8 +33,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .brand small { display: block; margin-top: 2px; color: var(--muted); font-size: .58rem; letter-spacing: .11em; }
 .new-task-button { min-height: 40px; padding: 0 12px; border: 0; border-radius: 10px; color: white; background: var(--accent); text-align: left; font-weight: 720; font-size: .84rem; box-shadow: 0 5px 14px rgba(184, 93, 70, .20); }
 .new-task-button span { margin-right: 7px; font-size: 1rem; }
-.nav-list { margin-top: 14px; display: grid; gap: 2px; }
-.nav-label { padding: 16px 10px 5px; color: var(--muted); font-size: .62rem; font-weight: 750; letter-spacing: .12em; }
+.nav-list { margin-top: 14px; display: grid; gap: 3px; }
+.nav-group { display: grid; gap: 2px; }
+.nav-group summary { min-height: 30px; padding: 8px 10px 4px; color: var(--muted); cursor: pointer; font-size: .63rem; font-weight: 750; letter-spacing: .1em; list-style: none; }
+.nav-group summary::-webkit-details-marker { display: none; }
+.nav-group summary::after { content: "＋"; float: right; font-size: .75rem; font-weight: 500; }
+.nav-group[open] summary::after { content: "−"; }
+.nav-group .nav-item { padding-left: 13px; }
 .nav-item { min-height: 37px; padding: 0 9px; border: 0; border-radius: 9px; display: grid; grid-template-columns: 24px 1fr auto; align-items: center; color: var(--muted); background: transparent; text-align: left; font-size: .8rem; }
 .nav-item:hover { background: rgba(71,116,98,.07); }
 .nav-item.active { color: var(--calm); background: var(--calm-soft); font-weight: 720; }

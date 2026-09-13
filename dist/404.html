@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=22" />
+    <link rel="manifest" href="./manifest.webmanifest?v=23" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=22" />
+    <link rel="stylesheet" href="./styles.css?v=23" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -26,28 +26,35 @@
         <button class="new-task-button" id="newTaskBtn"><span>＋</span> INBOXに追加</button>
         <nav class="nav-list" id="sideNav">
           <button class="nav-item active" data-view="today"><span>◎</span>今日<em data-count="today">0</em></button>
-          <button class="nav-item" data-view="week"><span>▦</span>次の7日間<em data-count="week">0</em></button>
-          <button class="nav-item" data-view="all"><span>≡</span>すべて<em data-count="all">0</em></button>
-          <div class="nav-label">INBOXから振り分け</div>
           <button class="nav-item" data-view="inbox"><span>↓</span>INBOX<em data-count="inbox">0</em></button>
-          <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
-          <button class="nav-item" data-view="remind"><span>◷</span>リマインダー<em data-count="remind">0</em></button>
-          <button class="nav-item" data-view="waiting"><span>⌛</span>待ち状況<em data-count="waiting">0</em></button>
-          <button class="nav-item" data-view="projects"><span>□</span>プロジェクト<em data-count="projects">0</em></button>
-          <button class="nav-item" data-view="wish"><span>☆</span>いつかやりたい<em data-count="wish">0</em></button>
-          <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
-          <div class="nav-label">デジタル手帳</div>
-          <button class="nav-item" data-view="records"><span>✎</span>記録</button>
           <button class="nav-item" data-view="calendar"><span>▦</span>カレンダー</button>
-          <button class="nav-item" data-view="future"><span>◷</span>未来の予定</button>
-          <button class="nav-item" data-view="habits"><span>◉</span>習慣</button>
-          <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
-          <button class="nav-item" data-view="documents"><span>⌑</span>ドキュメント</button>
-          <button class="nav-item" data-view="budget"><span>￥</span>家計簿</button>
-          <button class="nav-item" data-view="reflection"><span>☾</span>振り返り</button>
-          <button class="nav-item" data-view="overview"><span>◫</span>全体の状況</button>
-          <button class="nav-item" data-view="data"><span>⇩</span>データ管理</button>
-          <button class="nav-item" data-view="help"><span>?</span>使い方</button>
+          <details class="nav-group">
+            <summary>タスク</summary>
+            <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
+            <button class="nav-item" data-view="week"><span>▦</span>次の7日間<em data-count="week">0</em></button>
+            <button class="nav-item" data-view="all"><span>≡</span>すべて<em data-count="all">0</em></button>
+            <button class="nav-item" data-view="remind"><span>◷</span>リマインダー<em data-count="remind">0</em></button>
+            <button class="nav-item" data-view="waiting"><span>⌛</span>待ち状況<em data-count="waiting">0</em></button>
+            <button class="nav-item" data-view="projects"><span>□</span>プロジェクト<em data-count="projects">0</em></button>
+            <button class="nav-item" data-view="wish"><span>☆</span>いつかやりたい<em data-count="wish">0</em></button>
+            <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
+          </details>
+          <details class="nav-group">
+            <summary>手帳</summary>
+            <button class="nav-item" data-view="records"><span>✎</span>記録</button>
+            <button class="nav-item" data-view="future"><span>◷</span>未来の予定</button>
+            <button class="nav-item" data-view="habits"><span>◉</span>習慣</button>
+            <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
+            <button class="nav-item" data-view="documents"><span>⌑</span>ドキュメント</button>
+            <button class="nav-item" data-view="budget"><span>￥</span>家計簿</button>
+            <button class="nav-item" data-view="reflection"><span>☾</span>振り返り</button>
+          </details>
+          <details class="nav-group">
+            <summary>その他</summary>
+            <button class="nav-item" data-view="overview"><span>◫</span>全体の状況</button>
+            <button class="nav-item" data-view="data"><span>⇩</span>データ管理</button>
+            <button class="nav-item" data-view="help"><span>?</span>使い方</button>
+          </details>
         </nav>
         <div class="project-area">
           <div class="side-heading"><span>プロジェクト</span><button id="newProjectBtn" aria-label="プロジェクトを追加">＋</button></div>
@@ -362,7 +369,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=22"></script>
-    <script src="./google-calendar.js?v=22"></script>
+    <script src="./app.js?v=23"></script>
+    <script src="./google-calendar.js?v=23"></script>
   </body>
 </html>

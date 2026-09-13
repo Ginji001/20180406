@@ -319,7 +319,7 @@
       wish: open.filter((task) => task.folder === "wish").length,
       completed: state.data.tasks.filter((task) => task.completed).length
     };
-    Object.entries(counts).forEach(([key, value]) => $$('[data-count="' + key + '"]').forEach((node) => { node.textContent = value; }));
+    Object.entries(counts).forEach(([key, value]) => $$(`[data-count="${key}"]`).forEach((node) => { node.textContent = value; node.hidden = !value; }));
   }
 
   function renderProjects() {
@@ -340,6 +340,9 @@
   function renderNavigation() {
     $$("[data-view]").forEach((button) => button.classList.toggle("active", !state.projectId && button.dataset.view === state.view));
     $$("[data-mode]").forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
+    $$(".nav-group").forEach((group) => {
+      if (group.querySelector(`[data-view="${state.view}"]`)) group.open = true;
+    });
   }
 
   function renderOverview() {
@@ -1228,7 +1231,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=22"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=23"));
 
   function registerWebMCP() {
     const context = document.modelContext;
