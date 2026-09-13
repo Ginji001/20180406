@@ -202,7 +202,8 @@ h1 { margin: 0; font-family: var(--font-friendly); font-size: clamp(2rem, 4.5vw,
 .calendar-event { color: var(--accent); background: var(--accent-soft); }
 .event-form { grid-template-columns: auto minmax(160px, 1fr) auto; margin-top: 18px; }
 
-.future-form, .collection-form { grid-template-columns: auto minmax(180px, 1fr) auto; }
+.future-form { grid-template-columns: auto minmax(180px, 1fr) auto; }
+.collection-form { grid-template-columns: minmax(130px, .8fr) minmax(180px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) auto; }
 .future-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
 .future-grid > section { min-height: 180px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--paper); }
 .future-grid header { padding: 13px 14px; display: flex; align-items: baseline; justify-content: space-between; border-bottom: 1px solid var(--line); background: var(--paper-2); }
@@ -219,9 +220,14 @@ h1 { margin: 0; font-family: var(--font-friendly); font-size: clamp(2rem, 4.5vw,
 .collection-grid header { padding: 13px 15px; display: flex; align-items: center; justify-content: space-between; background: var(--paper-2); }
 .collection-grid header strong { font-size: .8rem; }
 .collection-grid header span { color: var(--muted); font-size: .65rem; }
-.collection-grid article { min-height: 48px; padding: 8px 11px; display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 7px; border-top: 1px solid var(--line); }
+.collection-grid article { min-height: 58px; padding: 8px 11px; display: grid; grid-template-columns: 20px 42px minmax(0, 1fr) auto; align-items: center; gap: 7px; border-top: 1px solid var(--line); }
 .collection-grid input { width: 17px; height: 17px; accent-color: var(--accent); }
+.collection-image { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; background: var(--paper-2); }
+.collection-item-body { min-width: 0; }
 .collection-grid p { margin: 0; font-size: .75rem; line-height: 1.45; }
+.collection-grid p a { color: inherit; text-decoration: none; }
+.collection-grid p a:hover { text-decoration: underline; }
+.collection-link { display: inline-block; margin-top: 3px; color: var(--muted); font-size: .62rem; }
 .collection-grid p.done { color: var(--muted); text-decoration: line-through; }
 .collection-grid button { border: 0; color: var(--danger); background: transparent; font-size: .65rem; }
 

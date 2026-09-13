@@ -161,6 +161,15 @@
     }[char]));
   }
 
+  function safeExternalURL(value = "") {
+    try {
+      const url = new URL(String(value).trim());
+      return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    } catch (_) {
+      return "";
+    }
+  }
+
   function projectById(id) {
     return state.data.projects.find((project) => project.id === id);
   }
@@ -462,7 +471,7 @@
     const groups = [...new Set(state.data.collectionItems.map((item) => item.category))].sort((a, b) => a.localeCompare(b, "ja"));
     $("#collectionList").innerHTML = groups.map((category) => {
       const items = state.data.collectionItems.filter((item) => item.category === category);
-      return `<section><header><strong>${escapeHTML(category)}</strong><span>${items.length}件</span></header>${items.map((item) => `<article><input type="checkbox" data-collection-check="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text)}を完了" /><p class="${item.done ? "done" : ""}">${escapeHTML(item.text)}</p><button type="button" data-delete-collection="${item.id}">削除</button></article>`).join("")}</section>`;
+      return `<section><header><strong>${escapeHTML(category)}</strong><span>${items.length}件</span></header>${items.map((item) => { const image = safeExternalURL(item.image); const url = safeExternalURL(item.url); return `<article><input type="checkbox" data-collection-check="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text)}を完了" />${image ? `<img class="collection-image" src="${escapeHTML(image)}" alt="" loading="lazy" />` : ""}<div class="collection-item-body"><p class="${item.done ? "done" : ""}">${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(item.text)}</a>` : escapeHTML(item.text)}</p>${url ? `<a class="collection-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">URLを開く</a>` : ""}</div><button type="button" data-delete-collection="${item.id}">削除</button></article>`; }).join("")}</section>`;
     }).join("") || '<div class="empty-state"><strong>コレクションはまだありません</strong><span>欲しい物や読みたい物など、自由な一覧を作れます。</span></div>';
   }
 
@@ -1069,9 +1078,14 @@
     event.preventDefault();
     const category = $("#collectionCategory").value.trim();
     const text = $("#collectionItem").value.trim();
+    const image = $("#collectionImage").value.trim();
+    const url = $("#collectionUrl").value.trim();
     if (!category || !text) return;
-    state.data.collectionItems.push({ id: uid(), category, text, done: false, createdAt: new Date().toISOString() });
+    if ((image && !safeExternalURL(image)) || (url && !safeExternalURL(url))) return showToast("画像URLとURLはhttpまたはhttpsで入力してください");
+    state.data.collectionItems.push({ id: uid(), category, text, image, url, done: false, createdAt: new Date().toISOString() });
     $("#collectionItem").value = "";
+    $("#collectionImage").value = "";
+    $("#collectionUrl").value = "";
     persist();
     renderCollections();
     showToast("コレクションへ追加しました");
@@ -1250,7 +1264,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=24"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=25"));
 
   function registerWebMCP() {
     const context = document.modelContext;
