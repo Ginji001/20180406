@@ -420,7 +420,8 @@
       const iso = toISO(date);
       const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
       const events = state.data.events.filter((item) => item.date === iso);
-      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
+      const habits = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
+      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}${habits.slice(0, 2).map((habit) => `<span class="calendar-task calendar-habit" title="完了した習慣">✓ ${escapeHTML(habit.name)}</span>`).join("")}</div>`;
     }).join("")}</div>`;
     const monthEvents = state.data.events.filter((item) => item.date.startsWith(state.calendarMonth)).sort((a, b) => a.date.localeCompare(b.date));
     $("#eventList").innerHTML = monthEvents.map((item) => `<article class="journal-row"><span class="journal-symbol">○</span><div><strong>${escapeHTML(item.title)}</strong><small>${formatFullDate(item.date)}</small></div><button type="button" data-delete-event="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>この月の予定はありません</strong><span>下の入力欄から追加できます。</span></div>';
@@ -1227,7 +1228,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=21"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=22"));
 
   function registerWebMCP() {
     const context = document.modelContext;
@@ -1275,4 +1276,3 @@
   render();
   registerWebMCP();
 })();
-

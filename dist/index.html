@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=21" />
+    <link rel="manifest" href="./manifest.webmanifest?v=22" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=21" />
+    <link rel="stylesheet" href="./styles.css?v=22" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -145,7 +145,7 @@
           </section>
 
           <section id="calendarWorkspace" class="special-workspace calendar-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">月間予定</p><h1>カレンダー</h1><p>タスクと予定を、月ごとに確認します。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">月間予定</p><h1>カレンダー</h1><p>タスクと予定、完了した習慣を月ごとに確認します。</p></div></div>
             <div class="calendar-controls"><button type="button" id="calendarPrev" aria-label="前の月">‹</button><strong id="calendarMonthLabel"></strong><button type="button" id="calendarNext" aria-label="次の月">›</button></div>
             <form class="month-goal-form" id="monthGoalForm"><label><span>今月の目標</span><input id="monthGoal" maxlength="200" placeholder="今月大切にすること" /></label><button type="submit">保存</button></form>
             <section class="google-calendar-panel" id="googleCalendarPanel">
@@ -362,8 +362,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=21"></script>
-    <script src="./google-calendar.js?v=21"></script>
+    <script src="./app.js?v=22"></script>
+    <script src="./google-calendar.js?v=22"></script>
   </body>
 </html>
-
