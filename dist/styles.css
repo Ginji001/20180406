@@ -179,6 +179,7 @@ h1 { margin: 0; font-family: var(--font-friendly); font-size: clamp(2rem, 4.5vw,
 .today-journal-grid button { margin-top: auto; min-height: 30px; border: 0; border-radius: 6px; color: var(--muted); background: var(--paper-2); font-size: .68rem; }
 
 .journal-form { margin: 24px 0 16px; padding: 10px; display: grid; grid-template-columns: auto auto minmax(160px, 1fr) auto; gap: 8px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper); }
+.journal-form#logForm { grid-template-columns: auto auto auto minmax(160px, 1fr) auto; }
 .journal-form input, .journal-form select, .month-goal-form input, .budget-form input, .transaction-form input, .transaction-form select, .heading-month { min-width: 0; min-height: 39px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--bg); font-size: .76rem; }
 .journal-form button, .month-goal-form button, .budget-form button, .transaction-form button { min-height: 39px; padding: 0 14px; border: 0; border-radius: 7px; color: white; background: var(--accent); font-size: .72rem; font-weight: 700; }
 .log-filter { margin-bottom: 12px; display: flex; align-items: end; justify-content: space-between; }
@@ -416,6 +417,7 @@ body.dark .habit-calendar-item { color: #ffd0bd; background: #51362f; }
   .gtd-flow { grid-template-columns: 1fr; }
   .today-journal-grid, .future-grid, .collection-grid { grid-template-columns: 1fr; }
   .journal-form, .event-form, .future-form, .collection-form { grid-template-columns: 1fr; }
+  .journal-form#logForm { grid-template-columns: 1fr; }
   .budget-summary { grid-template-columns: 1fr 1fr; }
   .transaction-form { grid-template-columns: 1fr 1fr; }
   .transaction-form #transactionNote { grid-column: 1 / -1; }

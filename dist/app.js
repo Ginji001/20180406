@@ -397,10 +397,11 @@
     }).join("") || emptyState();
   }
 
-  function createLog(type, text, date = todayISO) {
+  function createLog(type, text, date = todayISO, time = "") {
     const value = String(text || "").trim();
     if (!value) return null;
-    const record = { id: uid(), date, type: logTypeNames[type] ? type : "memo", text: value, createdAt: new Date().toISOString() };
+    const validTime = /^\d{2}:\d{2}$/.test(String(time)) ? String(time) : "";
+    const record = { id: uid(), date, time: validTime, type: logTypeNames[type] ? type : "memo", text: value, createdAt: new Date().toISOString() };
     state.data.logs.push(record);
     persist();
     return record;
@@ -424,8 +425,8 @@
   function renderLogs() {
     $("#logDate").value ||= todayISO;
     $("#logFilterDate").value = state.logDate;
-    const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.createdAt).localeCompare(String(a.createdAt)));
-    $("#logList").innerHTML = logs.map((item) => `<article class="journal-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}・${logTypeNames[item.type] || "記録"}</small></div><button type="button" data-delete-log="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
+    const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt)));
+    $("#logList").innerHTML = logs.map((item) => `<article class="journal-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}</small></div><button type="button" data-delete-log="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
     $("#showAllLogs").textContent = state.showAllLogs ? "日付で絞る" : "すべて表示";
   }
 
@@ -1006,8 +1007,9 @@
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const date = $("#logDate").value;
-    if (!createLog($("#logType").value, $("#logText").value, date)) return;
+    if (!createLog($("#logType").value, $("#logText").value, date, $("#logTime").value)) return;
     $("#logText").value = "";
+    $("#logTime").value = "";
     state.logDate = date;
     state.showAllLogs = false;
     renderLogs();
@@ -1269,7 +1271,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=26"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=27"));
 
   function registerWebMCP() {
     const context = document.modelContext;
