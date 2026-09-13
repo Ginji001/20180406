@@ -414,9 +414,6 @@
     area.hidden = !home;
     if (area.hidden) return;
     $("#homeLogDate").value ||= todayISO;
-    const date = $("#homeLogDate").value || todayISO;
-    const logs = [...state.data.logs].filter((item) => item.date === date).sort((a, b) => String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 5);
-    $("#homeLogList").innerHTML = logs.map((item) => `<article class="journal-row home-log-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${item.time ? `${escapeHTML(item.time)}・` : ""}${logTypeNames[item.type] || "記録"}</small></div></article>`).join("") || '<div class="empty-state"><strong>この日の記録はありません</strong><span>上の入力欄から記録できます。</span></div>';
   }
 
   function renderLogs() {
@@ -1283,7 +1280,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=29"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=30"));
 
   function registerWebMCP() {
     const context = document.modelContext;
