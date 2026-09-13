@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=27" />
+    <link rel="manifest" href="./manifest.webmanifest?v=28" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=27" />
+    <link rel="stylesheet" href="./styles.css?v=28" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -25,8 +25,7 @@
         </div>
         <button class="new-task-button" id="newTaskBtn"><span>＋</span> INBOXに追加</button>
         <nav class="nav-list" id="sideNav">
-          <button class="nav-item active" data-view="today"><span>◎</span>今日<em data-count="today">0</em></button>
-          <button class="nav-item" data-view="inbox"><span>↓</span>INBOX<em data-count="inbox">0</em></button>
+          <button class="nav-item active" data-view="inbox"><span>↓</span>INBOX<em data-count="inbox">0</em></button>
           <button class="nav-item" data-view="calendar"><span>▦</span>カレンダー</button>
           <details class="nav-group">
             <summary>タスク</summary>
@@ -89,32 +88,44 @@
               <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">今日</h1><p id="viewDescription"></p></div>
               <button class="outline-button" id="headingAddBtn">＋ INBOXに追加</button>
             </div>
-            <form class="capture" id="quickAddForm">
-              <span class="capture-icon">＋</span>
-              <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="event">○ 予定</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
-              <input id="quickTaskInput" required maxlength="120" autocomplete="off" placeholder="タスク・予定・記録を追加…" />
-              <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
-              <button type="submit">追加</button>
-            </form>
-            <div class="toolbar">
-              <div class="view-switch" id="viewSwitch" aria-label="表示形式">
-                <button class="active" data-mode="list">一覧</button><button data-mode="table">表</button><button data-mode="week">週</button><button data-mode="month">月</button>
-              </div>
-              <div class="filters">
-                <select id="tagFilter" aria-label="タグで絞り込み"><option value="all">すべてのタグ</option><option value="work">仕事</option><option value="private">プライベート</option><option value="none">タグなし</option></select>
-                <select id="priorityFilter" aria-label="優先度で絞り込み"><option value="all">すべての優先度</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select>
-              </div>
+            <div class="home-columns">
+              <section class="home-section inbox-home" id="inboxHome">
+                <div class="home-section-head"><div><p class="help-kicker">タスク</p><h2>INBOX</h2></div></div>
+                <form class="capture" id="quickAddForm">
+                  <span class="capture-icon">＋</span>
+                  <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="event">○ 予定</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+                  <input id="quickTaskInput" required maxlength="120" autocomplete="off" placeholder="INBOXに追加…" />
+                  <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
+                  <button type="submit">追加</button>
+                </form>
+                <div class="toolbar">
+                  <div class="view-switch" id="viewSwitch" aria-label="表示形式">
+                    <button class="active" data-mode="list">一覧</button><button data-mode="table">表</button><button data-mode="week">週</button><button data-mode="month">月</button>
+                  </div>
+                  <div class="filters">
+                    <select id="tagFilter" aria-label="タグで絞り込み"><option value="all">すべてのタグ</option><option value="work">仕事</option><option value="private">プライベート</option><option value="none">タグなし</option></select>
+                    <select id="priorityFilter" aria-label="優先度で絞り込み"><option value="all">すべての優先度</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select>
+                  </div>
+                </div>
+                <div class="bulk-bar" id="bulkBar" hidden>
+                  <strong id="selectedCount">0件選択</strong>
+                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：カレンダーの予定</option><option value="future">手帳：未来の予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
+                  <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
+                </div>
+                <div id="taskContent"></div>
+              </section>
+              <section class="home-section home-journal" id="homeJournal" hidden>
+                <div class="home-section-head"><div><p class="help-kicker">手帳</p><h2>記録</h2></div><button type="button" data-view="records">記録一覧</button></div>
+                <p class="home-section-copy">出来事・メモ・アイデアを、日付と時刻つきで残します。</p>
+                <form class="home-log-form" id="homeLogForm">
+                  <div class="home-log-date"><input id="homeLogDate" type="date" required aria-label="記録する日付" /><input id="homeLogTime" type="time" aria-label="記録する時刻" /></div>
+                  <select id="homeLogType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+                  <textarea id="homeLogText" required maxlength="300" rows="4" placeholder="手帳に記録する内容"></textarea>
+                  <button type="submit">記録する</button>
+                </form>
+                <div class="home-log-recent"><strong>この日の記録</strong><div class="journal-list" id="homeLogList"></div></div>
+              </section>
             </div>
-            <div class="bulk-bar" id="bulkBar" hidden>
-              <strong id="selectedCount">0件選択</strong>
-              <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：カレンダーの予定</option><option value="future">手帳：未来の予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
-              <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
-            </div>
-            <div id="taskContent"></div>
-            <section class="today-journal" id="todayJournal" hidden>
-              <div class="today-journal-head"><div><p class="help-kicker">今日の手帳</p><h2>予定・記録・習慣</h2></div><button type="button" data-view="records">記録を開く</button></div>
-              <div class="today-journal-grid" id="todayJournalGrid"></div>
-            </section>
           </section>
 
           <section id="overviewWorkspace" class="special-workspace" hidden>
@@ -330,7 +341,7 @@
     </div>
 
     <nav class="mobile-nav" aria-label="モバイルメニュー">
-      <button class="active" data-view="today"><span>◎</span>今日</button><button data-view="inbox"><span>↓</span>INBOX</button>
+      <button class="active" data-view="inbox"><span>↓</span>INBOX</button><button data-view="records"><span>✎</span>記録</button>
       <button class="mobile-add" id="mobileAdd" aria-label="INBOXに追加">＋</button>
       <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
@@ -373,7 +384,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=27"></script>
-    <script src="./google-calendar.js?v=27"></script>
+    <script src="./app.js?v=28"></script>
+    <script src="./google-calendar.js?v=28"></script>
   </body>
 </html>

@@ -342,8 +342,9 @@
 
   function renderHeading() {
     const project = projectById(state.projectId);
-    elements.viewTitle.textContent = project ? project.name : viewNames[state.view] || "今日";
-    elements.viewDescription.textContent = project ? "このプロジェクトの未完了タスクです。" : descriptions[state.view] || "";
+    const home = state.view === "inbox" && !project;
+    elements.viewTitle.textContent = home ? "ホーム" : project ? project.name : viewNames[state.view] || "今日";
+    elements.viewDescription.textContent = home ? "INBOXと手帳の記録を、ここからすぐ入力できます。" : project ? "このプロジェクトの未完了タスクです。" : descriptions[state.view] || "";
     elements.dateLabel.textContent = new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(today);
   }
 
@@ -407,19 +408,15 @@
     return record;
   }
 
-  function renderTodayJournal() {
-    const area = $("#todayJournal");
-    area.hidden = state.view !== "today" || Boolean(state.projectId);
+  function renderHomeJournal() {
+    const area = $("#homeJournal");
+    const home = state.view === "inbox" && !state.projectId;
+    area.hidden = !home;
     if (area.hidden) return;
-    const events = state.data.events.filter((item) => item.date === todayISO);
-    const logs = state.data.logs.filter((item) => item.date === todayISO);
-    const habits = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(todayISO));
-    const card = (title, items, empty, view) => `<article><div><strong>${title}</strong><span>${items.length}件</span></div>${items.length ? `<ul>${items.slice(0, 4).map((item) => `<li>${escapeHTML(item)}</li>`).join("")}</ul>` : `<p>${empty}</p>`}<button type="button" data-view="${view}">開く</button></article>`;
-    $("#todayJournalGrid").innerHTML = [
-      card("今日の予定", events.map((item) => item.title), "予定はありません", "calendar"),
-      card("今日の記録", logs.map((item) => `${logSymbols[item.type] || "・"} ${item.text}`), "記録はありません", "records"),
-      card("達成した習慣", habits.map((item) => item.name), "達成した習慣はありません", "habits")
-    ].join("");
+    $("#homeLogDate").value ||= todayISO;
+    const date = $("#homeLogDate").value || todayISO;
+    const logs = [...state.data.logs].filter((item) => item.date === date).sort((a, b) => String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt))).slice(0, 5);
+    $("#homeLogList").innerHTML = logs.map((item) => `<article class="journal-row home-log-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${item.time ? `${escapeHTML(item.time)}・` : ""}${logTypeNames[item.type] || "記録"}</small></div></article>`).join("") || '<div class="empty-state"><strong>この日の記録はありません</strong><span>上の入力欄から記録できます。</span></div>';
   }
 
   function renderLogs() {
@@ -576,6 +573,9 @@
     renderCounts();
     renderProjects();
     renderNavigation();
+    const home = state.view === "inbox" && !state.projectId;
+    document.body.classList.toggle("home-page", home);
+    elements.taskWorkspace.classList.toggle("home-mode", home);
     const special = ["overview", "documents", "habits", "records", "calendar", "future", "collections", "budget", "data", "reflection", "help"].includes(state.view);
     elements.taskWorkspace.hidden = special;
     elements.overviewWorkspace.hidden = state.view !== "overview";
@@ -602,7 +602,7 @@
     else if (state.view !== "help") {
       renderHeading();
       renderTasks();
-      renderTodayJournal();
+      renderHomeJournal();
     }
   }
 
@@ -1004,6 +1004,18 @@
   $("#habitCalendarPrev").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, -1); renderHabitCalendar(); });
   $("#habitCalendarNext").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, 1); renderHabitCalendar(); });
 
+  $("#homeLogForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const date = $("#homeLogDate").value;
+    if (!createLog($("#homeLogType").value, $("#homeLogText").value, date, $("#homeLogTime").value)) return;
+    $("#homeLogText").value = "";
+    $("#homeLogTime").value = "";
+    state.logDate = date;
+    renderHomeJournal();
+    showToast("手帳に記録しました");
+  });
+  $("#homeLogDate").addEventListener("change", renderHomeJournal);
+
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const date = $("#logDate").value;
@@ -1271,7 +1283,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=27"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=28"));
 
   function registerWebMCP() {
     const context = document.modelContext;
