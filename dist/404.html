@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=23" />
+    <link rel="manifest" href="./manifest.webmanifest?v=24" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=23" />
+    <link rel="stylesheet" href="./styles.css?v=24" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -134,7 +134,10 @@
           </section>
 
           <section id="habitsWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>習慣</h1><p>今日できた習慣をチェックします。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>習慣</h1><p>月間カレンダーで達成日を確認し、今日の習慣をチェックします。</p></div></div>
+            <div class="calendar-controls habit-calendar-controls"><button type="button" id="habitCalendarPrev" aria-label="前の月">‹</button><strong id="habitCalendarMonthLabel"></strong><button type="button" id="habitCalendarNext" aria-label="次の月">›</button></div>
+            <p class="habit-calendar-help">✓ は達成した習慣です。</p>
+            <div id="habitCalendar" class="habit-calendar"></div>
             <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しい習慣" /><button>追加</button></form>
             <div id="habitList" class="habit-list"></div>
           </section>
@@ -369,7 +372,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=23"></script>
-    <script src="./google-calendar.js?v=23"></script>
+    <script src="./app.js?v=24"></script>
+    <script src="./google-calendar.js?v=24"></script>
   </body>
 </html>

@@ -76,6 +76,7 @@
     tag: "all",
     priority: "all",
     calendarMonth: todayISO.slice(0, 7),
+    habitMonth: todayISO.slice(0, 7),
     logDate: todayISO,
     showAllLogs: false,
     selected: new Set(),
@@ -366,7 +367,21 @@
     $("#documentList").innerHTML = state.data.documents.map((item) => `<article class="simple-item">${item.url ? `<a href="${escapeHTML(item.url)}" target="_blank" rel="noopener">${escapeHTML(item.title)}</a>` : `<strong>${escapeHTML(item.title)}</strong>`}<button data-delete-document="${item.id}">削除</button></article>`).join("") || emptyState();
   }
 
+  function renderHabitCalendar() {
+    const [year, month] = state.habitMonth.split("-").map(Number);
+    const first = new Date(year, month - 1, 1);
+    const start = addDays(first, -first.getDay());
+    const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
+    $("#habitCalendarMonthLabel").textContent = `${year}年${month}月`;
+    $("#habitCalendar").innerHTML = `<div class="calendar habit-calendar-grid">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
+      const iso = toISO(date);
+      const completed = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
+      return `<div class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${completed.slice(0, 4).map((item) => `<span class="habit-calendar-item">✓ ${escapeHTML(item.name)}</span>`).join("") || '<span class="habit-calendar-empty">—</span>'}</div>`;
+    }).join("")}</div>`;
+  }
+
   function renderHabits() {
+    renderHabitCalendar();
     $("#habitList").innerHTML = state.data.habits.map((item) => {
       const done = Array.isArray(item.dates) && item.dates.includes(todayISO);
       return `<article class="habit-item"><input type="checkbox" data-habit="${item.id}" ${done ? "checked" : ""} aria-label="${escapeHTML(item.name)}を今日完了" /><label>${escapeHTML(item.name)}</label><button data-delete-habit="${item.id}">削除</button></article>`;
@@ -961,6 +976,7 @@
     if (event.target.checked && !habit.dates.includes(todayISO)) habit.dates.push(todayISO);
     if (!event.target.checked) habit.dates = habit.dates.filter((date) => date !== todayISO);
     persist();
+    renderHabits();
   });
   $("#habitList").addEventListener("click", (event) => {
     const id = event.target.closest("[data-delete-habit]")?.dataset.deleteHabit;
@@ -969,6 +985,9 @@
     persist();
     renderHabits();
   });
+
+  $("#habitCalendarPrev").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, -1); renderHabitCalendar(); });
+  $("#habitCalendarNext").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, 1); renderHabitCalendar(); });
 
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1231,7 +1250,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=23"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=24"));
 
   function registerWebMCP() {
     const context = document.modelContext;
