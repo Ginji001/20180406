@@ -223,6 +223,7 @@ h1 { margin: 0; font-family: var(--font-friendly); font-size: clamp(2rem, 4.5vw,
 .collection-grid article { min-height: 58px; padding: 8px 11px; display: grid; grid-template-columns: 20px 42px minmax(0, 1fr) auto; align-items: center; gap: 7px; border-top: 1px solid var(--line); }
 .collection-grid input { width: 17px; height: 17px; accent-color: var(--accent); }
 .collection-image { width: 42px; height: 42px; border-radius: 6px; object-fit: cover; background: var(--paper-2); }
+.collection-image-placeholder { display: block; }
 .collection-item-body { min-width: 0; }
 .collection-grid p { margin: 0; font-size: .75rem; line-height: 1.45; }
 .collection-grid p a { color: inherit; text-decoration: none; }
