@@ -22,7 +22,7 @@
   const todayISO = toISO(today);
 
   const emptyData = () => ({
-    version: 4,
+    version: 5,
     tasks: [],
     projects: [],
     documents: [],
@@ -30,7 +30,6 @@
     reflections: [],
     logs: [],
     events: [],
-    futureItems: [],
     collectionItems: [],
     transactions: [],
     budgets: {},
@@ -40,16 +39,25 @@
   function normalizeData(value) {
     const base = emptyData();
     if (!value || typeof value !== "object") return base;
+    const events = Array.isArray(value.events) ? value.events.map((item) => ({ ...item })) : [];
+    const eventIds = new Set(events.map((item) => item.id).filter(Boolean));
+    if (Array.isArray(value.futureItems)) {
+      value.futureItems.forEach((item) => {
+        if (!item || (item.id && eventIds.has(item.id))) return;
+        const id = item.id || uid();
+        events.push({ ...item, id, date: "", month: item.month || "" });
+        eventIds.add(id);
+      });
+    }
     return {
-      version: 4,
+      version: 5,
       tasks: Array.isArray(value.tasks) ? value.tasks : [],
       projects: Array.isArray(value.projects) ? value.projects : [],
       documents: Array.isArray(value.documents) ? value.documents : [],
       habits: Array.isArray(value.habits) ? value.habits : [],
       reflections: Array.isArray(value.reflections) ? value.reflections : [],
       logs: Array.isArray(value.logs) ? value.logs : [],
-      events: Array.isArray(value.events) ? value.events : [],
-      futureItems: Array.isArray(value.futureItems) ? value.futureItems : [],
+      events,
       collectionItems: Array.isArray(value.collectionItems) ? value.collectionItems : [],
       transactions: Array.isArray(value.transactions) ? value.transactions : [],
       budgets: value.budgets && typeof value.budgets === "object" ? value.budgets : {},
@@ -67,8 +75,9 @@
     }
   }
 
+  const loadedData = loadJSON(STORAGE_KEY, emptyData());
   const state = {
-    data: normalizeData(loadJSON(STORAGE_KEY, emptyData())),
+    data: normalizeData(loadedData),
     view: "inbox",
     mode: "list",
     projectId: null,
@@ -92,7 +101,6 @@
     habitsWorkspace: $("#habitsWorkspace"),
     recordsWorkspace: $("#recordsWorkspace"),
     calendarWorkspace: $("#calendarWorkspace"),
-    futureWorkspace: $("#futureWorkspace"),
     collectionsWorkspace: $("#collectionsWorkspace"),
     budgetWorkspace: $("#budgetWorkspace"),
     dataWorkspace: $("#dataWorkspace"),
@@ -438,6 +446,7 @@
     $("#calendarMonthLabel").textContent = `${year}年${month}月`;
     $("#monthGoal").value = state.data.monthlyGoals[state.calendarMonth] || "";
     $("#eventDate").value ||= todayISO;
+    $("#eventMonth").value = state.calendarMonth;
     $("#combinedCalendar").innerHTML = `<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
       const iso = toISO(date);
       const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
@@ -445,21 +454,13 @@
       const habits = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
       return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}${habits.slice(0, 2).map((habit) => `<span class="calendar-task calendar-habit" title="完了した習慣">✓ ${escapeHTML(habit.name)}</span>`).join("")}</div>`;
     }).join("")}</div>`;
-    const monthEvents = state.data.events.filter((item) => item.date.startsWith(state.calendarMonth)).sort((a, b) => a.date.localeCompare(b.date));
-    $("#eventList").innerHTML = monthEvents.map((item) => `<article class="journal-row"><span class="journal-symbol">○</span><div><strong>${escapeHTML(item.title)}</strong><small>${formatFullDate(item.date)}</small></div><button type="button" data-delete-event="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>この月の予定はありません</strong><span>下の入力欄から追加できます。</span></div>';
-  }
-
-  function renderFuture() {
-    const start = new Date(today.getFullYear(), today.getMonth(), 1);
-    const months = [...new Set([...Array.from({ length: 6 }, (_, index) => changeMonth(toISO(start).slice(0, 7), index)), ...state.data.futureItems.map(item => item.month)])].sort();
-    $("#futureMonth").min = months[0];
-    $("#futureMonth").max = months[5];
-    $("#futureMonth").value ||= months[0];
-    $("#futureList").innerHTML = months.map((month) => {
-      const [year, value] = month.split("-");
-      const items = state.data.futureItems.filter((item) => item.month === month);
-      return `<section><header><span>${year}年</span><strong>${Number(value)}月</strong></header><div>${items.map((item) => `<article><span>○</span><p>${escapeHTML(item.title)}</p><button type="button" data-delete-future="${item.id}">削除</button></article>`).join("") || '<p class="future-empty">予定はありません</p>'}</div></section>`;
-    }).join("");
+    const monthEvents = state.data.events.filter((item) => (item.date || item.month || "").startsWith(state.calendarMonth)).sort((a, b) => (a.date || `${a.month}-99`).localeCompare(b.date || `${b.month}-99`));
+    $("#eventList").innerHTML = monthEvents.map((item) => {
+      const hasDate = Boolean(item.date);
+      const [year, month] = String(item.month || "").split("-");
+      const schedule = hasDate ? formatFullDate(item.date) : `${year}年${Number(month)}月（日付未定）`;
+      return `<article class="journal-row"><span class="journal-symbol">${hasDate ? "○" : "◷"}</span><div><strong>${escapeHTML(item.title)}</strong><small>${schedule}</small></div><div class="journal-actions"><button type="button" data-edit-event="${item.id}">編集</button><button type="button" data-delete-event="${item.id}">削除</button></div></article>`;
+    }).join("") || '<div class="empty-state"><strong>この月の予定はありません</strong><span>日付または月を選んで追加できます。</span></div>';
   }
 
   function renderCollections() {
@@ -493,7 +494,7 @@
   }
 
   function renderDataSummary() {
-    const counts = [["タスク", state.data.tasks.length], ["記録", state.data.logs.length], ["予定", state.data.events.length + state.data.futureItems.length], ["振り返り", state.data.reflections.length], ["コレクション", state.data.collectionItems.length], ["家計簿", state.data.transactions.length]];
+    const counts = [["タスク", state.data.tasks.length], ["記録", state.data.logs.length], ["予定", state.data.events.length], ["振り返り", state.data.reflections.length], ["コレクション", state.data.collectionItems.length], ["家計簿", state.data.transactions.length]];
     $("#dataSummary").innerHTML = counts.map(([label, value]) => `<article><span>${label}</span><strong>${value}</strong></article>`).join("");
   }
 
@@ -573,14 +574,13 @@
     const home = state.view === "inbox" && !state.projectId;
     document.body.classList.toggle("home-page", home);
     elements.taskWorkspace.classList.toggle("home-mode", home);
-    const special = ["overview", "documents", "habits", "records", "calendar", "future", "collections", "budget", "data", "reflection", "help"].includes(state.view);
+    const special = ["overview", "documents", "habits", "records", "calendar", "collections", "budget", "data", "reflection", "help"].includes(state.view);
     elements.taskWorkspace.hidden = special;
     elements.overviewWorkspace.hidden = state.view !== "overview";
     elements.documentsWorkspace.hidden = state.view !== "documents";
     elements.habitsWorkspace.hidden = state.view !== "habits";
     elements.recordsWorkspace.hidden = state.view !== "records";
     elements.calendarWorkspace.hidden = state.view !== "calendar";
-    elements.futureWorkspace.hidden = state.view !== "future";
     elements.collectionsWorkspace.hidden = state.view !== "collections";
     elements.budgetWorkspace.hidden = state.view !== "budget";
     elements.dataWorkspace.hidden = state.view !== "data";
@@ -591,7 +591,6 @@
     else if (state.view === "habits") renderHabits();
     else if (state.view === "records") renderLogs();
     else if (state.view === "calendar") renderCombinedCalendar();
-    else if (state.view === "future") renderFuture();
     else if (state.view === "collections") renderCollections();
     else if (state.view === "budget") renderBudget();
     else if (state.view === "data") renderDataSummary();
@@ -891,7 +890,7 @@
     const amount = Number($("#routeAmount").value);
     const next = JSON.parse(JSON.stringify(state.data));
     try {
-      if (!date || !["records","calendar","future","habits","collections","documents","budget","reflection"].includes(destination)) throw new Error("振り分け先と日付を確認してください");
+      if (!date || !["records","calendar","habits","collections","documents","budget","reflection"].includes(destination)) throw new Error("振り分け先と日付を確認してください");
       if (destination === "budget" && (!Number.isSafeInteger(amount) || amount <= 0)) throw new Error("金額は1円以上の整数で入力してください");
       const items = next.tasks.filter(t => routeIds.includes(t.id));
       if (!items.length) throw new Error("振り分ける項目がありません");
@@ -900,7 +899,6 @@
         const base = { id: uid(), createdAt: new Date().toISOString(), inboxSource: item };
         if (destination === "records") next.logs.push({...base, date, type:"memo", text});
         if (destination === "calendar") next.events.push({...base, date, title:text});
-        if (destination === "future") next.futureItems.push({...base, month:date.slice(0,7), title:text});
         if (destination === "habits") next.habits.push({...base, name:text, dates:[]});
         if (destination === "collections") next.collectionItems.push({...base, category, text, done:Boolean(item.completed)});
         if (destination === "documents") next.documents.push({...base, title:text, url:/^https?:\/\//i.test(item.url || "") ? item.url : ""});
@@ -946,7 +944,7 @@
 
   $("#searchInput").addEventListener("input", (event) => {
     state.search = event.target.value.trim();
-    if (!["overview", "documents", "habits", "records", "calendar", "future", "collections", "budget", "data", "reflection", "help"].includes(state.view)) renderTasks();
+    if (!["overview", "documents", "habits", "records", "calendar", "collections", "budget", "data", "reflection", "help"].includes(state.view)) renderTasks();
   });
   $("#tagFilter").addEventListener("change", (event) => { state.tag = event.target.value; renderTasks(); });
   $("#priorityFilter").addEventListener("change", (event) => { state.priority = event.target.value; renderTasks(); });
@@ -1084,17 +1082,48 @@
   });
   $("#eventForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const date = $("#eventDate").value;
+    const timing = $("#eventTiming").value;
+    const date = timing === "date" ? $("#eventDate").value : "";
+    const month = timing === "month" ? $("#eventMonth").value : "";
     const title = $("#eventTitle").value.trim();
-    if (!date || !title) return;
-    state.data.events.push({ id: uid(), date, title, createdAt: new Date().toISOString() });
-    state.calendarMonth = date.slice(0, 7);
+    if ((!date && !month) || !title) return;
+    state.data.events.push({ id: uid(), date, month, title, createdAt: new Date().toISOString() });
+    state.calendarMonth = date ? date.slice(0, 7) : month;
     $("#eventTitle").value = "";
     persist();
     renderCombinedCalendar();
     showToast("予定を追加しました");
   });
+  $("#eventTiming").addEventListener("change", (event) => {
+    const monthOnly = event.target.value === "month";
+    $("#eventDate").hidden = monthOnly;
+    $("#eventDate").required = !monthOnly;
+    $("#eventMonth").hidden = !monthOnly;
+    $("#eventMonth").required = monthOnly;
+  });
+  function setEventEditTiming(timing) {
+    const monthOnly = timing === "month";
+    $("#eventEditTiming").value = monthOnly ? "month" : "date";
+    $("#eventEditDate").hidden = monthOnly;
+    $("#eventEditDate").required = !monthOnly;
+    $("#eventEditMonth").hidden = !monthOnly;
+    $("#eventEditMonth").required = monthOnly;
+    $("#eventEditScheduleLabel").textContent = monthOnly ? "月" : "日付";
+  }
+  $("#eventEditTiming").addEventListener("change", (event) => setEventEditTiming(event.target.value));
   $("#eventList").addEventListener("click", (event) => {
+    const editId = event.target.closest("[data-edit-event]")?.dataset.editEvent;
+    if (editId) {
+      const item = state.data.events.find((entry) => entry.id === editId);
+      if (!item) return;
+      $("#eventEditId").value = item.id;
+      setEventEditTiming(item.date ? "date" : "month");
+      $("#eventEditDate").value = item.date || todayISO;
+      $("#eventEditMonth").value = item.month || item.date?.slice(0, 7) || state.calendarMonth;
+      $("#eventEditTitle").value = item.title || "";
+      $("#eventEditDialog").showModal();
+      return;
+    }
     const id = event.target.closest("[data-delete-event]")?.dataset.deleteEvent;
     if (!id || !window.confirm("この予定を削除しますか？")) return;
     state.data.events = state.data.events.filter((item) => item.id !== id);
@@ -1102,24 +1131,20 @@
     renderCombinedCalendar();
     showToast("予定を削除しました");
   });
-
-  $("#futureForm").addEventListener("submit", (event) => {
+  $("#eventEditForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const month = $("#futureMonth").value;
-    const title = $("#futureTitle").value.trim();
-    if (!month || !title) return;
-    state.data.futureItems.push({ id: uid(), month, title, createdAt: new Date().toISOString() });
-    $("#futureTitle").value = "";
+    const item = state.data.events.find((entry) => entry.id === $("#eventEditId").value);
+    const monthOnly = $("#eventEditTiming").value === "month";
+    const date = monthOnly ? "" : $("#eventEditDate").value;
+    const month = monthOnly ? $("#eventEditMonth").value : "";
+    const title = $("#eventEditTitle").value.trim();
+    if (!item || (!date && !month) || !title) return;
+    Object.assign(item, { date, month, title, updatedAt: new Date().toISOString() });
+    state.calendarMonth = date ? date.slice(0, 7) : month;
     persist();
-    renderFuture();
-    showToast("未来の予定を追加しました");
-  });
-  $("#futureList").addEventListener("click", (event) => {
-    const id = event.target.closest("[data-delete-future]")?.dataset.deleteFuture;
-    if (!id || !window.confirm("この未来の予定を削除しますか？")) return;
-    state.data.futureItems = state.data.futureItems.filter((item) => item.id !== id);
-    persist();
-    renderFuture();
+    $("#eventEditDialog").close();
+    renderCombinedCalendar();
+    showToast("予定を更新しました");
   });
 
   $("#collectionForm").addEventListener("submit", (event) => {
@@ -1312,7 +1337,9 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=31"));
+  if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
+
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=32"));
 
   function registerWebMCP() {
     const context = document.modelContext;

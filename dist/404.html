@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=31" />
+    <link rel="manifest" href="./manifest.webmanifest?v=32" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=31" />
+    <link rel="stylesheet" href="./styles.css?v=32" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -26,7 +26,7 @@
         <button class="new-task-button" id="newTaskBtn"><span>＋</span> INBOXに追加</button>
         <nav class="nav-list" id="sideNav">
           <button class="nav-item active" data-view="inbox"><span>↓</span>INBOX<em data-count="inbox">0</em></button>
-          <button class="nav-item" data-view="calendar"><span>▦</span>カレンダー</button>
+          <button class="nav-item" data-view="calendar"><span>▦</span>予定</button>
           <details class="nav-group">
             <summary>タスク</summary>
             <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
@@ -41,7 +41,6 @@
           <details class="nav-group">
             <summary>手帳</summary>
             <button class="nav-item" data-view="records"><span>✎</span>記録</button>
-            <button class="nav-item" data-view="future"><span>◷</span>未来の予定</button>
             <button class="nav-item" data-view="habits"><span>◉</span>習慣</button>
             <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
             <button class="nav-item" data-view="documents"><span>⌑</span>ドキュメント</button>
@@ -74,7 +73,7 @@
           <button class="mobile-menu" id="mobileMenu" aria-label="メニューを開く">☰</button>
           <div class="quick-links" aria-label="クイック操作">
             <button data-quick="postpone"><span>↷</span>先送り</button>
-            <button data-view="calendar"><span>▦</span>カレンダー</button>
+            <button data-view="calendar"><span>▦</span>予定</button>
             <button data-view="records"><span>✎</span>記録</button>
             <button data-view="reflection"><span>☾</span>振り返り</button>
             <button data-view="help"><span>?</span>使い方</button>
@@ -109,7 +108,7 @@
                 </div>
                 <div class="bulk-bar" id="bulkBar" hidden>
                   <strong id="selectedCount">0件選択</strong>
-                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：カレンダーの予定</option><option value="future">手帳：未来の予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
+                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
                   <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
                 </div>
                 <div id="taskContent"></div>
@@ -166,7 +165,7 @@
           </section>
 
           <section id="calendarWorkspace" class="special-workspace calendar-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">月間予定</p><h1>カレンダー</h1><p>タスクと予定、完了した習慣を月ごとに確認します。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">日付あり・日付未定</p><h1>予定</h1><p>日付が決まった予定も、月だけ決まった予定も、ここでまとめて管理します。</p></div></div>
             <div class="calendar-controls"><button type="button" id="calendarPrev" aria-label="前の月">‹</button><strong id="calendarMonthLabel"></strong><button type="button" id="calendarNext" aria-label="次の月">›</button></div>
             <form class="month-goal-form" id="monthGoalForm"><label><span>今月の目標</span><input id="monthGoal" maxlength="200" placeholder="今月大切にすること" /></label><button type="submit">保存</button></form>
             <section class="google-calendar-panel" id="googleCalendarPanel">
@@ -180,24 +179,20 @@
               </div>
               <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
               <p class="google-calendar-note">初回接続時にGoogle内へ「ハチロク手帳」専用カレンダーを作成します。タイトル・日付・タスクのメモ・完了状態を送信し、接続直後に同期します。<a href="./privacy.html" target="_blank" rel="noopener">データの取り扱い</a></p>
-              <p class="google-calendar-note">同期対象は、期限のあるタスクとこの画面の「予定」です。すべて終日の予定として登録されます。</p>
+              <p class="google-calendar-note">同期対象は、期限のあるタスクと日付が決まった予定です。すべて終日の予定として登録されます。月だけ決まった予定は、日付を決めてから同期できます。</p>
               <p class="google-calendar-note">以前の主カレンダーの予定は残ります。今後は専用カレンダーだけに同期します。両方を表示すると同じ予定が重なる場合があります。</p>
               <details class="google-calendar-help"><summary>別の端末で同じ専用カレンダーを使う</summary><p>接続後に表示されるIDを控え、別の端末で接続する前に保存してください。Googleカレンダーの設定からも確認できます。IDがない端末では新しく作成します。</p><label>専用カレンダーID<input id="googleDedicatedCalendarId" type="text" autocomplete="off" placeholder="…@group.calendar.google.com" /></label><button type="button" id="googleUseCalendarBtn">このIDを保存</button></details>
               <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押します。</li><li>Googleアカウントを選び、カレンダーへのアクセスを許可します。</li><li>「今すぐ同期」で期限付きタスクと予定を同期できます。</li></ol></details>
             </section>
             <div class="combined-calendar" id="combinedCalendar"></div>
             <form class="journal-form event-form" id="eventForm">
-              <input id="eventDate" type="date" required />
+              <select id="eventTiming" aria-label="予定の日程"><option value="date">日付を指定</option><option value="month">月だけ指定</option></select>
+              <input id="eventDate" type="date" required aria-label="予定の日付" />
+              <input id="eventMonth" type="month" aria-label="予定の月" hidden />
               <input id="eventTitle" required maxlength="120" placeholder="予定の内容" />
               <button type="submit">予定を追加</button>
             </form>
             <div class="journal-list" id="eventList"></div>
-          </section>
-
-          <section id="futureWorkspace" class="special-workspace future-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">6か月の見通し</p><h1>未来の予定</h1><p>まだ日付が決まっていない予定も、月単位で置いておけます。</p></div></div>
-            <form class="journal-form future-form" id="futureForm"><input id="futureMonth" type="month" required /><input id="futureTitle" required maxlength="160" placeholder="未来の予定" /><button type="submit">追加</button></form>
-            <div class="future-grid" id="futureList"></div>
           </section>
 
           <section id="collectionsWorkspace" class="special-workspace collections-workspace" hidden>
@@ -311,8 +306,8 @@
             <div class="help-section help-details">
               <article><h2>タスクを整理する</h2><p>INBOXに集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。項目を開いて「手帳へ振り分け」を押すと、記録・予定・習慣・コレクション・ドキュメント・家計簿・振り返りへ移せます。左端の四角を選ぶと一括操作もできます。</p></article>
               <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
-              <article><h2>月と未来を見通す</h2><p>「カレンダー」では月間目標、予定、期限つきタスクを確認できます。「未来の予定」には6か月先まで月単位で置けます。</p></article>
-              <article><h2>Googleカレンダーと同期する</h2><p>「カレンダー」の連携欄で一度接続すると、期限のあるタスクと予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
+              <article><h2>予定をまとめて見通す</h2><p>「予定」では、日付が決まった予定と月だけ決まった予定、期限つきタスクをまとめて確認できます。</p></article>
+              <article><h2>Googleカレンダーと同期する</h2><p>「予定」の連携欄で一度接続すると、期限のあるタスクと日付が決まった予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
               <article><h2>習慣と一覧を育てる</h2><p>「習慣」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを画像やURL付きでまとめられます。</p></article>
               <article><h2>家計を把握する</h2><p>「家計簿」で月の予算を決め、収入と支出を登録します。月を切り替えると、その月の残り金額が分かります。</p></article>
               <article><h2>一日を振り返る</h2><p>完了したタスクと習慣を確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
@@ -345,7 +340,7 @@
       <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
 
-    <dialog id="routeDialog"><form id="routeForm"><h2>INBOXから振り分け</h2><p id="routeSummary"></p><label class="field">振り分け先<select id="routeDestination"><option value="records">手帳：記録</option><option value="calendar">手帳：カレンダーの予定</option><option value="future">手帳：未来の予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select></label><label class="field">日付<input id="routeDate" type="date" required /></label><label class="field">分類<input id="routeCategory" value="INBOXから" maxlength="80" /></label><div id="routeMoney" hidden><label class="field">収支<select id="routeMoneyType"><option value="expense">支出</option><option value="income">収入</option></select></label><label class="field">金額（1件あたり）<input id="routeAmount" type="number" min="1" step="1" /></label></div><p>内容とメモを移動します。振り返りは同じ日の内容に追記します。</p><p id="routeError" role="alert"></p><div class="dialog-actions"><button type="button" id="routeCancel">キャンセル</button><button type="submit">振り分ける</button></div></form></dialog><dialog id="taskDialog">
+    <dialog id="routeDialog"><form id="routeForm"><h2>INBOXから振り分け</h2><p id="routeSummary"></p><label class="field">振り分け先<select id="routeDestination"><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select></label><label class="field">日付<input id="routeDate" type="date" required /></label><label class="field">分類<input id="routeCategory" value="INBOXから" maxlength="80" /></label><div id="routeMoney" hidden><label class="field">収支<select id="routeMoneyType"><option value="expense">支出</option><option value="income">収入</option></select></label><label class="field">金額（1件あたり）<input id="routeAmount" type="number" min="1" step="1" /></label></div><p>内容とメモを移動します。振り返りは同じ日の内容に追記します。</p><p id="routeError" role="alert"></p><div class="dialog-actions"><button type="button" id="routeCancel">キャンセル</button><button type="submit">振り分ける</button></div></form></dialog><dialog id="taskDialog">
       <form id="taskForm">
         <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">INBOXに追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
         <input type="hidden" id="taskId" />
@@ -387,6 +382,17 @@
       </form>
     </dialog>
 
+    <dialog id="eventEditDialog">
+      <form id="eventEditForm">
+        <div class="dialog-head"><div><small>予定</small><h2>予定を編集</h2></div><button type="button" class="icon-button" data-close="eventEdit" aria-label="閉じる">×</button></div>
+        <input type="hidden" id="eventEditId" />
+        <label class="field"><span>日程</span><select id="eventEditTiming"><option value="date">日付を指定</option><option value="month">月だけ指定</option></select></label>
+        <label class="field"><span id="eventEditScheduleLabel">日付</span><input id="eventEditDate" type="date" required aria-label="編集する予定の日付" /><input id="eventEditMonth" type="month" aria-label="編集する予定の月" hidden /></label>
+        <label class="field"><span>内容</span><input id="eventEditTitle" required maxlength="120" /></label>
+        <div class="dialog-actions"><button type="button" data-close="eventEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
+      </form>
+    </dialog>
+
     <dialog id="backupDialog">
       <form>
         <div class="dialog-head"><div><small>データ管理</small><h2>バックアップ</h2></div><button type="button" class="icon-button" data-close="backup">×</button></div>
@@ -397,7 +403,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=31"></script>
-    <script src="./google-calendar.js?v=31"></script>
+    <script src="./app.js?v=32"></script>
+    <script src="./google-calendar.js?v=32"></script>
   </body>
 </html>
