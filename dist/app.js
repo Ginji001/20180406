@@ -485,19 +485,14 @@
     $("#monthGoal").value = state.data.monthlyGoals[state.calendarMonth] || "";
     $("#eventDate").value ||= todayISO;
     $("#eventMonth").value = state.calendarMonth;
-    $("#combinedCalendar").innerHTML = `<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
+    const undatedEvents = state.data.events.filter((item) => !item.date && item.month === state.calendarMonth);
+    const undatedMarkup = undatedEvents.length ? `<div class="calendar-undated"><strong>日付未定</strong><div>${undatedEvents.map((item) => `<button type="button" data-edit-event="${item.id}">◷ ${escapeHTML(item.title)}</button>`).join("")}</div></div>` : "";
+    $("#combinedCalendar").innerHTML = `${undatedMarkup}<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
       const iso = toISO(date);
       const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
       const events = state.data.events.filter((item) => item.date === iso);
-      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
+      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.map((item) => `<button type="button" class="calendar-task calendar-event" data-edit-event="${item.id}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
     }).join("")}</div>`;
-    const monthEvents = state.data.events.filter((item) => (item.date || item.month || "").startsWith(state.calendarMonth)).sort((a, b) => (a.date || `${a.month}-99`).localeCompare(b.date || `${b.month}-99`));
-    $("#eventList").innerHTML = monthEvents.map((item) => {
-      const hasDate = Boolean(item.date);
-      const [year, month] = String(item.month || "").split("-");
-      const schedule = hasDate ? formatFullDate(item.date) : `${year}年${Number(month)}月（日付未定）`;
-      return `<article class="journal-row"><span class="journal-symbol">${hasDate ? "○" : "◷"}</span><div><strong>${escapeHTML(item.title)}</strong><small>${schedule}</small></div><div class="journal-actions"><button type="button" data-edit-event="${item.id}">編集</button><button type="button" data-delete-event="${item.id}">削除</button></div></article>`;
-    }).join("") || '<div class="empty-state"><strong>この月の予定はありません</strong><span>日付または月を選んで追加できます。</span></div>';
   }
 
   function renderCollections() {
@@ -1147,26 +1142,20 @@
     $("#eventEditMonth").required = monthOnly;
     $("#eventEditScheduleLabel").textContent = monthOnly ? "月" : "日付";
   }
+  function openEventEditor(id) {
+    const item = state.data.events.find((entry) => entry.id === id);
+    if (!item) return;
+    $("#eventEditId").value = item.id;
+    setEventEditTiming(item.date ? "date" : "month");
+    $("#eventEditDate").value = item.date || todayISO;
+    $("#eventEditMonth").value = item.month || item.date?.slice(0, 7) || state.calendarMonth;
+    $("#eventEditTitle").value = item.title || "";
+    $("#eventEditDialog").showModal();
+  }
   $("#eventEditTiming").addEventListener("change", (event) => setEventEditTiming(event.target.value));
-  $("#eventList").addEventListener("click", (event) => {
+  $("#combinedCalendar").addEventListener("click", (event) => {
     const editId = event.target.closest("[data-edit-event]")?.dataset.editEvent;
-    if (editId) {
-      const item = state.data.events.find((entry) => entry.id === editId);
-      if (!item) return;
-      $("#eventEditId").value = item.id;
-      setEventEditTiming(item.date ? "date" : "month");
-      $("#eventEditDate").value = item.date || todayISO;
-      $("#eventEditMonth").value = item.month || item.date?.slice(0, 7) || state.calendarMonth;
-      $("#eventEditTitle").value = item.title || "";
-      $("#eventEditDialog").showModal();
-      return;
-    }
-    const id = event.target.closest("[data-delete-event]")?.dataset.deleteEvent;
-    if (!id || !window.confirm("この予定を削除しますか？")) return;
-    state.data.events = state.data.events.filter((item) => item.id !== id);
-    persist();
-    renderCombinedCalendar();
-    showToast("予定を削除しました");
+    if (editId) openEventEditor(editId);
   });
   $("#eventEditForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1182,6 +1171,15 @@
     $("#eventEditDialog").close();
     renderCombinedCalendar();
     showToast("予定を更新しました");
+  });
+  $("#deleteEventBtn").addEventListener("click", () => {
+    const id = $("#eventEditId").value;
+    if (!id || !window.confirm("この予定を削除しますか？")) return;
+    state.data.events = state.data.events.filter((item) => item.id !== id);
+    persist();
+    $("#eventEditDialog").close();
+    renderCombinedCalendar();
+    showToast("予定を削除しました");
   });
 
   $("#collectionForm").addEventListener("submit", async (event) => {
@@ -1393,7 +1391,7 @@
 
   if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=34"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=35"));
 
   function registerWebMCP() {
     const context = document.modelContext;
