@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=32" />
+    <link rel="manifest" href="./manifest.webmanifest?v=33" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=32" />
+    <link rel="stylesheet" href="./styles.css?v=33" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -196,8 +196,8 @@
           </section>
 
           <section id="collectionsWorkspace" class="special-workspace collections-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">自由な一覧</p><h1>コレクション</h1><p>欲しい物・読みたい物などを、画像やURL付きでまとめます。</p></div></div>
-            <form class="journal-form collection-form" id="collectionForm"><input id="collectionCategory" required maxlength="50" placeholder="一覧の名前（例：読みたい本）" /><input id="collectionItem" required maxlength="180" placeholder="追加する内容" /><input id="collectionImage" type="url" maxlength="500" placeholder="画像URL（任意）" /><input id="collectionUrl" type="url" maxlength="500" placeholder="URL（任意）" /><button type="submit">追加</button></form>
+            <div class="page-heading"><div><p class="eyebrow">自由な一覧</p><h1>コレクション</h1><p>欲しい物・読みたい物などを、端末の画像やURL付きでまとめます。</p></div></div>
+            <form class="journal-form collection-form" id="collectionForm"><input id="collectionCategory" required maxlength="50" placeholder="一覧の名前（例：読みたい本）" /><input id="collectionItem" required maxlength="180" placeholder="追加する内容" /><input id="collectionImage" type="file" accept="image/*" aria-label="画像ファイル（任意）" /><input id="collectionUrl" type="url" maxlength="500" placeholder="URL（任意）" /><button type="submit">追加</button></form>
             <div class="collection-grid" id="collectionList"></div>
           </section>
 
@@ -308,7 +308,7 @@
               <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
               <article><h2>予定をまとめて見通す</h2><p>「予定」では、日付が決まった予定と月だけ決まった予定、期限つきタスクをまとめて確認できます。</p></article>
               <article><h2>Googleカレンダーと同期する</h2><p>「予定」の連携欄で一度接続すると、期限のあるタスクと日付が決まった予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
-              <article><h2>習慣と一覧を育てる</h2><p>「習慣」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを画像やURL付きでまとめられます。</p></article>
+              <article><h2>習慣と一覧を育てる</h2><p>「習慣」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを端末から選んだ画像やURL付きでまとめられます。</p></article>
               <article><h2>家計を把握する</h2><p>「家計簿」で月の予算を決め、収入と支出を登録します。月を切り替えると、その月の残り金額が分かります。</p></article>
               <article><h2>一日を振り返る</h2><p>完了したタスクと習慣を確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
               <article><h2>データを守る</h2><p>「データ管理」から全内容を一つのファイルへ書き出せます。別の端末では、そのファイルを選んで復元します。</p></article>
@@ -403,7 +403,7 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=32"></script>
-    <script src="./google-calendar.js?v=32"></script>
+    <script src="./app.js?v=33"></script>
+    <script src="./google-calendar.js?v=33"></script>
   </body>
 </html>

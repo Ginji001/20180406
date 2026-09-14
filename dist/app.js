@@ -178,6 +178,44 @@
     }
   }
 
+  function safeImageSource(value = "") {
+    const source = String(value || "").trim();
+    if (/^data:image\/(?:jpeg|png|webp);base64,[a-z0-9+/=]+$/i.test(source)) return source;
+    return safeExternalURL(source);
+  }
+
+  function collectionImageFromFile(file) {
+    if (!file) return Promise.resolve("");
+    if (!String(file.type || "").startsWith("image/")) return Promise.reject(new Error("画像ファイルを選んでください"));
+    if (file.size > 15 * 1024 * 1024) return Promise.reject(new Error("画像は15MB以下のものを選んでください"));
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error("画像を読み込めませんでした"));
+      reader.onload = () => {
+        const image = new Image();
+        image.onerror = () => reject(new Error("この画像形式は読み込めません"));
+        image.onload = () => {
+          const maxSide = 1200;
+          const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+          canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+          const context = canvas.getContext("2d");
+          if (!context) return reject(new Error("画像を処理できませんでした"));
+          context.fillStyle = "#ffffff";
+          context.fillRect(0, 0, canvas.width, canvas.height);
+          context.drawImage(image, 0, 0, canvas.width, canvas.height);
+          let dataURL = canvas.toDataURL("image/webp", 0.82);
+          if (!dataURL.startsWith("data:image/webp")) dataURL = canvas.toDataURL("image/jpeg", 0.82);
+          if (dataURL.length > 2500000) return reject(new Error("画像の保存サイズが大きすぎます。別の画像を選んでください"));
+          resolve(dataURL);
+        };
+        image.src = String(reader.result || "");
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
   function projectById(id) {
     return state.data.projects.find((project) => project.id === id);
   }
@@ -468,7 +506,7 @@
     $("#collectionList").innerHTML = groups.map((category) => {
       const items = state.data.collectionItems.filter((item) => item.category === category);
       return `<section><header><strong>${escapeHTML(category)}</strong><span>${items.length}件</span></header>${items.map((item) => {
-        const image = safeExternalURL(item.image);
+        const image = safeImageSource(item.image);
         const url = safeExternalURL(item.url);
         const imageMarkup = image ? `<img class="collection-image" src="${escapeHTML(image)}" alt="" loading="lazy" />` : '<span class="collection-image collection-image-placeholder" aria-hidden="true"></span>';
         return `<article><input type="checkbox" data-collection-check="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text)}を完了" />${imageMarkup}<div class="collection-item-body"><p class="${item.done ? "done" : ""}">${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(item.text)}</a>` : escapeHTML(item.text)}</p>${url ? `<a class="collection-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">URLを開く</a>` : ""}</div><button type="button" data-delete-collection="${item.id}">削除</button></article>`;
@@ -1147,21 +1185,38 @@
     showToast("予定を更新しました");
   });
 
-  $("#collectionForm").addEventListener("submit", (event) => {
+  $("#collectionForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const category = $("#collectionCategory").value.trim();
     const text = $("#collectionItem").value.trim();
-    const image = $("#collectionImage").value.trim();
     const url = $("#collectionUrl").value.trim();
     if (!category || !text) return;
-    if ((image && !safeExternalURL(image)) || (url && !safeExternalURL(url))) return showToast("画像URLとURLはhttpまたはhttpsで入力してください");
-    state.data.collectionItems.push({ id: uid(), category, text, image, url, done: false, createdAt: new Date().toISOString() });
-    $("#collectionItem").value = "";
-    $("#collectionImage").value = "";
-    $("#collectionUrl").value = "";
-    persist();
-    renderCollections();
-    showToast("コレクションへ追加しました");
+    if (url && !safeExternalURL(url)) return showToast("URLはhttpまたはhttpsで入力してください");
+    const submitButton = event.currentTarget.querySelector("button[type='submit']");
+    const originalLabel = submitButton.textContent;
+    submitButton.disabled = true;
+    submitButton.textContent = "画像を処理中…";
+    try {
+      const image = await collectionImageFromFile($("#collectionImage").files?.[0]);
+      const item = { id: uid(), category, text, image, url, done: false, createdAt: new Date().toISOString() };
+      state.data.collectionItems.push(item);
+      try {
+        persist();
+      } catch (_) {
+        state.data.collectionItems = state.data.collectionItems.filter((entry) => entry.id !== item.id);
+        throw new Error("保存容量が足りません。画像を減らしてからもう一度お試しください");
+      }
+      $("#collectionItem").value = "";
+      $("#collectionImage").value = "";
+      $("#collectionUrl").value = "";
+      renderCollections();
+      showToast("コレクションへ追加しました");
+    } catch (error) {
+      showToast(error.message || "画像を追加できませんでした");
+    } finally {
+      submitButton.disabled = false;
+      submitButton.textContent = originalLabel;
+    }
   });
   $("#collectionList").addEventListener("change", (event) => {
     const id = event.target.dataset.collectionCheck;
@@ -1339,7 +1394,7 @@
 
   if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=32"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=33"));
 
   function registerWebMCP() {
     const context = document.modelContext;
