@@ -489,8 +489,7 @@
       const iso = toISO(date);
       const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
       const events = state.data.events.filter((item) => item.date === iso);
-      const habits = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
-      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}${habits.slice(0, 2).map((habit) => `<span class="calendar-task calendar-habit" title="完了した習慣">✓ ${escapeHTML(habit.name)}</span>`).join("")}</div>`;
+      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.slice(0, 2).map((item) => `<button type="button" class="calendar-task calendar-event" data-event-date="${iso}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
     }).join("")}</div>`;
     const monthEvents = state.data.events.filter((item) => (item.date || item.month || "").startsWith(state.calendarMonth)).sort((a, b) => (a.date || `${a.month}-99`).localeCompare(b.date || `${b.month}-99`));
     $("#eventList").innerHTML = monthEvents.map((item) => {
@@ -1394,7 +1393,7 @@
 
   if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=33"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=34"));
 
   function registerWebMCP() {
     const context = document.modelContext;
