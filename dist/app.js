@@ -420,7 +420,7 @@
     $("#logDate").value ||= todayISO;
     $("#logFilterDate").value = state.logDate;
     const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt)));
-    $("#logList").innerHTML = logs.map((item) => `<article class="journal-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}</small></div><button type="button" data-delete-log="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
+    $("#logList").innerHTML = logs.map((item) => `<article class="journal-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
     $("#showAllLogs").textContent = state.showAllLogs ? "日付で絞る" : "すべて表示";
   }
 
@@ -1034,12 +1034,44 @@
     renderLogs();
   });
   $("#logList").addEventListener("click", (event) => {
+    const editId = event.target.closest("[data-edit-log]")?.dataset.editLog;
+    if (editId) {
+      const record = state.data.logs.find((item) => item.id === editId);
+      if (!record) return;
+      $("#logEditId").value = record.id;
+      $("#logEditDate").value = record.date || todayISO;
+      $("#logEditTime").value = record.time || "";
+      $("#logEditType").value = logTypeNames[record.type] ? record.type : "memo";
+      $("#logEditText").value = record.text || "";
+      $("#logEditDialog").showModal();
+      return;
+    }
     const id = event.target.closest("[data-delete-log]")?.dataset.deleteLog;
     if (!id || !window.confirm("この記録を削除しますか？")) return;
     state.data.logs = state.data.logs.filter((item) => item.id !== id);
     persist();
     renderLogs();
     showToast("記録を削除しました");
+  });
+  $("#logEditForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const record = state.data.logs.find((item) => item.id === $("#logEditId").value);
+    const date = $("#logEditDate").value;
+    const text = $("#logEditText").value.trim();
+    if (!record || !date || !text) return;
+    const time = $("#logEditTime").value;
+    Object.assign(record, {
+      date,
+      time: /^\d{2}:\d{2}$/.test(time) ? time : "",
+      type: logTypeNames[$("#logEditType").value] ? $("#logEditType").value : "memo",
+      text,
+      updatedAt: new Date().toISOString()
+    });
+    state.logDate = date;
+    persist();
+    $("#logEditDialog").close();
+    renderLogs();
+    showToast("記録を更新しました");
   });
 
   $("#calendarPrev").addEventListener("click", () => { state.calendarMonth = changeMonth(state.calendarMonth, -1); renderCombinedCalendar(); });
@@ -1280,7 +1312,7 @@
     installBtn.hidden = true;
   });
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=30"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=31"));
 
   function registerWebMCP() {
     const context = document.modelContext;

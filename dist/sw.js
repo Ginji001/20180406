@@ -1,9 +1,8 @@
-const CACHE = "hachiroku-techo-v30";
-const ASSETS = ["./about.html", "./privacy.html", "./terms.html", "./", "./index.html?v=30", "./styles.css?v=30", "./app.js?v=30", "./manifest.webmanifest?v=30", "./favicon.svg", "./icon-192.png", "./icon-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=30"];
+const CACHE = "hachiroku-techo-v31";
+const ASSETS = ["./about.html", "./privacy.html", "./terms.html", "./", "./index.html?v=31", "./styles.css?v=31", "./app.js?v=31", "./manifest.webmanifest?v=31", "./favicon.svg", "./icon-192.png", "./icon-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=31"];
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))));
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))));
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET" || new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(fetch(event.request).then((response) => { const copy = response.clone(); caches.open(CACHE).then((cache) => cache.put(event.request, copy)); return response; }).catch(() => caches.match(event.request).then((cached) => cached || caches.match("./index.html"))));
 });
-

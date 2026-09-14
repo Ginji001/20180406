@@ -199,7 +199,9 @@ body.home-page .content { height: calc(100dvh - 62px); padding: 24px 0 18px; ove
 .journal-symbol { font-size: 1.05rem; text-align: center; }
 .journal-row strong { display: block; overflow-wrap: anywhere; font-size: .78rem; }
 .journal-row small { display: block; margin-top: 4px; color: var(--muted); font-size: .65rem; }
+.journal-actions { display: flex; align-items: center; gap: 4px; }
 .journal-row button { border: 0; color: var(--danger); background: transparent; font-size: .67rem; }
+.journal-row button[data-edit-log] { color: var(--accent); }
 
 .calendar-controls { margin: 22px auto 12px; display: flex; align-items: center; justify-content: center; gap: 18px; }
 .calendar-controls button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--paper); font-size: 1.25rem; }
