@@ -531,3 +531,33 @@ body.dark .habit-calendar-item { color: #ffd0bd; background: #51362f; }
 .move-notice a { flex: 1; color: white; background: var(--accent); }
 .move-notice button { border: 1px solid #c9a24b; background: white; color: #3b2a22; }
 @media (max-width: 620px) { .save-error-bar { bottom: calc(82px + env(safe-area-inset-bottom)); flex-direction: column; align-items: stretch; } }
+
+/* v39：GTD（INBOXの整理・今日にする・習慣タスク・通知） */
+.gtd-panel { margin: -4px 0 14px; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.gtd-panel button { min-height: 46px; padding: 6px 10px; display: flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--line); border-radius: 10px; color: var(--text); background: var(--paper-2); font-size: .72rem; font-weight: 680; text-align: center; }
+.gtd-panel button em { min-width: 20px; padding: 1px 6px; border-radius: 999px; color: white; background: var(--accent); font-size: .62rem; font-style: normal; }
+.gtd-panel button em:empty { display: none; }
+.gtd-panel .gtd-main { flex-direction: column; gap: 1px; border-color: var(--accent); color: white; background: var(--accent); }
+.gtd-panel .gtd-main small { opacity: .9; font-size: .62rem; font-weight: 600; }
+.gtd-panel .gtd-main:disabled { border-color: var(--line); color: var(--muted); background: var(--paper-2); cursor: default; }
+.triage-dialog .triage-inner { padding: 22px; }
+.triage-dialog h2 { overflow-wrap: anywhere; }
+.triage-note { margin: 6px 0 0; color: var(--muted); font-size: .72rem; white-space: pre-wrap; }
+.triage-steps { margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; list-style: none; }
+.triage-steps li { padding-top: 7px; border-top: 4px solid var(--line); color: var(--muted); font-size: .6rem; text-align: center; }
+.triage-steps li.done { border-color: var(--calm); }
+.triage-steps li.current { border-color: var(--accent); color: var(--text); font-weight: 700; }
+.triage-question { margin: 0 0 14px; font-size: 1.02rem; font-weight: 700; }
+.triage-choices { display: grid; gap: 9px; }
+.triage-choices button { min-height: 52px; padding: 0 16px; border: 1px solid var(--strong-line); border-radius: 11px; color: var(--text); background: var(--paper); font-size: .86rem; font-weight: 700; }
+.triage-choices .primary { border-color: var(--accent); color: white; background: var(--accent); }
+.triage-choices .danger { color: var(--danger); }
+.triage-foot { margin-top: 18px; display: flex; justify-content: space-between; gap: 8px; }
+.triage-foot button { min-height: 40px; padding: 0 12px; border: 0; color: var(--muted); background: transparent; font-size: .74rem; font-weight: 680; }
+.triage-foot button:disabled { opacity: .35; }
+@media (max-width: 620px) {
+  .gtd-panel { grid-template-columns: 1fr 1fr; }
+  .gtd-panel .gtd-main { grid-column: 1 / -1; min-height: 54px; }
+  .triage-dialog { width: 100%; max-width: 100%; max-height: 92dvh; margin: auto 0 0; border-radius: 18px 18px 0 0; }
+  .triage-dialog .triage-inner { padding: 20px 16px calc(20px + env(safe-area-inset-bottom)); }
+}

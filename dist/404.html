@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=38" />
+    <link rel="manifest" href="./manifest.webmanifest?v=39" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=38" />
+    <link rel="stylesheet" href="./styles.css?v=39" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -97,6 +97,11 @@
                   <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
                   <button type="submit">追加</button>
                 </form>
+                <div class="gtd-panel" id="gtdPanel">
+                  <button type="button" class="gtd-main" id="triageBtn"><strong>INBOXを整理する</strong><small id="triageCount">未整理 0件</small></button>
+                  <button type="button" id="todayAllBtn">⤓ 期限切れを今日に<em id="todayAllCount"></em></button>
+                  <button type="button" id="habitTasksBtn">◉ 習慣を今日のタスクに</button>
+                </div>
                 <div class="toolbar">
                   <div class="view-switch" id="viewSwitch" aria-label="表示形式">
                     <button class="active" data-mode="list">一覧</button><button data-mode="table">表</button><button data-mode="week">週</button><button data-mode="month">月</button>
@@ -109,7 +114,7 @@
                 <div class="bulk-bar" id="bulkBar" hidden>
                   <strong id="selectedCount">0件選択</strong>
                   <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
-                  <button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
+                  <button data-bulk="today">今日にする</button><button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
                 </div>
                 <div id="taskContent"></div>
               </section>
@@ -313,7 +318,7 @@
             </div>
 
             <div class="help-section help-details">
-              <article><h2>タスクを整理する</h2><p>INBOXに集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。項目を開いて「手帳へ振り分け」を押すと、記録・予定・習慣・コレクション・ドキュメント・家計簿・振り返りへ移せます。左端の四角を選ぶと一括操作もできます。</p></article>
+              <article><h2>タスクを整理する</h2><p>INBOXに集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。項目を開いて「手帳へ振り分け」を押すと、記録・予定・習慣・コレクション・ドキュメント・家計簿・振り返りへ移せます。左端の四角を選ぶと一括操作もできます。「INBOXを整理する」を押すと、質問に答えるだけで1件ずつ振り分けられます。</p></article>
               <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
               <article><h2>予定をまとめて見通す</h2><p>「予定」では、日付が決まった予定と月だけ決まった予定、期限つきタスクをまとめて確認できます。</p></article>
               <article><h2>Googleカレンダーと同期する</h2><p>「予定」の連携欄で一度接続すると、期限のあるタスクと日付が決まった予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
@@ -357,6 +362,7 @@
         <div class="field-grid">
           <label class="field"><span>フォルダー</span><select id="taskFolder"><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select></label>
           <label class="field"><span>期限</span><input id="taskDue" type="date" /></label>
+          <label class="field"><span>通知する時刻</span><input id="taskTime" type="time" /></label>
           <label class="field"><span>優先度</span><select id="taskPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
           <label class="field"><span>タグ</span><select id="taskTag"><option value="">なし</option><option value="work">仕事</option><option value="private">プライベート</option></select></label>
           <label class="field"><span>プロジェクト</span><select id="taskProject"></select></label>
@@ -364,10 +370,19 @@
         </div>
         <label class="check-field"><input id="taskPinned" type="checkbox" /> 今日の「固定したタスク」に表示</label>
         <label class="field"><span>メモ</span><textarea id="taskNotes" rows="4" maxlength="500" placeholder="必要な情報を残せます"></textarea></label>
-        <div class="dialog-actions"><button type="button" id="routeItemBtn">手帳へ振り分け</button><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
+        <div class="dialog-actions"><button type="button" id="tomorrowTaskBtn" hidden>明日へ</button><button type="button" id="routeItemBtn">手帳へ振り分け</button><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
       </form>
     </dialog>
 
+
+    <dialog id="triageDialog" class="triage-dialog">
+      <div class="triage-inner">
+        <div class="dialog-head"><div><small id="triageProgress">INBOXを整理</small><h2 id="triageTitle"></h2><p class="triage-note" id="triageNote"></p></div><button type="button" class="icon-button" id="triageClose" aria-label="閉じる">×</button></div>
+        <ol class="triage-steps" id="triageSteps" aria-hidden="true"><li>行動</li><li>手順</li><li>待ち</li><li>日時</li><li>2分</li></ol>
+        <div id="triageBody"></div>
+        <div class="triage-foot"><button type="button" id="triageBack">← 戻る</button><button type="button" id="triageSkip">あとで決める →</button></div>
+      </div>
+    </dialog>
     <dialog id="projectDialog">
       <form id="projectForm">
         <div class="dialog-head"><div><small>プロジェクト</small><h2>プロジェクトを追加</h2></div><button type="button" class="icon-button" data-close="project">×</button></div>
@@ -413,8 +428,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=38"></script>
-    <script src="./cloud-sync.js?v=38" defer></script>
-    <script src="./google-calendar.js?v=38"></script>
+    <script src="./app.js?v=39"></script>
+    <script src="./cloud-sync.js?v=39" defer></script>
+    <script src="./google-calendar.js?v=39"></script>
   </body>
 </html>
