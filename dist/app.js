@@ -1392,7 +1392,14 @@
 
   if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=36"));
+  window.hachirokuApp = {
+    replaceData(next) {
+      state.data = normalizeData(next);
+      render();
+    }
+  };
+
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=37"));
 
   function registerWebMCP() {
     const context = document.modelContext;

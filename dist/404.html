@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=36" />
+    <link rel="manifest" href="./manifest.webmanifest?v=37" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=36" />
+    <link rel="stylesheet" href="./styles.css?v=37" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -224,7 +224,16 @@
               <label>ファイルから復元<input id="dataImportInput" type="file" accept="application/json,.json" /></label>
               <button type="button" id="dataBackupBtn">詳細を開く</button>
             </div>
-            <p class="data-note">データはこの端末のブラウザ内に保存されます。別の端末へ移す場合は、書き出したファイルを新しい端末で復元してください。</p>
+            <p class="data-note">データはこの端末のブラウザ内に保存されます。下の「端末間の同期」をオンにすると、ほかの端末とも自動で共有できます。</p>
+            <section class="cloud-sync-panel" id="cloudSyncPanel">
+              <div class="cloud-sync-head">
+                <div><p class="help-kicker">端末間の同期</p><h2>iPhone・Mac・Windowsで同じ記録を使う</h2><p id="cloudSyncStatus">オフです。</p></div>
+                <span class="cloud-sync-badge" id="cloudSyncBadge">オフ</span>
+              </div>
+              <p class="cloud-sync-account" id="cloudSyncAccount" hidden></p>
+              <div class="cloud-sync-actions"><button type="button" id="cloudSyncBtn">Googleでログインして同期</button><button type="button" id="cloudSyncStopBtn" hidden>ログアウト（同期をやめる）</button></div>
+              <p class="data-note">使う端末それぞれで、同じGoogleアカウントでログインしてください。入力した内容は数秒でほかの端末にも反映されます。通信がないときもこれまでどおり記録でき、つながったときに自動で同期します。記録はログインしたご本人だけが読み書きできる場所に保存されます。</p>
+            </section>
           </section>
 
           <section id="reflectionWorkspace" class="special-workspace reflection-workspace" hidden>
@@ -403,7 +412,9 @@
     </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
-    <script src="./app.js?v=36"></script>
-    <script src="./google-calendar.js?v=36"></script>
+    <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
+    <script src="./app.js?v=37"></script>
+    <script src="./cloud-sync.js?v=37" defer></script>
+    <script src="./google-calendar.js?v=37"></script>
   </body>
 </html>

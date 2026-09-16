@@ -503,3 +503,18 @@ body.dark .habit-calendar-item { color: #ffd0bd; background: #51362f; }
   .google-calendar-controls { grid-template-columns: 1fr; }
   .google-calendar-actions button { flex: 1 1 140px; }
 }
+.cloud-sync-panel { margin-top: 22px; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.cloud-sync-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.cloud-sync-head h2 { margin: 0 0 6px; font-size: 1rem; }
+.cloud-sync-head p:not(.help-kicker) { margin: 0; color: var(--muted); font-size: .76rem; line-height: 1.6; }
+#cloudSyncStatus[data-tone="error"] { color: var(--danger); font-weight: 700; }
+.cloud-sync-badge { flex: none; padding: 4px 9px; border-radius: 999px; color: var(--muted); background: var(--paper-2); font-size: .68rem; font-weight: 700; }
+.cloud-sync-badge.connected { color: white; background: var(--accent); }
+.cloud-sync-badge.syncing, .cloud-sync-badge.waiting { color: var(--accent); background: var(--accent-soft); }
+.cloud-sync-actions { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px; }
+.cloud-sync-actions button { min-height: 44px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); background: var(--paper); font-size: .8rem; font-weight: 700; }
+.cloud-sync-actions button:first-child { border-color: var(--accent); color: white; background: var(--accent); }
+.cloud-sync-actions button:disabled { opacity: .6; }
+.cloud-sync-pill { position: fixed; z-index: 60; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; color: white; background: var(--accent); font-size: .78rem; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+.cloud-sync-pill[hidden] { display: none; }
+.cloud-sync-account { margin: 12px 0 0; color: var(--text); font-size: .78rem; font-weight: 700; overflow-wrap: anywhere; }
