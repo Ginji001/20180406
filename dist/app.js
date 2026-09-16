@@ -494,9 +494,8 @@
   function renderHomeJournal() {
     const area = $("#homeJournal");
     const home = state.view === "inbox" && !state.projectId;
-    area.hidden = !home;
-    if (area.hidden) return;
-    $("#homeLogDate").value ||= todayISO;
+    area.hidden = true; // v40：ホームの記録欄はINBOXの入力欄に統合
+    $("#quickDate").value ||= todayISO;
   }
 
   function renderLogs() {
@@ -1030,21 +1029,29 @@
     if (type === "task") {
       createTask({ title: text, priority: $("#quickPriority").value, folder: "inbox" });
       showToast("INBOXへ追加しました");
-    } else if (type === "event") {
-      state.data.events.push({ id: uid(), date: todayISO, title: text, createdAt: new Date().toISOString() });
+    } else if (type === "schedule") {
+      const date = $("#quickDate").value || todayISO;
+      state.data.events.push({ id: uid(), date, title: text, createdAt: new Date().toISOString() });
       persist();
       render();
-      showToast("今日の予定へ追加しました");
+      showToast(`${formatDate(date)}の予定へ追加しました`);
     } else {
-      createLog(type, text, todayISO);
+      const date = $("#quickDate").value || todayISO;
+      createLog(type, text, date, $("#quickTime").value);
+      state.logDate = date;
       render();
-      showToast("今日の記録へ追加しました");
+      showToast(date === todayISO ? "今日の記録へ追加しました" : `${formatDate(date)}の記録へ追加しました`);
     }
     $("#quickTaskInput").value = "";
+    $("#quickTime").value = "";
   });
 
   $("#quickType").addEventListener("change", (event) => {
-    $("#quickPriority").hidden = event.target.value !== "task";
+    const task = event.target.value === "task";
+    $("#quickPriority").hidden = !task;
+    $("#quickWhen").hidden = task;
+    $("#quickDate").value ||= todayISO;
+    $("#quickTaskInput").placeholder = task ? "INBOXに追加…" : "手帳に記録する内容…";
   });
 
   $("#taskForm").addEventListener("submit", (event) => {
@@ -1679,7 +1686,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=39"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=40"));
 
   function registerWebMCP() {
     const context = document.modelContext;
