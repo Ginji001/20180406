@@ -311,6 +311,11 @@ body.home-page .content { height: calc(100dvh - 62px); padding: 24px 0 18px; ove
 .reflection-card-head button { min-height: 30px; padding: 0 7px; border: 0; color: var(--muted); background: transparent; font-size: .68rem; }
 .reflection-card-head .danger-text { color: var(--danger); }
 .reflection-card > p { margin: 12px 0; color: var(--text); font-size: .82rem; line-height: 1.65; white-space: pre-wrap; }
+.reflection-details { margin: 12px 0; display: grid; gap: 8px; }
+.reflection-detail { padding: 8px 10px; border-radius: 8px; background: var(--paper-2); }
+.reflection-detail dt { color: var(--muted); font-size: .66rem; font-weight: 700; }
+.reflection-detail dd { margin: 3px 0 0; color: var(--text); font-size: .82rem; line-height: 1.65; white-space: pre-wrap; overflow-wrap: anywhere; }
+.reflection-empty { color: var(--muted); font-size: .74rem; }
 .reflection-card footer { display: flex; gap: 6px; }
 .reflection-card footer span { padding: 3px 7px; border-radius: 999px; color: var(--muted); background: var(--paper-2); font-size: .66rem; }
 

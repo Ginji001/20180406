@@ -574,12 +574,13 @@
     const records = [...state.data.reflections].sort((a, b) => b.date.localeCompare(a.date));
     $("#reflectionHistoryCount").textContent = `${records.length}日分`;
     $("#reflectionHistory").innerHTML = records.map((record) => {
-      const details = [record.good, record.learned, record.tomorrow, record.note].filter(Boolean);
+      const details = [["よかったこと", record.good], ["気づいたこと", record.learned], ["明日やること", record.tomorrow], ["ひとことメモ", record.note]]
+        .map(([label, value]) => `<div class="reflection-detail"><dt>${label}</dt><dd>${value ? escapeHTML(value) : '<span class="reflection-empty">未記入</span>'}</dd></div>`).join("");
       const completed = Number(record.completedCount) || 0;
       const habits = Number(record.habitCount) || 0;
       return `<article class="reflection-card">
         <div class="reflection-card-head"><div><span class="reflection-face">${moodFaces[record.mood] || moodFaces[3]}</span><div><strong>${formatFullDate(record.date)}</strong><small>${moodNames[record.mood] || moodNames[3]}</small></div></div><div><button type="button" data-edit-reflection="${record.date}">編集</button><button type="button" class="danger-text" data-delete-reflection="${record.id}">削除</button></div></div>
-        <p>${escapeHTML(details[0] || "記録があります")}</p>
+        <dl class="reflection-details">${details}</dl>
         <footer><span>完了 ${completed}件</span><span>習慣 ${habits}件</span></footer>
       </article>`;
     }).join("") || '<div class="empty-state"><strong>振り返りはまだありません</strong><span>今日の気分や、よかったことから記録してみましょう。</span></div>';
@@ -1391,7 +1392,7 @@
 
   if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=35"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=36"));
 
   function registerWebMCP() {
     const context = document.modelContext;
