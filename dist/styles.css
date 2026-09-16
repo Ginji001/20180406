@@ -518,3 +518,16 @@ body.dark .habit-calendar-item { color: #ffd0bd; background: #51362f; }
 .cloud-sync-pill { position: fixed; z-index: 60; top: calc(env(safe-area-inset-top, 0px) + 10px); right: 12px; min-height: 40px; padding: 0 14px; border: 0; border-radius: 999px; color: white; background: var(--accent); font-size: .78rem; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 .cloud-sync-pill[hidden] { display: none; }
 .cloud-sync-account { margin: 12px 0 0; color: var(--text); font-size: .78rem; font-weight: 700; overflow-wrap: anywhere; }
+
+/* 保存失敗・URL移転のお知らせ */
+.save-error-bar, .move-notice { position: fixed; left: 50%; z-index: 95; width: min(620px, calc(100% - 24px)); transform: translateX(-50%); display: flex; gap: 10px; align-items: center; padding: 12px 14px; border-radius: 12px; box-shadow: var(--shadow); font-size: .82rem; line-height: 1.5; }
+.save-error-bar { bottom: calc(24px + env(safe-area-inset-bottom)); color: white; background: var(--danger); }
+.move-notice { position: relative; left: auto; transform: none; margin: calc(10px + env(safe-area-inset-top)) auto 10px; color: #3b2a22; background: #fff4d6; border: 1px solid #e6c77a; flex-direction: column; align-items: stretch; }
+.save-error-bar[hidden], .move-notice[hidden] { display: none; }
+.save-error-bar p, .move-notice p { margin: 0; flex: 1; }
+.save-error-bar div, .move-notice div { display: flex; gap: 8px; flex-shrink: 0; }
+.save-error-bar button { min-height: 40px; padding: 0 12px; border: 1px solid rgba(255,255,255,.7); border-radius: 9px; color: white; background: transparent; font-weight: 700; }
+.move-notice a, .move-notice button { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; padding: 0 14px; border-radius: 10px; font-weight: 700; font-size: .86rem; text-decoration: none; }
+.move-notice a { flex: 1; color: white; background: var(--accent); }
+.move-notice button { border: 1px solid #c9a24b; background: white; color: #3b2a22; }
+@media (max-width: 620px) { .save-error-bar { bottom: calc(82px + env(safe-area-inset-bottom)); flex-direction: column; align-items: stretch; } }

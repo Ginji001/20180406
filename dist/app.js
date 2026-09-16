@@ -160,7 +160,44 @@
   const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－" };
 
   function persist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
+      hideSaveError();
+      return true;
+    } catch (error) {
+      notifySaveError(error);
+      return false;
+    }
+  }
+
+  function isQuotaError(error) {
+    return error && (error.name === "QuotaExceededError" || error.name === "NS_ERROR_DOM_QUOTA_REACHED" || error.code === 22 || error.code === 1014);
+  }
+
+  function notifySaveError(error) {
+    let bar = document.getElementById("saveErrorBar");
+    if (!bar) {
+      bar = document.createElement("div");
+      bar.id = "saveErrorBar";
+      bar.className = "save-error-bar";
+      bar.setAttribute("role", "alert");
+      bar.innerHTML = '<p></p><div><button type="button" data-act="backup">バックアップ</button><button type="button" data-act="close" aria-label="閉じる">×</button></div>';
+      bar.addEventListener("click", (event) => {
+        const act = event.target.closest("button")?.dataset.act;
+        if (act === "close") bar.hidden = true;
+        if (act === "backup") document.querySelector('[data-view="data"]')?.click();
+      });
+      document.body.appendChild(bar);
+    }
+    bar.querySelector("p").textContent = isQuotaError(error)
+      ? "保存できませんでした。端末の保存容量がいっぱいです。不要な記録を削除するか、データ管理からバックアップを保存してください。このまま閉じると直前の変更は消えます。"
+      : "保存できませんでした。このまま閉じると直前の変更は消えます。データ管理からバックアップを保存してください。";
+    bar.hidden = false;
+  }
+
+  function hideSaveError() {
+    const bar = document.getElementById("saveErrorBar");
+    if (bar) bar.hidden = true;
   }
 
   function escapeHTML(value = "") {
@@ -954,7 +991,7 @@
       $("#routeDialog").close();
       setView(destination);
       showToast(items.length + "件を振り分けました");
-    } catch (error) { $("#routeError").textContent = error.message; }
+    } catch (error) { $("#routeError").textContent = isQuotaError(error) ? "端末の保存容量がいっぱいで保存できませんでした。不要な記録を削除してから、もう一度お試しください。" : error.message; }
   });
 
   $("#newTaskBtn").addEventListener("click", () => openTask());
@@ -1315,7 +1352,7 @@
   if (settings.dark) document.body.classList.add("dark");
   $("#themeBtn").addEventListener("click", () => {
     document.body.classList.toggle("dark");
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify({ dark: document.body.classList.contains("dark") }));
+    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ dark: document.body.classList.contains("dark") })); } catch (error) { notifySaveError(error); }
   });
 
   $("#backupBtn").addEventListener("click", () => elements.backupDialog.showModal());
@@ -1396,10 +1433,22 @@
     replaceData(next) {
       state.data = normalizeData(next);
       render();
-    }
+    },
+    notifySaveError
   };
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=37"));
+  // 旧URL（GitHub Pages）で開いたときは新URLへ案内する
+  if (location.hostname === "ginji001.github.io") {
+    const moveBar = document.createElement("div");
+    moveBar.className = "move-notice";
+    moveBar.setAttribute("role", "status");
+    moveBar.innerHTML = '<p><strong>ハチロク手帳は新しいURLに引っ越しました。</strong>このURLは今後使えなくなります。記録はURLごとに別々に保存されているため、先にこの画面の「データ管理」でGoogleログインして同期するか、バックアップを保存してから移ってください。</p><div><a href="https://hachiroku-techo.pages.dev/">新しいURLを開く</a><button type="button" data-act="sync">データ管理</button></div>';
+    moveBar.querySelector("[data-act=sync]").addEventListener("click", () => document.querySelector('[data-view="data"]')?.click());
+    document.body.prepend(moveBar);
+    document.body.classList.add("has-move-notice");
+  }
+
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=38"));
 
   function registerWebMCP() {
     const context = document.modelContext;

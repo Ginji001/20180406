@@ -61,7 +61,12 @@
   }
 
   function saveData(data) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      window.hachirokuApp?.notifySaveError?.(error);
+      throw error;
+    }
   }
 
   function connected() {
