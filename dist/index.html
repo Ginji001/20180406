@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=41" />
+    <link rel="manifest" href="./manifest.webmanifest?v=42" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=41" />
+    <link rel="stylesheet" href="./styles.css?v=42" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -151,9 +151,10 @@
           <section id="habitsWorkspace" class="special-workspace" hidden>
             <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>習慣</h1><p>習慣専用の月間カレンダーで達成日を確認し、今日の習慣をチェックします。</p></div></div>
             <div class="calendar-controls habit-calendar-controls"><button type="button" id="habitCalendarPrev" aria-label="前の月">‹</button><strong id="habitCalendarMonthLabel"></strong><button type="button" id="habitCalendarNext" aria-label="次の月">›</button></div>
-            <p class="habit-calendar-help">✓ は達成した習慣です。このカレンダーはGoogleカレンダーとは連携しません。</p>
+            <p class="habit-calendar-help">✓ は達成した習慣です。日にちを押すと、その日の記録を直せます。</p>
             <div id="habitCalendar" class="habit-calendar"></div>
             <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しい習慣" /><button>追加</button></form>
+            <div class="habit-day-head"><strong id="habitDayLabel">今日の習慣</strong><input id="habitDate" type="date" aria-label="編集する日付" /><button type="button" id="habitTodayBtn" hidden>今日に戻る</button></div>
             <div id="habitList" class="habit-list"></div>
           </section>
 
@@ -429,8 +430,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=41"></script>
-    <script src="./cloud-sync.js?v=41" defer></script>
-    <script src="./google-calendar.js?v=41"></script>
+    <script src="./app.js?v=42"></script>
+    <script src="./cloud-sync.js?v=42" defer></script>
+    <script src="./google-calendar.js?v=42"></script>
   </body>
 </html>

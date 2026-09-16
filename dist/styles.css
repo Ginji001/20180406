@@ -570,3 +570,14 @@ body.dark .habit-calendar-item { color: #ffd0bd; background: #51362f; }
 
 /* v41：ホームではGTDボタンを出さない（タスクの各画面にだけ表示） */
 .home-mode .gtd-panel { display: none; }
+
+/* v42：習慣の過去日を編集 */
+button.habit-calendar-day { display: block; width: 100%; margin: 0; border-left: 0; border-bottom: 0; border-radius: 0; color: inherit; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+button.habit-calendar-day:disabled { cursor: default; }
+button.habit-calendar-day.today { background: #fff0d6; }
+button.habit-calendar-day.selected { box-shadow: inset 0 0 0 2px var(--accent); }
+body.dark button.habit-calendar-day.today { background: #4a3923; }
+.habit-day-head { margin: 0 0 8px; display: flex; align-items: center; gap: 8px; scroll-margin-top: 80px; }
+.habit-day-head strong { flex: 1; font-size: .92rem; }
+.habit-day-head input { min-height: 36px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--paper); font-size: .74rem; }
+.habit-day-head button { min-height: 36px; padding: 0 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--paper-2); font-size: .7rem; }

@@ -86,6 +86,7 @@
     priority: "all",
     calendarMonth: todayISO.slice(0, 7),
     habitMonth: todayISO.slice(0, 7),
+    habitDate: todayISO,
     logDate: todayISO,
     showAllLogs: false,
     selected: new Set(),
@@ -469,15 +470,21 @@
     $("#habitCalendar").innerHTML = `<div class="calendar habit-calendar-grid">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
       const iso = toISO(date);
       const completed = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
-      return `<div class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${completed.slice(0, 4).map((item) => `<span class="habit-calendar-item">✓ ${escapeHTML(item.name)}</span>`).join("") || '<span class="habit-calendar-empty">—</span>'}</div>`;
+      const future = iso > todayISO;
+      return `<button type="button" class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""} ${iso === state.habitDate ? "selected" : ""}" data-habit-day="${iso}" ${future ? "disabled" : ""} aria-label="${formatFullDate(iso)}の習慣を編集"><span class="day-number">${date.getDate()}</span>${completed.slice(0, 4).map((item) => `<span class="habit-calendar-item">✓ ${escapeHTML(item.name)}</span>`).join("") || '<span class="habit-calendar-empty">—</span>'}</button>`;
     }).join("")}</div>`;
   }
 
   function renderHabits() {
     renderHabitCalendar();
+    const day = state.habitDate;
+    $("#habitDayLabel").textContent = day === todayISO ? "今日の習慣" : `${formatDate(day)}の習慣`;
+    $("#habitDate").value = day;
+    $("#habitDate").max = todayISO;
+    $("#habitTodayBtn").hidden = day === todayISO;
     $("#habitList").innerHTML = state.data.habits.map((item) => {
-      const done = Array.isArray(item.dates) && item.dates.includes(todayISO);
-      return `<article class="habit-item"><input type="checkbox" data-habit="${item.id}" ${done ? "checked" : ""} aria-label="${escapeHTML(item.name)}を今日完了" /><label>${escapeHTML(item.name)}</label><button data-delete-habit="${item.id}">削除</button></article>`;
+      const done = Array.isArray(item.dates) && item.dates.includes(day);
+      return `<article class="habit-item"><input type="checkbox" data-habit="${item.id}" ${done ? "checked" : ""} aria-label="${escapeHTML(item.name)}を${day === todayISO ? "今日" : formatDate(day)}に完了" /><label>${escapeHTML(item.name)}</label><button data-delete-habit="${item.id}">削除</button></article>`;
     }).join("") || emptyState();
   }
 
@@ -1291,11 +1298,27 @@
     const habit = state.data.habits.find((item) => item.id === id);
     if (!habit) return;
     habit.dates = Array.isArray(habit.dates) ? habit.dates : [];
-    if (event.target.checked && !habit.dates.includes(todayISO)) habit.dates.push(todayISO);
-    if (!event.target.checked) habit.dates = habit.dates.filter((date) => date !== todayISO);
+    const day = state.habitDate;
+    if (event.target.checked && !habit.dates.includes(day)) habit.dates.push(day);
+    if (!event.target.checked) habit.dates = habit.dates.filter((date) => date !== day);
     persist();
     renderHabits();
+    if (day !== todayISO) showToast(`${formatDate(day)}の記録を更新しました`);
   });
+  function selectHabitDate(iso) {
+    if (!iso || iso > todayISO) return;
+    state.habitDate = iso;
+    state.habitMonth = iso.slice(0, 7);
+    renderHabits();
+  }
+  $("#habitCalendar").addEventListener("click", (event) => {
+    const iso = event.target.closest("[data-habit-day]")?.dataset.habitDay;
+    if (!iso) return;
+    selectHabitDate(iso);
+    $("#habitDayLabel").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  $("#habitDate").addEventListener("change", (event) => selectHabitDate(event.target.value));
+  $("#habitTodayBtn").addEventListener("click", () => selectHabitDate(todayISO));
   $("#habitList").addEventListener("click", (event) => {
     const id = event.target.closest("[data-delete-habit]")?.dataset.deleteHabit;
     if (!id || !window.confirm("この習慣を削除しますか？")) return;
@@ -1686,7 +1709,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=41"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=42"));
 
   function registerWebMCP() {
     const context = document.modelContext;
