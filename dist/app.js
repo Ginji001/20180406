@@ -979,7 +979,7 @@
       notified[`${task.id}|${task.due}|${task.time}`] = Date.now();
       const body = `${formatDate(task.due)} ${task.time}　${folderNames[task.folder] || ""}`;
       if ("Notification" in window && Notification.permission === "granted" && navigator.serviceWorker?.ready) {
-        navigator.serviceWorker.ready.then((registration) => registration.showNotification(task.title, { body, tag: task.id, icon: "./icon-192.png" })).catch(() => showToast(`⏰ ${task.title}`));
+        navigator.serviceWorker.ready.then((registration) => registration.showNotification(task.title, { body, tag: task.id, icon: "./icon-cat-192.png" })).catch(() => showToast(`⏰ ${task.title}`));
       } else {
         showToast(`⏰ ${task.title}`);
       }
@@ -1712,7 +1712,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=43"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=44"));
 
   function registerWebMCP() {
     const context = document.modelContext;

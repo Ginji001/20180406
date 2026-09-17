@@ -1,5 +1,5 @@
-const CACHE = "hachiroku-techo-v43";
-const ASSETS = ["./about.html", "./privacy.html", "./terms.html", "./", "./index.html?v=43", "./styles.css?v=43", "./app.js?v=43", "./manifest.webmanifest?v=43", "./favicon.svg", "./icon-192.png", "./icon-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=43", "./cloud-sync.js?v=43"];
+const CACHE = "hachiroku-techo-v44";
+const ASSETS = ["./about.html", "./privacy.html", "./terms.html", "./", "./index.html?v=44", "./styles.css?v=44", "./app.js?v=44", "./manifest.webmanifest?v=44", "./favicon-cat.png", "./apple-touch-icon.png", "./icon-cat-192.png", "./icon-cat-512.png", "./icon-cat-maskable-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=44", "./cloud-sync.js?v=44"];
 self.addEventListener("install", (event) => event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))));
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))));
 self.addEventListener("fetch", (event) => {
