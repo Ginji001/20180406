@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=42" />
+    <link rel="manifest" href="./manifest.webmanifest?v=43" />
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link rel="apple-touch-icon" href="./icon-192.png" />
-    <link rel="stylesheet" href="./styles.css?v=42" />
+    <link rel="stylesheet" href="./styles.css?v=43" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -93,9 +93,10 @@
                 <form class="capture" id="quickAddForm">
                   <span class="capture-icon">＋</span>
                   <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="schedule">▦ 予定（カレンダー）</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
-                  <input id="quickTaskInput" required maxlength="300" autocomplete="off" placeholder="INBOXに追加…" />
+                  <input id="quickTaskInput" required maxlength="300" autocomplete="off" placeholder="タイトル（INBOXに追加…）" aria-label="タイトル" />
                   <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
                   <button type="submit">追加</button>
+                  <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="内容（くわしく書く・任意）" aria-label="内容"></textarea>
                   <div class="capture-when" id="quickWhen" hidden><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="記録する時刻" /></div>
                 </form>
                 <div class="gtd-panel" id="gtdPanel">
@@ -403,7 +404,7 @@
           <label class="field"><span>時刻</span><input id="logEditTime" type="time" /></label>
         </div>
         <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select></label>
-        <label class="field"><span>内容</span><textarea id="logEditText" required maxlength="300" rows="5"></textarea></label>
+        <label class="field"><span>内容</span><textarea id="logEditText" required maxlength="1200" rows="5"></textarea></label>
         <div class="dialog-actions"><button type="button" data-close="logEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
       </form>
     </dialog>
@@ -430,8 +431,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=42"></script>
-    <script src="./cloud-sync.js?v=42" defer></script>
-    <script src="./google-calendar.js?v=42"></script>
+    <script src="./app.js?v=43"></script>
+    <script src="./cloud-sync.js?v=43" defer></script>
+    <script src="./google-calendar.js?v=43"></script>
   </body>
 </html>
