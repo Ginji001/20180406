@@ -1036,7 +1036,10 @@
     const type = $("#quickType").value;
     if (type === "task") {
       createTask({ title: text, notes: detail, priority: $("#quickPriority").value, folder: "inbox" });
-      showToast("INBOXへ追加しました");
+      createLog("memo", detail ? `${text}\n${detail}` : text, todayISO); // v46：INBOXに入れたら今日の記録にも残す
+      state.logDate = todayISO;
+      render();
+      showToast("INBOXと今日の記録へ追加しました");
     } else if (type === "schedule") {
       const date = $("#quickDate").value || todayISO;
       state.data.events.push({ id: uid(), date, title: text, ...(detail ? { note: detail } : {}), createdAt: new Date().toISOString() });
@@ -1712,7 +1715,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=45"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=46"));
 
   function registerWebMCP() {
     const context = document.modelContext;
