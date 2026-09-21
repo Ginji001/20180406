@@ -160,7 +160,25 @@
   const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと" };
   const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－" };
 
+  // v47：INBOXから作った記録（taskId付き）はタスクのタイトル・内容と常に同じにする
+  function inboxLogText(task) {
+    const title = String(task.title || "").trim();
+    const notes = String(task.notes || "").trim();
+    return notes ? `${title}\n${notes}` : title;
+  }
+
+  function syncInboxLogs() {
+    const tasks = new Map(state.data.tasks.map((task) => [task.id, task]));
+    state.data.logs.forEach((log) => {
+      const task = log.taskId && tasks.get(log.taskId);
+      if (!task) return;
+      const text = inboxLogText(task);
+      if (text && log.text !== text) log.text = text;
+    });
+  }
+
   function persist() {
+    syncInboxLogs();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
       hideSaveError();
@@ -1035,8 +1053,9 @@
     const detail = $("#quickDetail").value.trim();
     const type = $("#quickType").value;
     if (type === "task") {
-      createTask({ title: text, notes: detail, priority: $("#quickPriority").value, folder: "inbox" });
-      createLog("memo", detail ? `${text}\n${detail}` : text, todayISO); // v46：INBOXに入れたら今日の記録にも残す
+      const task = createTask({ title: text, notes: detail, priority: $("#quickPriority").value, folder: "inbox" });
+      state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date: todayISO, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
+      persist();
       state.logDate = todayISO;
       render();
       showToast("INBOXと今日の記録へ追加しました");
@@ -1395,6 +1414,11 @@
     const text = $("#logEditText").value.trim();
     if (!record || !date || !text) return;
     const time = $("#logEditTime").value;
+    const linked = record.taskId && state.data.tasks.find((task) => task.id === record.taskId);
+    if (linked) {
+      const [head, ...rest] = text.split("\n");
+      Object.assign(linked, { title: head.trim() || linked.title, notes: rest.join("\n").trim() });
+    }
     Object.assign(record, {
       date,
       time: /^\d{2}:\d{2}$/.test(time) ? time : "",
@@ -1696,6 +1720,28 @@
 
   if (Array.isArray(loadedData?.futureItems) && loadedData.futureItems.length) persist();
 
+  // v47：既存のINBOXをすべて記録へ（既にある記録は紐づけ直す。端末ごとに1回。idを固定して同期で重複しない）
+  (function backfillInboxLogs() {
+    const FLAG = "hachiroku-inbox-log-backfill-v2";
+    try { if (localStorage.getItem(FLAG)) return; } catch (error) { return; }
+    const linked = new Set(state.data.logs.map((log) => log.taskId).filter(Boolean));
+    const ids = new Set(state.data.logs.map((log) => log.id));
+    state.data.tasks.filter((task) => task.folder === "inbox").forEach((task) => {
+      const title = String(task.title || "").trim();
+      if (!title || linked.has(task.id)) return;
+      const same = state.data.logs.find((log) => !log.taskId && String(log.text || "").split("\n")[0].trim() === title);
+      if (same) { same.taskId = task.id; return; }
+      const id = `inbox-${task.id}`;
+      if (ids.has(id)) return;
+      const at = task.createdAt ? new Date(task.createdAt) : new Date(Number(task.order) || Date.now());
+      const date = Number.isNaN(at.getTime()) ? todayISO : toISO(at);
+      state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
+    });
+    if (!persist()) return;
+    try { localStorage.setItem(FLAG, "1"); } catch (error) {}
+    render();
+  })();
+
   window.hachirokuApp = {
     replaceData(next) {
       state.data = normalizeData(next);
@@ -1715,7 +1761,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=46"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=47"));
 
   function registerWebMCP() {
     const context = document.modelContext;
