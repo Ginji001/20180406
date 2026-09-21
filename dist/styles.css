@@ -602,3 +602,5 @@ body.dark button.habit-calendar-day.today { background: #4a3923; }
 .log-pick-bar strong { margin-right: auto; }
 .journal-row.is-picked { border-color: var(--accent); background: var(--accent-soft); }
 .journal-pick input { accent-color: var(--muted); }
+/* v53：更新のお知らせ */
+.update-bar { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); z-index: 1000; transform: translateX(-50%); padding: 10px 16px; border: 0; border-radius: 999px; color: white; background: var(--accent); box-shadow: 0 6px 20px rgba(0,0,0,.18); font-size: .75rem; font-weight: 700; }

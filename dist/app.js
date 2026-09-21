@@ -1898,7 +1898,48 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=52"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=53"));
+
+  // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
+  const APP_VERSION = 53;
+  let updateChecking = false;
+  function busyEditing() {
+    if (document.querySelector("dialog[open]")) return true;
+    const el = document.activeElement;
+    return Boolean(el && el.matches("input, textarea, select") && (el.value || "").trim() && el.type !== "checkbox" && el.type !== "date" && el.type !== "time" && el.tagName !== "SELECT");
+  }
+  function showUpdateBar() {
+    if (document.querySelector("#updateBar")) return;
+    const bar = document.createElement("button");
+    bar.type = "button";
+    bar.id = "updateBar";
+    bar.className = "update-bar";
+    bar.textContent = "新しいバージョンがあります。タップして更新";
+    bar.addEventListener("click", () => location.reload());
+    document.body.appendChild(bar);
+  }
+  async function checkForUpdate() {
+    if (updateChecking || !navigator.onLine) return;
+    updateChecking = true;
+    try {
+      const text = await (await fetch(`./sw.js?check=${Date.now()}`, { cache: "no-store" })).text();
+      const latest = Number((text.match(/hachiroku-techo-v(\d+)/) || [])[1] || 0);
+      if (latest > APP_VERSION) {
+        navigator.serviceWorker?.getRegistration().then((reg) => reg?.update()).catch(() => {});
+        if (busyEditing()) showUpdateBar();
+        else location.reload();
+      }
+    } catch (error) {
+      // 通信できないときは何もしない
+    } finally {
+      updateChecking = false;
+    }
+  }
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(); });
+  window.addEventListener("focus", checkForUpdate);
+  window.addEventListener("pageshow", (event) => { if (event.persisted) checkForUpdate(); });
+  setInterval(() => { if (!document.hidden) checkForUpdate(); }, 30 * 60 * 1000);
+  setTimeout(checkForUpdate, 3000);
 
   function registerWebMCP() {
     const context = document.modelContext;
