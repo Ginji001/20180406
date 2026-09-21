@@ -134,6 +134,7 @@
     week: "次の7日間",
     all: "すべてのタスク",
     inbox: "INBOX",
+    inboxList: "INBOX",
     next: "次にやる",
     remind: "リマインダー",
     waiting: "待ち状況",
@@ -146,6 +147,7 @@
     week: "今日から7日間の予定を確認します。",
     all: "未完了のタスクをすべて確認します。",
     inbox: "思いついたことを集め、あとで整理します。",
+    inboxList: "INBOXに入っているタスクです。",
     next: "具体的に、次に行動するタスクです。",
     remind: "指定した日に思い出したいタスクです。",
     waiting: "ほかの人や出来事を待っているタスクです。",
@@ -317,6 +319,8 @@
         tasks = tasks.filter((task) => !task.completed && task.due && task.due >= todayISO && task.due <= weekEnd);
       } else if (state.view === "all") {
         tasks = tasks.filter((task) => !task.completed);
+      } else if (state.view === "inboxList") {
+        tasks = tasks.filter((task) => !task.completed && task.folder === "inbox");
       } else if (state.view === "projects") {
         tasks = tasks.filter((task) => !task.completed && task.folder === "project");
       } else if (state.view === "completed") {
@@ -451,7 +455,7 @@
   }
 
   function renderNavigation() {
-    $$("[data-view]").forEach((button) => button.classList.toggle("active", !state.projectId && button.dataset.view === state.view));
+    $$("[data-view]").forEach((button) => button.classList.toggle("active", !state.projectId && (button.dataset.view === state.view || (state.view === "inboxList" && button.dataset.view === "inbox"))));
     $$("[data-mode]").forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
     $$(".nav-group").forEach((group) => {
       if (group.querySelector(`[data-view="${state.view}"]`)) group.open = true;
@@ -1012,7 +1016,8 @@
 
   document.addEventListener("click", (event) => {
     const viewButton = event.target.closest("[data-view]");
-    if (viewButton) setView(viewButton.dataset.view);
+    // v49：サイドバーの「INBOX」の件数を押すとINBOXの一覧を開く（文字部分はこれまでどおりホーム）
+    if (viewButton) setView(event.target.closest('[data-count="inbox"]') ? "inboxList" : viewButton.dataset.view);
 
     const projectButton = event.target.closest("[data-project]");
     if (projectButton) {
@@ -1768,7 +1773,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=48"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=49"));
 
   function registerWebMCP() {
     const context = document.modelContext;
