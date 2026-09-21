@@ -164,6 +164,11 @@
   const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐" };
   const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類
 
+  // v55：開いたまま日付が変わっても「今日」がずれないように、その時点の日付を使う
+  function currentISO() {
+    return toISO(new Date());
+  }
+
   // v47：INBOXから作った記録（taskId付き）はタスクのタイトル・内容と常に同じにする
   function inboxLogText(task) {
     const title = String(task.title || "").trim();
@@ -188,12 +193,12 @@
     state.data.tasks.filter((task) => task.folder === "inbox" && !task.completed).forEach((task) => {
       const title = String(task.title || "").trim();
       if (!title || linked.has(task.id)) return;
-      const same = state.data.logs.find((log) => !log.taskId && String(log.text || "").split("\n")[0].trim() === title);
+      const at = task.createdAt ? new Date(task.createdAt) : new Date(Number(task.order) || Date.now());
+      const date = Number.isNaN(at.getTime()) ? currentISO() : toISO(at);
+      const same = state.data.logs.find((log) => !log.taskId && log.date === date && String(log.text || "").split("\n")[0].trim() === title);
       if (same) { same.taskId = task.id; linked.add(task.id); return; }
       const id = `inbox-${task.id}`;
       if (ids.has(id)) return;
-      const at = task.createdAt ? new Date(task.createdAt) : new Date(Number(task.order) || Date.now());
-      const date = Number.isNaN(at.getTime()) ? todayISO : toISO(at);
       state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
       linked.add(task.id); ids.add(id);
     });
@@ -1423,15 +1428,22 @@
 
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    // v54：記録はすべてINBOXから（INBOXに入れると今日の記録にメモとして載る）
+    // v55：記録画面で入れた内容は、選んだ日付・時刻・種類で記録し、INBOXにも入れる（両方を紐づけ）
     const title = $("#logText").value.trim();
     if (!title) return;
-    createTask({ title, folder: "inbox" });
+    const date = $("#logDate").value || currentISO();
+    const time = /^\d{2}:\d{2}$/.test($("#logTime").value) ? $("#logTime").value : "";
+    const type = logTypeNames[$("#logType").value] ? $("#logType").value : "memo";
+    const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: "", completed: false, order: Date.now(), createdAt: new Date().toISOString() };
+    state.data.tasks.push(task);
+    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, type, text: title, ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
+    if (!persist()) return;
     $("#logText").value = "";
-    state.logDate = todayISO;
+    $("#logTime").value = "";
+    state.logDate = date;
     state.showAllLogs = false;
-    renderLogs();
-    showToast("INBOXと今日の記録へ追加しました");
+    render();
+    showToast(`INBOXと${date === currentISO() ? "今日" : formatDate(date)}の記録へ追加しました`);
   });
   $("#logFilterDate").addEventListener("change", (event) => {
     state.logDate = event.target.value || todayISO;
@@ -1899,10 +1911,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=54"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=55"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 54;
+  const APP_VERSION = 55;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
@@ -1915,17 +1927,18 @@
     bar.type = "button";
     bar.id = "updateBar";
     bar.className = "update-bar";
-    bar.textContent = "新しいバージョンがあります。タップして更新";
+    bar.textContent = "タップして最新の状態に更新";
     bar.addEventListener("click", () => location.reload());
     document.body.appendChild(bar);
   }
   async function checkForUpdate() {
+    if (!updateChecking && currentISO() !== todayISO && !navigator.onLine) { if (busyEditing()) showUpdateBar(); else location.reload(); return; }
     if (updateChecking || !navigator.onLine) return;
     updateChecking = true;
     try {
       const text = await (await fetch(`./sw.js?check=${Date.now()}`, { cache: "no-store" })).text();
       const latest = Number((text.match(/hachiroku-techo-v(\d+)/) || [])[1] || 0);
-      if (latest > APP_VERSION) {
+      if (latest > APP_VERSION || currentISO() !== todayISO) {
         navigator.serviceWorker?.getRegistration().then((reg) => reg?.update()).catch(() => {});
         if (busyEditing()) showUpdateBar();
         else location.reload();
