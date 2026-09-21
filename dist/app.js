@@ -89,6 +89,7 @@
     habitDate: todayISO,
     logDate: todayISO,
     showAllLogs: false,
+    pickedLogs: new Set(),
     selected: new Set(),
     draggedId: null
   };
@@ -530,14 +531,14 @@
       const iso = toISO(date);
       const completed = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
       const future = iso > todayISO;
-      return `<button type="button" class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""} ${iso === state.habitDate ? "selected" : ""}" data-habit-day="${iso}" ${future ? "disabled" : ""} aria-label="${formatFullDate(iso)}の習慣を編集"><span class="day-number">${date.getDate()}</span>${completed.slice(0, 4).map((item) => `<span class="habit-calendar-item">✓ ${escapeHTML(item.name)}</span>`).join("") || '<span class="habit-calendar-empty">—</span>'}</button>`;
+      return `<button type="button" class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""} ${iso === state.habitDate ? "selected" : ""}" data-habit-day="${iso}" ${future ? "disabled" : ""} aria-label="${formatFullDate(iso)}のハビットを編集"><span class="day-number">${date.getDate()}</span>${completed.slice(0, 4).map((item) => `<span class="habit-calendar-item">✓ ${escapeHTML(item.name)}</span>`).join("") || '<span class="habit-calendar-empty">—</span>'}</button>`;
     }).join("")}</div>`;
   }
 
   function renderHabits() {
     renderHabitCalendar();
     const day = state.habitDate;
-    $("#habitDayLabel").textContent = day === todayISO ? "今日の習慣" : `${formatDate(day)}の習慣`;
+    $("#habitDayLabel").textContent = day === todayISO ? "今日のハビット" : `${formatDate(day)}のハビット`;
     $("#habitDate").value = day;
     $("#habitDate").max = todayISO;
     $("#habitTodayBtn").hidden = day === todayISO;
@@ -573,10 +574,15 @@
       const check = checkLogTypes.includes(item.type);
       const task = item.taskId && taskMap.get(item.taskId);
       const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? `<button type="button" class="journal-sort" data-sort-log="${task.id}">振り分け</button>` : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
-      const mark = check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
-      return `<article class="journal-row ${check && item.done ? "is-done" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
+      const pick = item.type === "memo";
+      const mark = pick ? `<label class="journal-check journal-pick" title="振り分けるメモを選ぶ"><input type="checkbox" data-pick-log="${item.id}" ${state.pickedLogs.has(item.id) ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}を選ぶ" /></label>` : check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
+      return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
     }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
     $("#showAllLogs").textContent = state.showAllLogs ? "日付で絞る" : "すべて表示";
+    const memoIds = new Set(state.data.logs.filter((item) => item.type === "memo").map((item) => item.id));
+    state.pickedLogs.forEach((id) => { if (!memoIds.has(id)) state.pickedLogs.delete(id); });
+    $("#logPickBar").hidden = !state.pickedLogs.size;
+    $("#logPickCount").textContent = `${state.pickedLogs.size}件のメモを`;
   }
 
   function changeMonth(month, amount) {
@@ -661,7 +667,7 @@
     const recentCount = state.data.reflections.filter((item) => item.date >= start && item.date <= date).length;
     $("#reflectionSummary").innerHTML = [
       ["完了したタスク", completedTasks.length, completedTasks.slice(0, 3).join("、") || "まだありません"],
-      ["達成した習慣", completedHabits.length, completedHabits.slice(0, 3).join("、") || "まだありません"],
+      ["達成したハビット", completedHabits.length, completedHabits.slice(0, 3).join("、") || "まだありません"],
       ["7日間の記録", `${recentCount}/7`, recentCount ? "記録を積み重ねています" : "今日から始めましょう"]
     ].map(([label, value, detail]) => `<article><span>${label}</span><strong>${value}</strong><p>${escapeHTML(detail)}</p></article>`).join("");
   }
@@ -690,7 +696,7 @@
       return `<article class="reflection-card">
         <div class="reflection-card-head"><div><span class="reflection-face">${moodFaces[record.mood] || moodFaces[3]}</span><div><strong>${formatFullDate(record.date)}</strong><small>${moodNames[record.mood] || moodNames[3]}</small></div></div><div><button type="button" data-edit-reflection="${record.date}">編集</button><button type="button" class="danger-text" data-delete-reflection="${record.id}">削除</button></div></div>
         <dl class="reflection-details">${details}</dl>
-        <footer><span>完了 ${completed}件</span><span>習慣 ${habits}件</span></footer>
+        <footer><span>完了 ${completed}件</span><span>ハビット ${habits}件</span></footer>
       </article>`;
     }).join("") || '<div class="empty-state"><strong>振り返りはまだありません</strong><span>今日の気分や、よかったことから記録してみましょう。</span></div>';
   }
@@ -880,7 +886,7 @@
 
   $("#habitTasksBtn").addEventListener("click", () => {
     if (!state.data.habits.length) {
-      showToast("先に「習慣」で毎日の習慣を登録してください");
+      showToast("先に「ハビット」で毎日のハビットを登録してください");
       return setView("habits");
     }
     let added = 0;
@@ -890,10 +896,10 @@
       state.data.tasks.push({ id: uid(), title: habit.name, folder: "next", due: todayISO, time: "", habitId: habit.id, priority: "medium", tag: "", projectId: null, repeat: "", pinned: false, notes: "", completed: false, completedAt: null, order: Date.now() + added });
       added += 1;
     });
-    if (!added) return showToast("今日の習慣タスクは作成済みです");
+    if (!added) return showToast("今日のハビットタスクは作成済みです");
     persist();
     render();
-    showToast(`習慣を${added}件、今日の「次にやる」に追加しました`);
+    showToast(`ハビットを${added}件、今日の「次にやる」に追加しました`);
   });
 
   $("#tomorrowTaskBtn").addEventListener("click", () => {
@@ -1364,7 +1370,7 @@
     $("#habitName").value = "";
     persist();
     renderHabits();
-    showToast("習慣を追加しました");
+    showToast("ハビットを追加しました");
   });
   $("#habitList").addEventListener("change", (event) => {
     const id = event.target.dataset.habit;
@@ -1394,7 +1400,7 @@
   $("#habitTodayBtn").addEventListener("click", () => selectHabitDate(todayISO));
   $("#habitList").addEventListener("click", (event) => {
     const id = event.target.closest("[data-delete-habit]")?.dataset.deleteHabit;
-    if (!id || !window.confirm("この習慣を削除しますか？")) return;
+    if (!id || !window.confirm("このハビットを削除しますか？")) return;
     state.data.habits = state.data.habits.filter((item) => item.id !== id);
     persist();
     renderHabits();
@@ -1436,6 +1442,38 @@
     renderLogs();
   });
   // v50：チェックBOXと振り分け
+  // v51：メモを選んで種類を振り分ける
+  $("#logList").addEventListener("change", (event) => {
+    const pickId = event.target.closest("[data-pick-log]")?.dataset.pickLog;
+    if (!pickId) return;
+    if (event.target.checked) state.pickedLogs.add(pickId); else state.pickedLogs.delete(pickId);
+    renderLogs();
+  });
+  $("#logPickBar").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-pick-type]");
+    if (!button) return;
+    const kind = button.dataset.pickType;
+    if (kind === "clear") { state.pickedLogs.clear(); renderLogs(); return; }
+    const type = kind === "schedule" ? "event" : kind;
+    if (!logTypeNames[type]) return;
+    let count = 0;
+    state.data.logs.filter((item) => state.pickedLogs.has(item.id) && item.type === "memo").forEach((item) => {
+      if (kind === "schedule" && !item.eventId) {
+        const [title, ...rest] = String(item.text || "").split("\n");
+        const eventId = uid();
+        state.data.events.push({ id: eventId, date: item.date || todayISO, time: item.time || "", title: title.trim() || "予定", ...(rest.join("\n").trim() ? { note: rest.join("\n").trim() } : {}), createdAt: new Date().toISOString() });
+        item.eventId = eventId;
+      }
+      item.type = type;
+      if (checkLogTypes.includes(type)) item.done = false;
+      item.updatedAt = new Date().toISOString();
+      count += 1;
+    });
+    state.pickedLogs.clear();
+    persist();
+    renderLogs();
+    showToast(kind === "schedule" ? `${count}件を予定（カレンダー）に追加しました` : `${count}件を「${logTypeNames[type]}」にしました`);
+  });
   $("#logList").addEventListener("change", (event) => {
     const id = event.target.closest("[data-check-log]")?.dataset.checkLog;
     const record = id && state.data.logs.find((item) => item.id === id);
@@ -1860,7 +1898,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=50"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=52"));
 
   function registerWebMCP() {
     const context = document.modelContext;

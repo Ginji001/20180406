@@ -5,15 +5,15 @@
     <meta name="google-site-verification" content="wtSCDToB6Esr571PVkL2zQRouOPWFA_mretsvdyL7zU" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#b2553f" />
-    <meta name="description" content="タスク、予定、記録、習慣、家計を一つにまとめる日本語のデジタル手帳" />
+    <meta name="description" content="タスク、予定、記録、ハビット、家計を一つにまとめる日本語のデジタル手帳" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=50" />
+    <link rel="manifest" href="./manifest.webmanifest?v=52" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=50" />
+    <link rel="stylesheet" href="./styles.css?v=52" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -41,7 +41,7 @@
           <details class="nav-group">
             <summary>手帳</summary>
             <button class="nav-item" data-view="records"><span>✎</span>記録</button>
-            <button class="nav-item" data-view="habits"><span>◉</span>習慣</button>
+            <button class="nav-item" data-view="habits"><span>◉</span>ハビット</button>
             <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
             <button class="nav-item" data-view="documents"><span>⌑</span>ドキュメント</button>
             <button class="nav-item" data-view="budget"><span>￥</span>家計簿</button>
@@ -102,7 +102,7 @@
                 <div class="gtd-panel" id="gtdPanel">
                   <button type="button" class="gtd-main" id="triageBtn"><strong>INBOXを整理する</strong><small id="triageCount">未整理 0件</small></button>
                   <button type="button" id="todayAllBtn">⤓ 期限切れを今日に<em id="todayAllCount"></em></button>
-                  <button type="button" id="habitTasksBtn">◉ 習慣を今日のタスクに</button>
+                  <button type="button" id="habitTasksBtn">◉ ハビットを今日のタスクに</button>
                 </div>
                 <div class="toolbar">
                   <div class="view-switch" id="viewSwitch" aria-label="表示形式">
@@ -115,7 +115,7 @@
                 </div>
                 <div class="bulk-bar" id="bulkBar" hidden>
                   <strong id="selectedCount">0件選択</strong>
-                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
+                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：ハビット</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select>
                   <button data-bulk="today">今日にする</button><button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
                 </div>
                 <div id="taskContent"></div>
@@ -150,12 +150,12 @@
           </section>
 
           <section id="habitsWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>習慣</h1><p>習慣専用の月間カレンダーで達成日を確認し、今日の習慣をチェックします。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>ハビット</h1><p>ハビット専用の月間カレンダーで達成日を確認し、今日のハビットをチェックします。</p></div></div>
             <div class="calendar-controls habit-calendar-controls"><button type="button" id="habitCalendarPrev" aria-label="前の月">‹</button><strong id="habitCalendarMonthLabel"></strong><button type="button" id="habitCalendarNext" aria-label="次の月">›</button></div>
-            <p class="habit-calendar-help">✓ は達成した習慣です。日にちを押すと、その日の記録を直せます。</p>
+            <p class="habit-calendar-help">✓ は達成したハビットです。日にちを押すと、その日の記録を直せます。</p>
             <div id="habitCalendar" class="habit-calendar"></div>
-            <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しい習慣" /><button>追加</button></form>
-            <div class="habit-day-head"><strong id="habitDayLabel">今日の習慣</strong><input id="habitDate" type="date" aria-label="編集する日付" /><button type="button" id="habitTodayBtn" hidden>今日に戻る</button></div>
+            <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しいハビット" /><button>追加</button></form>
+            <div class="habit-day-head"><strong id="habitDayLabel">今日のハビット</strong><input id="habitDate" type="date" aria-label="編集する日付" /><button type="button" id="habitTodayBtn" hidden>今日に戻る</button></div>
             <div id="habitList" class="habit-list"></div>
           </section>
 
@@ -169,6 +169,7 @@
               <button type="submit">記録する</button>
             </form>
             <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="showAllLogs">すべて表示</button></div>
+            <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件のメモを</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="completed">× 完了</button><button type="button" data-pick-type="postponed">＞ 先送り</button><button type="button" data-pick-type="cancelled">－ キャンセル</button><button type="button" data-pick-type="todo">☐ やること</button><button type="button" data-pick-type="clear">解除</button></div>
             <div class="journal-list" id="logList"></div>
           </section>
 
@@ -197,7 +198,7 @@
               </div>
               <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
               <p class="google-calendar-note">初回接続時にGoogle内へ「ハチロク手帳」専用カレンダーを作成します。タイトル・日付・タスクのメモ・完了状態を送信し、接続直後に同期します。<a href="./privacy.html" target="_blank" rel="noopener">データの取り扱い</a></p>
-              <p class="google-calendar-note">同期対象は、期限のあるタスクと日付が決まった予定です。習慣は同期しません。時刻のある予定は1時間の予定、それ以外は終日の予定として登録されます。月だけ決まった予定は、日付を決めてから同期できます。</p>
+              <p class="google-calendar-note">同期対象は、期限のあるタスクと日付が決まった予定です。ハビットは同期しません。時刻のある予定は1時間の予定、それ以外は終日の予定として登録されます。月だけ決まった予定は、日付を決めてから同期できます。</p>
               <p class="google-calendar-note">以前の主カレンダーの予定は残ります。今後は専用カレンダーだけに同期します。両方を表示すると同じ予定が重なる場合があります。</p>
               <details class="google-calendar-help"><summary>別の端末で同じ専用カレンダーを使う</summary><p>接続後に表示されるIDを控え、別の端末で接続する前に保存してください。Googleカレンダーの設定からも確認できます。IDがない端末では新しく作成します。</p><label>専用カレンダーID<input id="googleDedicatedCalendarId" type="text" autocomplete="off" placeholder="…@group.calendar.google.com" /></label><button type="button" id="googleUseCalendarBtn">このIDを保存</button></details>
               <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押します。</li><li>Googleアカウントを選び、カレンダーへのアクセスを許可します。</li><li>「今すぐ同期」で期限付きタスクと予定を同期できます。</li></ol></details>
@@ -292,7 +293,7 @@
               <div class="help-steps">
                 <article><span>1</span><h2>朝に確認する</h2><p>「今日」でタスクと予定を確認し、取り組む順番を決めます。</p></article>
                 <article><span>2</span><h2>日中に残す</h2><p>上の入力欄で種類を選び、タスク・予定・メモ・出来事をその場で登録します。</p></article>
-                <article><span>3</span><h2>夜に振り返る</h2><p>完了したことと習慣を確認し、気分・気づき・明日やることを保存します。</p></article>
+                <article><span>3</span><h2>夜に振り返る</h2><p>完了したこととハビットを確認し、気分・気づき・明日やることを保存します。</p></article>
               </div>
             </div>
 
@@ -322,13 +323,13 @@
             </div>
 
             <div class="help-section help-details">
-              <article><h2>タスクを整理する</h2><p>INBOXに集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。項目を開いて「手帳へ振り分け」を押すと、記録・予定・習慣・コレクション・ドキュメント・家計簿・振り返りへ移せます。左端の四角を選ぶと一括操作もできます。「INBOXを整理する」を押すと、質問に答えるだけで1件ずつ振り分けられます。</p></article>
+              <article><h2>タスクを整理する</h2><p>INBOXに集め、次にやる・待ち状況・プロジェクトなどへ振り分けます。項目を開いて「手帳へ振り分け」を押すと、記録・予定・ハビット・コレクション・ドキュメント・家計簿・振り返りへ移せます。左端の四角を選ぶと一括操作もできます。「INBOXを整理する」を押すと、質問に答えるだけで1件ずつ振り分けられます。</p></article>
               <article><h2>記録を見返す</h2><p>「記録」で日付を選ぶと、その日のメモ・出来事・完了・先送り・キャンセルをまとめて確認できます。</p></article>
               <article><h2>予定をまとめて見通す</h2><p>「予定」では、日付が決まった予定と月だけ決まった予定、期限つきタスクをまとめて確認できます。</p></article>
               <article><h2>Googleカレンダーと同期する</h2><p>「予定」の連携欄で一度接続すると、期限のあるタスクと日付が決まった予定をGoogleカレンダーへ同期できます。同期対象は終日の予定です。</p></article>
-              <article><h2>習慣と一覧を育てる</h2><p>「習慣」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを端末から選んだ画像やURL付きでまとめられます。</p></article>
+              <article><h2>ハビットと一覧を育てる</h2><p>「ハビット」は毎日チェックできます。「コレクション」には欲しい物、読みたい物などを端末から選んだ画像やURL付きでまとめられます。</p></article>
               <article><h2>家計を把握する</h2><p>「家計簿」で月の予算を決め、収入と支出を登録します。月を切り替えると、その月の残り金額が分かります。</p></article>
-              <article><h2>一日を振り返る</h2><p>完了したタスクと習慣を確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
+              <article><h2>一日を振り返る</h2><p>完了したタスクとハビットを確認し、気分・よかったこと・気づき・明日やることを記録できます。</p></article>
               <article><h2>データを守る</h2><p>「データ管理」から全内容を一つのファイルへ書き出せます。別の端末では、そのファイルを選んで復元します。</p></article>
             </div>
 
@@ -358,7 +359,7 @@
       <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
 
-    <dialog id="routeDialog"><form id="routeForm"><h2>INBOXから振り分け</h2><p id="routeSummary"></p><label class="field">振り分け先<select id="routeDestination"><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：習慣</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select></label><label class="field">日付<input id="routeDate" type="date" required /></label><label class="field">分類<input id="routeCategory" value="INBOXから" maxlength="80" /></label><div id="routeMoney" hidden><label class="field">収支<select id="routeMoneyType"><option value="expense">支出</option><option value="income">収入</option></select></label><label class="field">金額（1件あたり）<input id="routeAmount" type="number" min="1" step="1" /></label></div><p>内容とメモを移動します。振り返りは同じ日の内容に追記します。</p><p id="routeError" role="alert"></p><div class="dialog-actions"><button type="button" id="routeCancel">キャンセル</button><button type="submit">振り分ける</button></div></form></dialog><dialog id="taskDialog">
+    <dialog id="routeDialog"><form id="routeForm"><h2>INBOXから振り分け</h2><p id="routeSummary"></p><label class="field">振り分け先<select id="routeDestination"><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：ハビット</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option><option value="reflection">手帳：振り返り</option></select></label><label class="field">日付<input id="routeDate" type="date" required /></label><label class="field">分類<input id="routeCategory" value="INBOXから" maxlength="80" /></label><div id="routeMoney" hidden><label class="field">収支<select id="routeMoneyType"><option value="expense">支出</option><option value="income">収入</option></select></label><label class="field">金額（1件あたり）<input id="routeAmount" type="number" min="1" step="1" /></label></div><p>内容とメモを移動します。振り返りは同じ日の内容に追記します。</p><p id="routeError" role="alert"></p><div class="dialog-actions"><button type="button" id="routeCancel">キャンセル</button><button type="submit">振り分ける</button></div></form></dialog><dialog id="taskDialog">
       <form id="taskForm">
         <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">INBOXに追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
         <input type="hidden" id="taskId" />
@@ -435,7 +436,7 @@
     <dialog id="backupDialog">
       <form>
         <div class="dialog-head"><div><small>データ管理</small><h2>バックアップ</h2></div><button type="button" class="icon-button" data-close="backup">×</button></div>
-        <p class="dialog-copy">端末内のタスク・予定・記録・習慣・コレクション・家計簿・振り返りをまとめて書き出し／復元できます。</p>
+        <p class="dialog-copy">端末内のタスク・予定・記録・ハビット・コレクション・家計簿・振り返りをまとめて書き出し／復元できます。</p>
         <div class="backup-actions"><button type="button" id="exportBtn">バックアップを書き出す</button><label>ファイルから復元<input id="importInput" type="file" accept="application/json,.json" /></label></div>
         <div class="dialog-actions"><button type="button" data-close="backup">閉じる</button><button type="button" class="danger" id="clearDataBtn">全データ削除</button></div>
       </form>
@@ -443,8 +444,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=50"></script>
-    <script src="./cloud-sync.js?v=50" defer></script>
-    <script src="./google-calendar.js?v=50"></script>
+    <script src="./app.js?v=52"></script>
+    <script src="./cloud-sync.js?v=52" defer></script>
+    <script src="./google-calendar.js?v=52"></script>
   </body>
 </html>

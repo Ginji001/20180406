@@ -597,3 +597,8 @@ body.dark button.habit-calendar-day.today { background: #4a3923; }
 .journal-row .journal-sort { margin-left: 6px; padding: 2px 8px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); background: transparent; font-size: .62rem; }
 .journal-route { margin-left: 6px; font-style: normal; color: var(--accent); }
 .sort-title { margin: 0 0 12px; font-weight: 700; white-space: pre-wrap; overflow-wrap: anywhere; }
+/* v51：メモの振り分け */
+.log-pick-bar { position: sticky; top: 8px; z-index: 5; flex-wrap: wrap; margin: 0 0 10px; }
+.log-pick-bar strong { margin-right: auto; }
+.journal-row.is-picked { border-color: var(--accent); background: var(--accent-soft); }
+.journal-pick input { accent-color: var(--muted); }
