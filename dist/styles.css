@@ -215,7 +215,8 @@ body.home-page .content { height: calc(100dvh - 62px); padding: 24px 0 18px; ove
 .calendar-undated strong { color: var(--muted); font-size: .66rem; }
 .calendar-undated > div { min-width: 0; display: flex; flex-wrap: wrap; gap: 5px; }
 .calendar-undated button { max-width: 100%; padding: 5px 8px; border: 0; border-radius: 5px; overflow: hidden; color: var(--accent); background: var(--accent-soft); text-overflow: ellipsis; white-space: nowrap; font-size: .62rem; }
-.event-form { grid-template-columns: auto auto minmax(160px, 1fr) auto; margin-top: 18px; }
+.event-form { grid-template-columns: auto auto auto minmax(160px, 1fr) auto; margin-top: 18px; }
+.event-form:has(#eventMonth:not([hidden])) { grid-template-columns: auto auto minmax(160px, 1fr) auto; }
 .event-form [hidden] { display: none; }
 
 .collection-form { grid-template-columns: minmax(130px, .8fr) minmax(180px, 1fr) minmax(170px, 1fr) minmax(170px, 1fr) auto; }

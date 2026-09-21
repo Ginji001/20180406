@@ -257,7 +257,7 @@
   function descriptors(data) {
     const items = [];
     data.tasks.filter((item) => item.due || item.googleEventId).forEach((item) => items.push({ kind: "task", id: item.id, item, date: item.due || "", title: item.title }));
-    data.events.filter((item) => item.date || item.googleEventId).forEach((item) => items.push({ kind: "event", id: item.id, item, date: item.date || "", title: item.title }));
+    data.events.filter((item) => item.date || item.googleEventId).forEach((item) => items.push({ kind: "event", id: item.id, item, date: item.date || "", time: /^\d{2}:\d{2}$/.test(item.time || "") ? item.time : "", title: item.title }));
     return items;
   }
 
@@ -274,14 +274,31 @@
     return {
       summary: symbol + " " + descriptor.title,
       description: "ハチロク手帳の" + label + "\nアプリと同期中" + notes,
-      start: { date: descriptor.date },
-      end: { date: toISO(addDays(date, 1)) },
+      ...(descriptor.time ? timedRange(descriptor.date, descriptor.time) : { start: { date: descriptor.date }, end: { date: toISO(addDays(date, 1)) } }),
       extendedProperties: { private: {
         [GOOGLE_TYPE_PROPERTY]: descriptor.kind,
         [GOOGLE_ID_PROPERTY]: descriptor.id,
         [GOOGLE_COMPLETED_PROPERTY]: descriptor.kind === "task" && descriptor.item.completed ? "1" : "0"
       } }
     };
+  }
+
+  function timedRange(iso, time) {
+    const [h, m] = time.split(":").map(Number);
+    const start = fromISO(iso);
+    start.setHours(h, m, 0, 0);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const stamp = (d) => toISO(d) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes()) + ":00";
+    return { start: { dateTime: stamp(start), timeZone: "Asia/Tokyo" }, end: { dateTime: stamp(end), timeZone: "Asia/Tokyo" } };
+  }
+
+  function sameWhen(a, b) {
+    if (b?.dateTime) return String(a?.dateTime || "").slice(0, 16) === b.dateTime.slice(0, 16);
+    return a?.date === b?.date && !a?.dateTime;
+  }
+
+  function remoteTime(remote) {
+    return remote?.start?.dateTime ? remote.start.dateTime.slice(11, 16) : "";
   }
 
   async function listManaged(kind) {
@@ -300,7 +317,7 @@
   function matches(remote, body) {
     const props = remotePrivate(remote);
     const expected = body.extendedProperties.private;
-    return remote.summary === body.summary && remote.start?.date === body.start.date && remote.end?.date === body.end.date && (remote.description || "") === body.description && props[GOOGLE_TYPE_PROPERTY] === expected[GOOGLE_TYPE_PROPERTY] && props[GOOGLE_ID_PROPERTY] === expected[GOOGLE_ID_PROPERTY] && props[GOOGLE_COMPLETED_PROPERTY] === expected[GOOGLE_COMPLETED_PROPERTY];
+    return remote.summary === body.summary && sameWhen(remote.start, body.start) && sameWhen(remote.end, body.end) && (remote.description || "") === body.description && props[GOOGLE_TYPE_PROPERTY] === expected[GOOGLE_TYPE_PROPERTY] && props[GOOGLE_ID_PROPERTY] === expected[GOOGLE_ID_PROPERTY] && props[GOOGLE_COMPLETED_PROPERTY] === expected[GOOGLE_COMPLETED_PROPERTY];
   }
 
   async function deleteRemote(eventId) {
@@ -325,6 +342,7 @@
       local.completedAt = completed ? (local.completedAt || remote.updated || new Date().toISOString()) : null;
     } else {
       local.date = date;
+      local.time = remoteTime(remote);
     }
     local.googleEventId = remote.id;
     local.googleCalendarId = googleState.calendarId;
@@ -344,7 +362,7 @@
       data.tasks.push(task);
       return task;
     }
-    const item = { id, date, title, createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
+    const item = { id, date, time: remoteTime(remote), title, createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
     data.events.push(item);
     return item;
   }

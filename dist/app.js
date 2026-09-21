@@ -551,8 +551,8 @@
     $("#combinedCalendar").innerHTML = `${undatedMarkup}<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
       const iso = toISO(date);
       const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
-      const events = state.data.events.filter((item) => item.date === iso);
-      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.map((item) => `<button type="button" class="calendar-task calendar-event" data-edit-event="${item.id}">○ ${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
+      const events = state.data.events.filter((item) => item.date === iso).sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
+      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.map((item) => `<button type="button" class="calendar-task calendar-event" data-edit-event="${item.id}">○ ${item.time ? `${escapeHTML(item.time)} ` : ""}${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
     }).join("")}</div>`;
   }
 
@@ -1061,10 +1061,11 @@
       showToast("INBOXと今日の記録へ追加しました");
     } else if (type === "schedule") {
       const date = $("#quickDate").value || todayISO;
-      state.data.events.push({ id: uid(), date, title: text, ...(detail ? { note: detail } : {}), createdAt: new Date().toISOString() });
+      const time = /^\d{2}:\d{2}$/.test($("#quickTime").value) ? $("#quickTime").value : "";
+      state.data.events.push({ id: uid(), date, time, title: text, ...(detail ? { note: detail } : {}), createdAt: new Date().toISOString() });
       persist();
       render();
-      showToast(`${formatDate(date)}の予定へ追加しました`);
+      showToast(`${formatDate(date)}${time ? ` ${time}` : ""}の予定へ追加しました`);
     } else {
       const date = $("#quickDate").value || todayISO;
       createLog(type, detail ? `${text}\n${detail}` : text, date, $("#quickTime").value);
@@ -1448,7 +1449,9 @@
     const month = timing === "month" ? $("#eventMonth").value : "";
     const title = $("#eventTitle").value.trim();
     if ((!date && !month) || !title) return;
-    state.data.events.push({ id: uid(), date, month, title, createdAt: new Date().toISOString() });
+    const time = date && /^\d{2}:\d{2}$/.test($("#eventTime").value) ? $("#eventTime").value : "";
+    state.data.events.push({ id: uid(), date, month, time, title, createdAt: new Date().toISOString() });
+    $("#eventTime").value = "";
     state.calendarMonth = date ? date.slice(0, 7) : month;
     $("#eventTitle").value = "";
     persist();
@@ -1461,6 +1464,7 @@
     $("#eventDate").required = !monthOnly;
     $("#eventMonth").hidden = !monthOnly;
     $("#eventMonth").required = monthOnly;
+    $("#eventTime").hidden = monthOnly;
   });
   function setEventEditTiming(timing) {
     const monthOnly = timing === "month";
@@ -1470,6 +1474,7 @@
     $("#eventEditMonth").hidden = !monthOnly;
     $("#eventEditMonth").required = monthOnly;
     $("#eventEditScheduleLabel").textContent = monthOnly ? "月" : "日付";
+    $("#eventEditTimeField").hidden = monthOnly;
   }
   function openEventEditor(id) {
     const item = state.data.events.find((entry) => entry.id === id);
@@ -1479,6 +1484,7 @@
     $("#eventEditDate").value = item.date || todayISO;
     $("#eventEditMonth").value = item.month || item.date?.slice(0, 7) || state.calendarMonth;
     $("#eventEditTitle").value = item.title || "";
+    $("#eventEditTime").value = item.time || "";
     $("#eventEditDialog").showModal();
   }
   $("#eventEditTiming").addEventListener("change", (event) => setEventEditTiming(event.target.value));
@@ -1494,7 +1500,8 @@
     const month = monthOnly ? $("#eventEditMonth").value : "";
     const title = $("#eventEditTitle").value.trim();
     if (!item || (!date && !month) || !title) return;
-    Object.assign(item, { date, month, title, updatedAt: new Date().toISOString() });
+    const time = date && /^\d{2}:\d{2}$/.test($("#eventEditTime").value) ? $("#eventEditTime").value : "";
+    Object.assign(item, { date, month, time, title, updatedAt: new Date().toISOString() });
     state.calendarMonth = date ? date.slice(0, 7) : month;
     persist();
     $("#eventEditDialog").close();
@@ -1761,7 +1768,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=47"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=48"));
 
   function registerWebMCP() {
     const context = document.modelContext;

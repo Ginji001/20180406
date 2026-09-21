@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=47" />
+    <link rel="manifest" href="./manifest.webmanifest?v=48" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=47" />
+    <link rel="stylesheet" href="./styles.css?v=48" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -97,7 +97,7 @@
                   <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
                   <button type="submit">追加</button>
                   <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="内容（くわしく書く・任意）" aria-label="内容"></textarea>
-                  <div class="capture-when" id="quickWhen" hidden><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="記録する時刻" /></div>
+                  <div class="capture-when" id="quickWhen" hidden><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="時刻（任意）" /></div>
                 </form>
                 <div class="gtd-panel" id="gtdPanel">
                   <button type="button" class="gtd-main" id="triageBtn"><strong>INBOXを整理する</strong><small id="triageCount">未整理 0件</small></button>
@@ -182,6 +182,7 @@
               <select id="eventTiming" aria-label="予定の日程"><option value="date">日付を指定</option><option value="month">月だけ指定</option></select>
               <input id="eventDate" type="date" required aria-label="予定の日付" />
               <input id="eventMonth" type="month" aria-label="予定の月" hidden />
+              <input id="eventTime" type="time" aria-label="予定の時刻（任意）" title="時刻（任意）" />
               <input id="eventTitle" required maxlength="120" placeholder="予定の内容" />
               <button type="submit">予定を追加</button>
             </form>
@@ -196,7 +197,7 @@
               </div>
               <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
               <p class="google-calendar-note">初回接続時にGoogle内へ「ハチロク手帳」専用カレンダーを作成します。タイトル・日付・タスクのメモ・完了状態を送信し、接続直後に同期します。<a href="./privacy.html" target="_blank" rel="noopener">データの取り扱い</a></p>
-              <p class="google-calendar-note">同期対象は、期限のあるタスクと日付が決まった予定です。習慣は同期しません。すべて終日の予定として登録されます。月だけ決まった予定は、日付を決めてから同期できます。</p>
+              <p class="google-calendar-note">同期対象は、期限のあるタスクと日付が決まった予定です。習慣は同期しません。時刻のある予定は1時間の予定、それ以外は終日の予定として登録されます。月だけ決まった予定は、日付を決めてから同期できます。</p>
               <p class="google-calendar-note">以前の主カレンダーの予定は残ります。今後は専用カレンダーだけに同期します。両方を表示すると同じ予定が重なる場合があります。</p>
               <details class="google-calendar-help"><summary>別の端末で同じ専用カレンダーを使う</summary><p>接続後に表示されるIDを控え、別の端末で接続する前に保存してください。Googleカレンダーの設定からも確認できます。IDがない端末では新しく作成します。</p><label>専用カレンダーID<input id="googleDedicatedCalendarId" type="text" autocomplete="off" placeholder="…@group.calendar.google.com" /></label><button type="button" id="googleUseCalendarBtn">このIDを保存</button></details>
               <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押します。</li><li>Googleアカウントを選び、カレンダーへのアクセスを許可します。</li><li>「今すぐ同期」で期限付きタスクと予定を同期できます。</li></ol></details>
@@ -415,6 +416,7 @@
         <input type="hidden" id="eventEditId" />
         <label class="field"><span>日程</span><select id="eventEditTiming"><option value="date">日付を指定</option><option value="month">月だけ指定</option></select></label>
         <label class="field"><span id="eventEditScheduleLabel">日付</span><input id="eventEditDate" type="date" required aria-label="編集する予定の日付" /><input id="eventEditMonth" type="month" aria-label="編集する予定の月" hidden /></label>
+        <label class="field" id="eventEditTimeField"><span>時刻（任意）</span><input id="eventEditTime" type="time" /></label>
         <label class="field"><span>内容</span><input id="eventEditTitle" required maxlength="120" /></label>
         <div class="dialog-actions"><button type="button" class="danger" id="deleteEventBtn">削除</button><button type="button" data-close="eventEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
       </form>
@@ -431,8 +433,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=47"></script>
-    <script src="./cloud-sync.js?v=47" defer></script>
-    <script src="./google-calendar.js?v=47"></script>
+    <script src="./app.js?v=48"></script>
+    <script src="./cloud-sync.js?v=48" defer></script>
+    <script src="./google-calendar.js?v=48"></script>
   </body>
 </html>
