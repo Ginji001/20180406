@@ -590,3 +590,10 @@ body.dark button.habit-calendar-day.today { background: #4a3923; }
 /* v49：INBOXの件数は一覧へのリンク */
 .nav-item em[data-count="inbox"] { cursor: pointer; border: 1px solid transparent; }
 .nav-item em[data-count="inbox"]:hover { border-color: currentColor; color: var(--accent, inherit); }
+/* v50：記録のチェックBOXと振り分け */
+.journal-check { display: flex; justify-content: center; cursor: pointer; }
+.journal-check input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+.journal-row.is-done strong { text-decoration: line-through; color: var(--muted); }
+.journal-row .journal-sort { margin-left: 6px; padding: 2px 8px; border: 1px solid var(--accent); border-radius: 999px; color: var(--accent); background: transparent; font-size: .62rem; }
+.journal-route { margin-left: 6px; font-style: normal; color: var(--accent); }
+.sort-title { margin: 0 0 12px; font-weight: 700; white-space: pre-wrap; overflow-wrap: anywhere; }

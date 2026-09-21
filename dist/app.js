@@ -159,8 +159,9 @@
   const tagNames = { work: "仕事", private: "プライベート" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
-  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと" };
-  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－" };
+  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること" };
+  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐" };
+  const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類
 
   // v47：INBOXから作った記録（taskId付き）はタスクのタイトル・内容と常に同じにする
   function inboxLogText(task) {
@@ -179,7 +180,43 @@
     });
   }
 
+  // v50：INBOXのタスクは必ず記録に載せる（既存の同じ文面の記録があれば紐づける）
+  function ensureInboxLogs() {
+    const linked = new Set(state.data.logs.map((log) => log.taskId).filter(Boolean));
+    const ids = new Set(state.data.logs.map((log) => log.id));
+    state.data.tasks.filter((task) => task.folder === "inbox" && !task.completed).forEach((task) => {
+      const title = String(task.title || "").trim();
+      if (!title || linked.has(task.id)) return;
+      const same = state.data.logs.find((log) => !log.taskId && String(log.text || "").split("\n")[0].trim() === title);
+      if (same) { same.taskId = task.id; linked.add(task.id); return; }
+      const id = `inbox-${task.id}`;
+      if (ids.has(id)) return;
+      const at = task.createdAt ? new Date(task.createdAt) : new Date(Number(task.order) || Date.now());
+      const date = Number.isNaN(at.getTime()) ? todayISO : toISO(at);
+      state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
+      linked.add(task.id); ids.add(id);
+    });
+  }
+
+  // v50：＞先送りにした記録は、翌日にチェックBOX付き（やること）で追加する。1回だけ（消しても復活しない）
+  function carryPostponedLogs() {
+    const ids = new Set(state.data.logs.map((log) => log.id));
+    const from = toISO(addDays(today, -1)); // 昔の先送りまでは遡らない（昨日以降が対象）
+    state.data.logs.filter((log) => log.type === "postponed" && !log.carriedTo && log.date && log.date >= from).forEach((log) => {
+      const base = fromISO(log.date);
+      if (!base) return;
+      const id = `${log.id}-next`;
+      if (!ids.has(id)) {
+        state.data.logs.push({ id, date: toISO(addDays(base, 1)), time: "", type: "todo", text: log.text, done: false, carriedFrom: log.id, createdAt: new Date().toISOString() });
+        ids.add(id);
+      }
+      log.carriedTo = id;
+    });
+  }
+
   function persist() {
+    ensureInboxLogs();
+    carryPostponedLogs();
     syncInboxLogs();
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
@@ -531,7 +568,14 @@
     $("#logDate").value ||= todayISO;
     $("#logFilterDate").value = state.logDate;
     const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt)));
-    $("#logList").innerHTML = logs.map((item) => `<article class="journal-row"><span class="journal-symbol">${logSymbols[item.type] || "・"}</span><div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
+    const taskMap = new Map(state.data.tasks.map((task) => [task.id, task]));
+    $("#logList").innerHTML = logs.map((item) => {
+      const check = checkLogTypes.includes(item.type);
+      const task = item.taskId && taskMap.get(item.taskId);
+      const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? `<button type="button" class="journal-sort" data-sort-log="${task.id}">振り分け</button>` : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
+      const mark = check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
+      return `<article class="journal-row ${check && item.done ? "is-done" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
+    }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
     $("#showAllLogs").textContent = state.showAllLogs ? "日付で絞る" : "すべて表示";
   }
 
@@ -1059,8 +1103,6 @@
     const type = $("#quickType").value;
     if (type === "task") {
       const task = createTask({ title: text, notes: detail, priority: $("#quickPriority").value, folder: "inbox" });
-      state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date: todayISO, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
-      persist();
       state.logDate = todayISO;
       render();
       showToast("INBOXと今日の記録へ追加しました");
@@ -1393,7 +1435,52 @@
     state.showAllLogs = !state.showAllLogs;
     renderLogs();
   });
+  // v50：チェックBOXと振り分け
+  $("#logList").addEventListener("change", (event) => {
+    const id = event.target.closest("[data-check-log]")?.dataset.checkLog;
+    const record = id && state.data.logs.find((item) => item.id === id);
+    if (!record) return;
+    record.done = event.target.checked;
+    record.updatedAt = new Date().toISOString();
+    persist();
+    renderLogs();
+  });
+  function setSortFolder(folder) {
+    $("#sortFolder").value = folder;
+    $("#sortWhen").hidden = folder !== "remind";
+    $("#sortDate").required = folder === "remind";
+  }
+  $("#sortFolder").addEventListener("change", (event) => setSortFolder(event.target.value));
+  $("#sortForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    const task = state.data.tasks.find((item) => item.id === $("#sortTaskId").value);
+    const folder = $("#sortFolder").value;
+    if (!task || !folderNames[folder]) return;
+    task.folder = folder;
+    if (folder === "remind") {
+      task.due = $("#sortDate").value || todayISO;
+      task.time = /^\d{2}:\d{2}$/.test($("#sortTime").value) ? $("#sortTime").value : "";
+      if (task.time) askNotificationPermission();
+    }
+    task.updatedAt = new Date().toISOString();
+    persist();
+    $("#sortDialog").close();
+    render();
+    showToast(`「${folderNames[folder]}」へ振り分けました`);
+  });
   $("#logList").addEventListener("click", (event) => {
+    const sortId = event.target.closest("[data-sort-log]")?.dataset.sortLog;
+    if (sortId) {
+      const task = state.data.tasks.find((item) => item.id === sortId);
+      if (!task) return;
+      $("#sortTaskId").value = task.id;
+      $("#sortTitle").textContent = task.title;
+      setSortFolder("next");
+      $("#sortDate").value = task.due || todayISO;
+      $("#sortTime").value = task.time || "";
+      $("#sortDialog").showModal();
+      return;
+    }
     const editId = event.target.closest("[data-edit-log]")?.dataset.editLog;
     if (editId) {
       const record = state.data.logs.find((item) => item.id === editId);
@@ -1773,7 +1860,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=49"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=50"));
 
   function registerWebMCP() {
     const context = document.modelContext;

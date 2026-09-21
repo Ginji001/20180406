@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=49" />
+    <link rel="manifest" href="./manifest.webmanifest?v=50" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=49" />
+    <link rel="stylesheet" href="./styles.css?v=50" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -92,7 +92,7 @@
                 <div class="home-section-head"><div><p class="help-kicker">タスク・記録</p><h2>INBOX</h2></div><button type="button" data-view="records">記録一覧</button></div>
                 <form class="capture" id="quickAddForm">
                   <span class="capture-icon">＋</span>
-                  <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="schedule">▦ 予定（カレンダー）</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+                  <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="schedule">▦ 予定（カレンダー）</option><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option></select>
                   <input id="quickTaskInput" required maxlength="300" autocomplete="off" placeholder="タイトル（INBOXに追加…）" aria-label="タイトル" />
                   <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
                   <button type="submit">追加</button>
@@ -125,7 +125,7 @@
                 <p class="home-section-copy">出来事・メモ・アイデアを、日付と時刻つきで残します。</p>
                 <form class="home-log-form" id="homeLogForm">
                   <div class="home-log-date"><input id="homeLogDate" type="date" required aria-label="記録する日付" /><input id="homeLogTime" type="time" aria-label="記録する時刻" /></div>
-                  <select id="homeLogType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+                  <select id="homeLogType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option></select>
                   <textarea id="homeLogText" required maxlength="300" rows="4" placeholder="手帳に記録する内容"></textarea>
                   <button type="submit">記録する</button>
                 </form>
@@ -164,7 +164,7 @@
             <form class="journal-form" id="logForm">
               <input id="logDate" type="date" required />
               <input id="logTime" type="time" aria-label="記録する時刻" />
-              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select>
+              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option></select>
               <input id="logText" required maxlength="300" placeholder="記録する内容" />
               <button type="submit">記録する</button>
             </form>
@@ -404,12 +404,22 @@
           <label class="field"><span>日付</span><input id="logEditDate" type="date" required /></label>
           <label class="field"><span>時刻</span><input id="logEditTime" type="time" /></label>
         </div>
-        <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option></select></label>
+        <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option></select></label>
         <label class="field"><span>内容</span><textarea id="logEditText" required maxlength="1200" rows="5"></textarea></label>
         <div class="dialog-actions"><button type="button" data-close="logEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
       </form>
     </dialog>
 
+    <dialog id="sortDialog">
+      <form id="sortForm">
+        <div class="dialog-head"><div><small>INBOX</small><h2>振り分け</h2></div><button type="button" class="icon-button" data-close="sort" aria-label="閉じる">×</button></div>
+        <input type="hidden" id="sortTaskId" />
+        <p class="sort-title" id="sortTitle"></p>
+        <label class="field"><span>振り分け先</span><select id="sortFolder"><option value="next">→ 次にやる</option><option value="remind">◷ リマインダー</option><option value="waiting">⌛ 待ち状況</option><option value="project">□ プロジェクト</option><option value="wish">☆ いつかやりたい</option></select></label>
+        <div class="field-grid" id="sortWhen" hidden><label class="field"><span>日付</span><input id="sortDate" type="date" /></label><label class="field"><span>通知する時刻（任意）</span><input id="sortTime" type="time" /></label></div>
+        <div class="dialog-actions"><button type="button" data-close="sort">キャンセル</button><button class="primary" type="submit">振り分ける</button></div>
+      </form>
+    </dialog>
     <dialog id="eventEditDialog">
       <form id="eventEditForm">
         <div class="dialog-head"><div><small>予定</small><h2>予定を編集</h2></div><button type="button" class="icon-button" data-close="eventEdit" aria-label="閉じる">×</button></div>
@@ -433,8 +443,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=49"></script>
-    <script src="./cloud-sync.js?v=49" defer></script>
-    <script src="./google-calendar.js?v=49"></script>
+    <script src="./app.js?v=50"></script>
+    <script src="./cloud-sync.js?v=50" defer></script>
+    <script src="./google-calendar.js?v=50"></script>
   </body>
 </html>
