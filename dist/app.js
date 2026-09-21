@@ -571,8 +571,13 @@
   }
 
   function renderLogs() {
-    $("#logDate").value ||= todayISO;
-    $("#logFilterDate").value = state.logDate;
+    // v56：記録する日付は「表示する日」に合わせる（表示中の日が変わったときだけ）
+    if (state.logFormDate !== state.logDate) {
+      $("#logDate").value = state.logDate;
+      state.logFormDate = state.logDate;
+    }
+    if (document.activeElement !== $("#logFilterDate")) $("#logFilterDate").value = state.logDate;
+    $("#logTodayBtn").hidden = !state.showAllLogs && state.logDate === currentISO();
     const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt)));
     const taskMap = new Map(state.data.tasks.map((task) => [task.id, task]));
     $("#logList").innerHTML = logs.map((item) => {
@@ -757,6 +762,11 @@
   }
 
   function setView(view) {
+    // v56：記録を開いたときは、いつも今日の記録を表示する
+    if (view === "records" && state.view !== "records") {
+      state.logDate = currentISO();
+      state.showAllLogs = false;
+    }
     state.view = view;
     state.projectId = null;
     state.selected.clear();
@@ -1445,8 +1455,19 @@
     render();
     showToast(`INBOXと${date === currentISO() ? "今日" : formatDate(date)}の記録へ追加しました`);
   });
-  $("#logFilterDate").addEventListener("change", (event) => {
-    state.logDate = event.target.value || todayISO;
+  // v56：iPhoneでは日付を回している間は input だけが届くことがあるので、両方で絞り込む
+  function applyLogFilterDate(event) {
+    const value = event.target.value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return;
+    if (value === state.logDate && !state.showAllLogs) return;
+    state.logDate = value;
+    state.showAllLogs = false;
+    renderLogs();
+  }
+  $("#logFilterDate").addEventListener("input", applyLogFilterDate);
+  $("#logFilterDate").addEventListener("change", applyLogFilterDate);
+  $("#logTodayBtn").addEventListener("click", () => {
+    state.logDate = currentISO();
     state.showAllLogs = false;
     renderLogs();
   });
@@ -1911,10 +1932,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=55"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=56"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 55;
+  const APP_VERSION = 56;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
