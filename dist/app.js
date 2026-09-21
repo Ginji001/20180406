@@ -1423,14 +1423,15 @@
 
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const date = $("#logDate").value;
-    if (!createLog($("#logType").value, $("#logText").value, date, $("#logTime").value)) return;
+    // v54：記録はすべてINBOXから（INBOXに入れると今日の記録にメモとして載る）
+    const title = $("#logText").value.trim();
+    if (!title) return;
+    createTask({ title, folder: "inbox" });
     $("#logText").value = "";
-    $("#logTime").value = "";
-    state.logDate = date;
+    state.logDate = todayISO;
     state.showAllLogs = false;
     renderLogs();
-    showToast("記録を追加しました");
+    showToast("INBOXと今日の記録へ追加しました");
   });
   $("#logFilterDate").addEventListener("change", (event) => {
     state.logDate = event.target.value || todayISO;
@@ -1898,10 +1899,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=53"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=54"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 53;
+  const APP_VERSION = 54;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
