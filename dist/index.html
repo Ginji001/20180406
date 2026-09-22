@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=57" />
+    <link rel="manifest" href="./manifest.webmanifest?v=58" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=57" />
+    <link rel="stylesheet" href="./styles.css?v=58" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -241,7 +241,7 @@
                 <span class="cloud-sync-badge" id="cloudSyncBadge">オフ</span>
               </div>
               <p class="cloud-sync-account" id="cloudSyncAccount" hidden></p>
-              <div class="cloud-sync-actions"><button type="button" id="cloudSyncBtn">Googleでログインして同期</button><button type="button" id="cloudSyncStopBtn" hidden>ログアウト（同期をやめる）</button></div>
+              <div class="cloud-sync-actions"><button type="button" id="cloudSyncBtn">Googleでログインして同期</button><button type="button" id="cloudSyncResyncBtn" hidden>クラウドから全部読み込み直す</button><button type="button" id="cloudSyncStopBtn" hidden>ログアウト（同期をやめる）</button></div>
               <p class="data-note">使う端末それぞれで、同じGoogleアカウントでログインしてください。入力した内容は数秒でほかの端末にも反映されます。通信がないときもこれまでどおり記録でき、つながったときに自動で同期します。記録はログインしたご本人だけが読み書きできる場所に保存されます。</p>
             </section>
           </section>
@@ -444,8 +444,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=57"></script>
-    <script src="./cloud-sync.js?v=57" defer></script>
-    <script src="./google-calendar.js?v=57"></script>
+    <script src="./app.js?v=58"></script>
+    <script src="./cloud-sync.js?v=58" defer></script>
+    <script src="./google-calendar.js?v=58"></script>
   </body>
 </html>
