@@ -147,10 +147,14 @@ function listen(since, session, onFirstServer) {
   });
 }
 
+const RESYNC_FLAG = "hachiroku-sync-resync-v58:"; // v58：一度だけ全件を読み直して、足りない過去分を取り込む
+function resetSyncState() { try { localStorage.removeItem(baseKey()); localStorage.removeItem(metaKey()); } catch {} }
+
 async function start(user) {
   const session = ++st.session;
   st.unsub?.(); st.unsub = null;
   st.user = user; st.ready = false;
+  try { if (!localStorage.getItem(RESYNC_FLAG + user.uid)) { resetSyncState(); rawSetItem.call(localStorage, RESYNC_FLAG + user.uid, "1"); } } catch {}
   setStatus("記録を同期しています…", "syncing");
   try {
     const meta = loadMeta(), base = loadBase(), now = Date.now();
@@ -171,6 +175,13 @@ async function start(user) {
     setStatus(errorText(e), "error");
     setTimeout(() => { if (st.user && !st.ready && session === st.session) start(st.user); }, 15000);
   }
+}
+
+// 手動：クラウドの記録を全部読み込み直す（この端末の記録は消さずに合わせる）
+function resyncAll() {
+  if (!st.user) return;
+  resetSyncState();
+  start(st.user);
 }
 
 function errorText(e) {
@@ -209,12 +220,15 @@ function render() {
   if (badge) { badge.textContent = st.tone === "syncing" ? "同期中" : st.tone === "error" ? "要確認" : on ? "オン" : "オフ"; badge.className = "cloud-sync-badge " + (st.tone === "syncing" ? "syncing" : st.tone === "error" ? "waiting" : on ? "connected" : ""); }
   if (btn) btn.hidden = on;
   if (stop) stop.hidden = !on;
+  const resync = $("#cloudSyncResyncBtn");
+  if (resync) resync.hidden = !on;
   if (account) { account.hidden = !on; account.textContent = on ? "ログイン中：" + (st.user.email || "Googleアカウント") : ""; }
   if (pill) { pill.hidden = st.tone !== "error"; pill.textContent = "⚠ 同期を確認"; }
 }
 function init() {
   $("#cloudSyncBtn")?.addEventListener("click", login);
   $("#cloudSyncStopBtn")?.addEventListener("click", logout);
+  $("#cloudSyncResyncBtn")?.addEventListener("click", resyncAll);
   $("#cloudSyncPill")?.addEventListener("click", () => document.querySelector('[data-view="data"]')?.click());
   window.addEventListener("online", () => { render(); if (st.user && !st.ready) start(st.user); });
   window.addEventListener("offline", render);
