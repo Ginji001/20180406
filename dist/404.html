@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=56" />
+    <link rel="manifest" href="./manifest.webmanifest?v=57" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=56" />
+    <link rel="stylesheet" href="./styles.css?v=57" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -92,12 +92,11 @@
                 <div class="home-section-head"><div><p class="help-kicker">タスク・記録</p><h2>INBOX</h2></div><button type="button" data-view="records">記録一覧</button></div>
                 <form class="capture" id="quickAddForm">
                   <span class="capture-icon">＋</span>
-                  <select id="quickType" aria-label="登録する種類"><option value="task">↓ INBOX</option><option value="schedule">▦ 予定（カレンダー）</option></select>
-                  <input id="quickTaskInput" required maxlength="300" autocomplete="off" placeholder="タイトル（INBOXに追加…）" aria-label="タイトル" />
-                  <select id="quickPriority" aria-label="優先度"><option value="medium">優先度：中</option><option value="high">優先度：高</option><option value="low">優先度：低</option></select>
+                  <select id="quickType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option></select>
+                  <input id="quickTaskInput" required maxlength="300" autocomplete="off" placeholder="内容（INBOXと記録に入ります）" aria-label="内容" />
                   <button type="submit">追加</button>
-                  <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="内容（くわしく書く・任意）" aria-label="内容"></textarea>
-                  <div class="capture-when" id="quickWhen" hidden><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="時刻（任意）" /></div>
+                  <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
+                  <div class="capture-when" id="quickWhen"><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="時刻（任意）" /></div>
                 </form>
                 <div class="gtd-panel" id="gtdPanel">
                   <button type="button" class="gtd-main" id="triageBtn"><strong>INBOXを整理する</strong><small id="triageCount">未整理 0件</small></button>
@@ -165,8 +164,9 @@
               <input id="logDate" type="date" required />
               <input id="logTime" type="time" aria-label="記録する時刻" />
               <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option></select>
-              <input id="logText" required maxlength="300" placeholder="記録する内容（INBOXにも入ります）" />
+              <input id="logText" required maxlength="300" placeholder="内容（INBOXと記録に入ります）" />
               <button type="submit">記録する</button>
+              <textarea id="logDetail" rows="2" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
             </form>
             <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="logTodayBtn" hidden>今日に戻る</button><button type="button" id="showAllLogs">すべて表示</button></div>
             <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件のメモを</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="completed">× 完了</button><button type="button" data-pick-type="postponed">＞ 先送り</button><button type="button" data-pick-type="cancelled">－ キャンセル</button><button type="button" data-pick-type="todo">☐ やること</button><button type="button" data-pick-type="clear">解除</button></div>
@@ -444,8 +444,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=56"></script>
-    <script src="./cloud-sync.js?v=56" defer></script>
-    <script src="./google-calendar.js?v=56"></script>
+    <script src="./app.js?v=57"></script>
+    <script src="./cloud-sync.js?v=57" defer></script>
+    <script src="./google-calendar.js?v=57"></script>
   </body>
 </html>

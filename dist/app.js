@@ -1117,42 +1117,32 @@
     }
   });
 
+  // v57：INBOXと記録は同じ入力内容（種類・日付・時刻・内容）。INBOXと記録の両方に入れ、振り分けは記録から
+  function addInboxEntry({ title, detail = "", date, time, type }) {
+    title = String(title || "").trim();
+    detail = String(detail || "").trim();
+    if (!title) return false;
+    date = /^\d{4}-\d{2}-\d{2}$/.test(date || "") ? date : currentISO();
+    time = /^\d{2}:\d{2}$/.test(time || "") ? time : "";
+    type = logTypeNames[type] ? type : "memo";
+    const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: detail, completed: false, order: Date.now(), createdAt: new Date().toISOString() };
+    state.data.tasks.push(task);
+    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, type, text: inboxLogText(task), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
+    if (!persist()) return false;
+    state.logDate = date;
+    state.showAllLogs = false;
+    render();
+    showToast(`INBOXと${date === currentISO() ? "今日" : formatDate(date)}の記録へ追加しました`);
+    return true;
+  }
+
   $("#quickAddForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const text = $("#quickTaskInput").value.trim();
-    const detail = $("#quickDetail").value.trim();
-    const type = $("#quickType").value;
-    if (type === "task") {
-      const task = createTask({ title: text, notes: detail, priority: $("#quickPriority").value, folder: "inbox" });
-      state.logDate = todayISO;
-      render();
-      showToast("INBOXと今日の記録へ追加しました");
-    } else if (type === "schedule") {
-      const date = $("#quickDate").value || todayISO;
-      const time = /^\d{2}:\d{2}$/.test($("#quickTime").value) ? $("#quickTime").value : "";
-      state.data.events.push({ id: uid(), date, time, title: text, ...(detail ? { note: detail } : {}), createdAt: new Date().toISOString() });
-      persist();
-      render();
-      showToast(`${formatDate(date)}${time ? ` ${time}` : ""}の予定へ追加しました`);
-    } else {
-      const date = $("#quickDate").value || todayISO;
-      createLog(type, detail ? `${text}\n${detail}` : text, date, $("#quickTime").value);
-      state.logDate = date;
-      render();
-      showToast(date === todayISO ? "今日の記録へ追加しました" : `${formatDate(date)}の記録へ追加しました`);
-    }
+    const ok = addInboxEntry({ title: $("#quickTaskInput").value, detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, type: $("#quickType").value });
+    if (!ok) return;
     $("#quickTaskInput").value = "";
     $("#quickDetail").value = "";
     $("#quickTime").value = "";
-  });
-
-  $("#quickType").addEventListener("change", (event) => {
-    const type = event.target.value;
-    const task = type === "task";
-    $("#quickPriority").hidden = !task;
-    $("#quickWhen").hidden = task;
-    $("#quickDate").value ||= todayISO;
-    $("#quickTaskInput").placeholder = task ? "タイトル（INBOXに追加…）" : type === "schedule" ? "予定のタイトル" : "タイトル（手帳に記録…）";
   });
 
   $("#taskForm").addEventListener("submit", (event) => {
@@ -1438,22 +1428,11 @@
 
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    // v55：記録画面で入れた内容は、選んだ日付・時刻・種類で記録し、INBOXにも入れる（両方を紐づけ）
-    const title = $("#logText").value.trim();
-    if (!title) return;
-    const date = $("#logDate").value || currentISO();
-    const time = /^\d{2}:\d{2}$/.test($("#logTime").value) ? $("#logTime").value : "";
-    const type = logTypeNames[$("#logType").value] ? $("#logType").value : "memo";
-    const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: "", completed: false, order: Date.now(), createdAt: new Date().toISOString() };
-    state.data.tasks.push(task);
-    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, type, text: title, ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
-    if (!persist()) return;
+    const ok = addInboxEntry({ title: $("#logText").value, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, type: $("#logType").value });
+    if (!ok) return;
     $("#logText").value = "";
+    $("#logDetail").value = "";
     $("#logTime").value = "";
-    state.logDate = date;
-    state.showAllLogs = false;
-    render();
-    showToast(`INBOXと${date === currentISO() ? "今日" : formatDate(date)}の記録へ追加しました`);
   });
   // v56：iPhoneでは日付を回している間は input だけが届くことがあるので、両方で絞り込む
   function applyLogFilterDate(event) {
@@ -1932,10 +1911,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=56"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=57"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 56;
+  const APP_VERSION = 57;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
