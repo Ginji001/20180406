@@ -614,3 +614,7 @@ body.dark button.habit-calendar-day.today { background: #4a3923; }
 .reflection-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .reflection-list li { font-size: .78rem; line-height: 1.5; }
 .reflection-old { margin: 4px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.5; }
+
+/* v60：行動記録 */
+.log-action-total { margin: 4px 0 0; color: var(--muted); font-size: .74rem; font-weight: 680; }
+.log-action-total[hidden] { display: none; }

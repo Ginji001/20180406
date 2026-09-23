@@ -160,10 +160,41 @@
   const tagNames = { work: "仕事", private: "プライベート" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
-  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること" };
-  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→" };
+  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること", action: "行動" };
+  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→", action: "⏱" };
   const reflectionLogTypes = ["good", "learned", "tomorrow"]; // v59：振り返りの中身は記録から
   const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類
+
+  // v60：行動記録は開始・終了時刻を持ち、かかった時間を出す
+  const validTime = (value) => (/^\d{2}:\d{2}$/.test(String(value || "")) ? String(value) : "");
+  function minutesOf(time) {
+    const [h, m] = validTime(time).split(":").map(Number);
+    return Number.isFinite(h) ? h * 60 + m : null;
+  }
+  function durationMinutes(item) {
+    if (!item || item.type !== "action") return 0;
+    const start = minutesOf(item.time), end = minutesOf(item.end);
+    if (start === null || end === null) return 0;
+    return end >= start ? end - start : end + 24 * 60 - start; // 日をまたいだときも計算する
+  }
+  function durationText(minutes) {
+    if (!minutes) return "";
+    const h = Math.floor(minutes / 60), m = minutes % 60;
+    return `${h ? `${h}時間` : ""}${m || !h ? `${m}分` : ""}`;
+  }
+  function logTimeText(item) {
+    const start = validTime(item.time);
+    if (!start) return "";
+    const end = item.type === "action" ? validTime(item.end) : "";
+    const length = durationText(durationMinutes(item));
+    return `${start}${end ? `〜${end}` : ""}${length ? `（${length}）` : ""}`;
+  }
+  // 種類が「行動」のときだけ終了時刻の欄を出す
+  function syncActionField(select, field) {
+    const target = $(field);
+    if (!target) return;
+    target.hidden = $(select)?.value !== "action";
+  }
 
   // v55：開いたまま日付が変わっても「今日」がずれないように、その時点の日付を使う
   function currentISO() {
@@ -587,8 +618,12 @@
       const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? `<button type="button" class="journal-sort" data-sort-log="${task.id}">振り分け</button>` : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
       const pick = item.type === "memo";
       const mark = pick ? `<label class="journal-check journal-pick" title="振り分けるメモを選ぶ"><input type="checkbox" data-pick-log="${item.id}" ${state.pickedLogs.has(item.id) ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}を選ぶ" /></label>` : check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
-      return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${item.time ? ` ${escapeHTML(item.time)}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
+      return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
     }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
+    const actionMinutes = logs.reduce((sum, item) => sum + durationMinutes(item), 0);
+    const actionCount = logs.filter((item) => item.type === "action").length;
+    $("#logActionTotal").hidden = !actionCount;
+    $("#logActionTotal").textContent = actionCount ? `行動 ${actionCount}件${actionMinutes ? `・合計 ${durationText(actionMinutes)}` : ""}` : "";
     $("#showAllLogs").textContent = state.showAllLogs ? "日付で絞る" : "すべて表示";
     const memoIds = new Set(state.data.logs.filter((item) => item.type === "memo").map((item) => item.id));
     state.pickedLogs.forEach((id) => { if (!memoIds.has(id)) state.pickedLogs.delete(id); });
@@ -1147,16 +1182,17 @@
   });
 
   // v57：INBOXと記録は同じ入力内容（種類・日付・時刻・内容）。INBOXと記録の両方に入れ、振り分けは記録から
-  function addInboxEntry({ title, detail = "", date, time, type }) {
+  function addInboxEntry({ title, detail = "", date, time, end = "", type }) {
     title = String(title || "").trim();
     detail = String(detail || "").trim();
     if (!title) return false;
     date = /^\d{4}-\d{2}-\d{2}$/.test(date || "") ? date : currentISO();
-    time = /^\d{2}:\d{2}$/.test(time || "") ? time : "";
+    time = validTime(time);
     type = logTypeNames[type] ? type : "memo";
+    end = type === "action" ? validTime(end) : "";
     const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: detail, completed: false, order: Date.now(), createdAt: new Date().toISOString() };
     state.data.tasks.push(task);
-    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, type, text: inboxLogText(task), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
+    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, ...(end ? { end } : {}), type, text: inboxLogText(task), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
     if (!persist()) return false;
     state.logDate = date;
     state.showAllLogs = false;
@@ -1167,12 +1203,17 @@
 
   $("#quickAddForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const ok = addInboxEntry({ title: $("#quickTaskInput").value, detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, type: $("#quickType").value });
+    const ok = addInboxEntry({ title: $("#quickTaskInput").value, detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, end: $("#quickEnd").value, type: $("#quickType").value });
     if (!ok) return;
     $("#quickTaskInput").value = "";
     $("#quickDetail").value = "";
     $("#quickTime").value = "";
+    $("#quickEnd").value = "";
   });
+
+  $("#quickType").addEventListener("change", () => syncActionField("#quickType", "#quickEnd"));
+  $("#logType").addEventListener("change", () => syncActionField("#logType", "#logEnd"));
+  $("#logEditType").addEventListener("change", () => syncActionField("#logEditType", "#logEditEndField"));
 
   $("#taskForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1457,11 +1498,12 @@
 
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
-    const ok = addInboxEntry({ title: $("#logText").value, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, type: $("#logType").value });
+    const ok = addInboxEntry({ title: $("#logText").value, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, end: $("#logEnd").value, type: $("#logType").value });
     if (!ok) return;
     $("#logText").value = "";
     $("#logDetail").value = "";
     $("#logTime").value = "";
+    $("#logEnd").value = "";
   });
   // v56：iPhoneでは日付を回している間は input だけが届くことがあるので、両方で絞り込む
   function applyLogFilterDate(event) {
@@ -1570,6 +1612,8 @@
       $("#logEditTime").value = record.time || "";
       $("#logEditType").value = logTypeNames[record.type] ? record.type : "memo";
       $("#logEditText").value = record.text || "";
+      $("#logEditEnd").value = record.end || "";
+      syncActionField("#logEditType", "#logEditEndField");
       $("#logEditDialog").showModal();
       return;
     }
@@ -1592,10 +1636,12 @@
       const [head, ...rest] = text.split("\n");
       Object.assign(linked, { title: head.trim() || linked.title, notes: rest.join("\n").trim() });
     }
+    const editType = logTypeNames[$("#logEditType").value] ? $("#logEditType").value : "memo";
     Object.assign(record, {
       date,
-      time: /^\d{2}:\d{2}$/.test(time) ? time : "",
-      type: logTypeNames[$("#logEditType").value] ? $("#logEditType").value : "memo",
+      time: validTime(time),
+      end: editType === "action" ? validTime($("#logEditEnd").value) : "",
+      type: editType,
       text,
       updatedAt: new Date().toISOString()
     });
@@ -1936,10 +1982,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=59"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=60"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 59;
+  const APP_VERSION = 60;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
