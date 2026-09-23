@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=61" />
+    <link rel="manifest" href="./manifest.webmanifest?v=62" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=61" />
+    <link rel="stylesheet" href="./styles.css?v=62" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -92,13 +92,13 @@
                   <div class="capture-when" id="quickWhen"><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="開始時刻（任意）" /><input id="quickEnd" type="time" aria-label="終了時刻" hidden /></div>
                 </form>
                 <div class="gtd-panel" id="gtdPanel">
-                  <button type="button" class="gtd-main" id="triageBtn"><strong>INBOXを整理する</strong><small id="triageCount">未整理 0件</small></button>
+                  
                   <button type="button" id="todayAllBtn">⤓ 期限切れを今日に<em id="todayAllCount"></em></button>
                   <button type="button" id="habitTasksBtn">◉ ハビットを今日のタスクに</button>
                 </div>
                 <div class="bulk-bar" id="bulkBar" hidden>
                   <strong id="selectedCount">0件選択</strong>
-                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select>
+                  
                   <button data-bulk="today">今日にする</button><button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
                 </div>
                 <div id="taskContent"></div>
@@ -144,7 +144,7 @@
             </form>
             <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="logTodayBtn" hidden>今日に戻る</button><button type="button" id="showAllLogs">すべて表示</button></div>
             <p class="log-action-total" id="logActionTotal" hidden></p>
-            <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件のメモを</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="good">◎ よかったこと</button><button type="button" data-pick-type="learned">！ 気づいたこと</button><button type="button" data-pick-type="tomorrow">→ 明日やること</button><button type="button" data-pick-type="action">⏱ 行動</button><button type="button" data-pick-type="clear">解除</button></div>
+            <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件を</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="good">◎ よかったこと</button><button type="button" data-pick-type="learned">！ 気づいたこと</button><button type="button" data-pick-type="tomorrow">→ 明日やること</button><button type="button" data-pick-type="action">⏱ 行動</button><button type="button" data-pick-folder="next">→ 次にやる</button><button type="button" data-pick-folder="remind">◷ リマインダー</button><button type="button" data-pick-folder="waiting">⌛ 待ち状況</button><button type="button" data-pick-folder="wish">☆ いつかやりたい</button><button type="button" data-pick-type="clear">解除</button></div>
             <div class="journal-list" id="logList"></div>
           </section>
 
@@ -350,14 +350,6 @@
     </dialog>
 
 
-    <dialog id="triageDialog" class="triage-dialog">
-      <div class="triage-inner">
-        <div class="dialog-head"><div><small id="triageProgress">INBOXを整理</small><h2 id="triageTitle"></h2><p class="triage-note" id="triageNote"></p></div><button type="button" class="icon-button" id="triageClose" aria-label="閉じる">×</button></div>
-        <ol class="triage-steps" id="triageSteps" aria-hidden="true"><li>行動</li><li>手順</li><li>待ち</li><li>日時</li><li>2分</li></ol>
-        <div id="triageBody"></div>
-        <div class="triage-foot"><button type="button" id="triageBack">← 戻る</button><button type="button" id="triageSkip">あとで決める →</button></div>
-      </div>
-    </dialog>
     <dialog id="projectDialog">
       <form id="projectForm">
         <div class="dialog-head"><div><small>プロジェクト</small><h2>プロジェクトを追加</h2></div><button type="button" class="icon-button" data-close="project">×</button></div>
@@ -382,16 +374,6 @@
       </form>
     </dialog>
 
-    <dialog id="sortDialog">
-      <form id="sortForm">
-        <div class="dialog-head"><div><small>INBOX</small><h2>振り分け</h2></div><button type="button" class="icon-button" data-close="sort" aria-label="閉じる">×</button></div>
-        <input type="hidden" id="sortTaskId" />
-        <p class="sort-title" id="sortTitle"></p>
-        <label class="field"><span>振り分け先</span><select id="sortFolder"><option value="next">→ 次にやる</option><option value="remind">◷ リマインダー</option><option value="waiting">⌛ 待ち状況</option><option value="project">□ プロジェクト</option><option value="wish">☆ いつかやりたい</option></select></label>
-        <div class="field-grid" id="sortWhen" hidden><label class="field"><span>日付</span><input id="sortDate" type="date" /></label><label class="field"><span>通知する時刻（任意）</span><input id="sortTime" type="time" /></label></div>
-        <div class="dialog-actions"><button type="button" data-close="sort">キャンセル</button><button class="primary" type="submit">振り分ける</button></div>
-      </form>
-    </dialog>
     <dialog id="eventEditDialog">
       <form id="eventEditForm">
         <div class="dialog-head"><div><small>予定</small><h2>予定を編集</h2></div><button type="button" class="icon-button" data-close="eventEdit" aria-label="閉じる">×</button></div>
@@ -415,8 +397,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=61"></script>
-    <script src="./cloud-sync.js?v=61" defer></script>
-    <script src="./google-calendar.js?v=61"></script>
+    <script src="./app.js?v=62"></script>
+    <script src="./cloud-sync.js?v=62" defer></script>
+    <script src="./google-calendar.js?v=62"></script>
   </body>
 </html>

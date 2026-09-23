@@ -575,7 +575,7 @@
     $("#logList").innerHTML = logs.map((item) => {
       const check = checkLogTypes.includes(item.type);
       const task = item.taskId && taskMap.get(item.taskId);
-      const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? `<button type="button" class="journal-sort" data-sort-log="${task.id}">振り分け</button>` : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
+      const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? '<em class="journal-route">未振り分け</em>' : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
       const pick = item.type === "memo";
       const mark = pick ? `<label class="journal-check journal-pick" title="振り分けるメモを選ぶ"><input type="checkbox" data-pick-log="${item.id}" ${state.pickedLogs.has(item.id) ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}を選ぶ" /></label>` : check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
       return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
@@ -588,7 +588,7 @@
     const memoIds = new Set(state.data.logs.filter((item) => item.type === "memo").map((item) => item.id));
     state.pickedLogs.forEach((id) => { if (!memoIds.has(id)) state.pickedLogs.delete(id); });
     $("#logPickBar").hidden = !state.pickedLogs.size;
-    $("#logPickCount").textContent = `${state.pickedLogs.size}件のメモを`;
+    $("#logPickCount").textContent = `${state.pickedLogs.size}件を`;
   }
 
   function changeMonth(month, amount) {
@@ -909,8 +909,6 @@
 
   function renderGtdPanel() {
     const inbox = state.data.tasks.filter((task) => !task.completed && task.folder === "inbox").length;
-    $("#triageCount").textContent = inbox ? `未整理 ${inbox}件` : "未整理はありません";
-    $("#triageBtn").disabled = !inbox;
     const count = todayTargets().length;
     $("#todayAllCount").textContent = count ? count : "";
   }
@@ -945,130 +943,6 @@
     if (!id) return;
     elements.taskDialog.close();
     postpone([id]);
-  });
-
-  // ---- GTD：INBOXの整理（ろ過フロー） ----
-  const triage = { queue: [], index: 0, history: [] };
-  const triageStepIndex = { action: 0, nonaction: 0, project: 1, waiting: 2, remind: 3, remindForm: 3, two: 4, twoDo: 4 };
-  const triageQuestions = {
-    action: ["これは、何か行動が必要ですか？", [["yes", "はい、行動が必要", "primary"], ["no", "いいえ"]]],
-    nonaction: ["行動が不要なら、どうしますか？", [["wish", "☆ いつかやりたいへ"], ["journal", "✎ 手帳へ（記録・メモなど）"], ["delete", "🗑 削除する", "danger"]]],
-    project: ["複数の手順が必要ですか？", [["yes", "はい → プロジェクトへ"], ["no", "いいえ、1回で終わる", "primary"]]],
-    waiting: ["ほかの人の対応や返事を待っていますか？", [["yes", "はい → 待ち状況へ"], ["no", "いいえ、自分でやる", "primary"]]],
-    remind: ["日にちや時間が決まっていますか？", [["yes", "はい → リマインダーへ"], ["no", "いいえ", "primary"]]],
-    two: ["2分以内で終わりますか？", [["yes", "はい、すぐ終わる"], ["no", "いいえ → 次にやるへ", "primary"]]],
-    twoDo: ["今すぐやってしまいましょう。", [["done", "✓ やった（完了にする）", "primary"], ["nextToday", "今日あとでやる"]]]
-  };
-
-  function triageTask() {
-    return state.data.tasks.find((task) => task.id === triage.queue[triage.index] && !task.completed && task.folder === "inbox");
-  }
-
-  function openTriage() {
-    triage.queue = state.data.tasks.filter((task) => !task.completed && task.folder === "inbox").sort((a, b) => (a.order || 0) - (b.order || 0)).map((task) => task.id);
-    triage.index = 0;
-    if (!triage.queue.length) return showToast("INBOXは空です");
-    showTriageStep("action", true);
-    $("#triageDialog").showModal();
-  }
-
-  function showTriageStep(step, reset = false) {
-    const task = triageTask();
-    if (!task) return nextTriageItem();
-    if (reset) triage.history = [];
-    triage.step = step;
-    $("#triageProgress").textContent = `INBOXを整理　${triage.index + 1} / ${triage.queue.length}`;
-    $("#triageTitle").textContent = task.title;
-    $("#triageNote").textContent = task.notes || "";
-    $("#triageNote").hidden = !task.notes;
-    $$("#triageSteps li").forEach((item, index) => {
-      item.classList.toggle("done", index < triageStepIndex[step]);
-      item.classList.toggle("current", index === triageStepIndex[step]);
-    });
-    $("#triageBack").disabled = !triage.history.length;
-    if (step === "remindForm") {
-      $("#triageBody").innerHTML = `<p class="triage-question">いつ思い出しますか？</p>
-        <div class="field-grid"><label class="field"><span>日付</span><input id="triageDate" type="date" value="${task.due || todayISO}" /></label><label class="field"><span>通知する時刻（任意）</span><input id="triageTime" type="time" value="${task.time || ""}" /></label></div>
-        <div class="triage-choices"><button type="button" class="primary" data-triage="saveRemind">リマインダーに入れる</button></div>`;
-      return;
-    }
-    const [question, choices] = triageQuestions[step];
-    $("#triageBody").innerHTML = `<p class="triage-question">${question}</p><div class="triage-choices">${choices.map(([value, label, tone]) => `<button type="button" class="${tone || ""}" data-triage="${value}">${label}</button>`).join("")}</div>`;
-  }
-
-  function goTriage(step) {
-    triage.history.push(triage.step);
-    showTriageStep(step);
-  }
-
-  function settleTriage(changes, message) {
-    const task = triageTask();
-    if (!task) return nextTriageItem();
-    Object.assign(task, changes);
-    persist();
-    render();
-    showToast(message);
-    nextTriageItem();
-  }
-
-  function nextTriageItem() {
-    triage.index += 1;
-    while (triage.index < triage.queue.length && !triageTask()) triage.index += 1;
-    if (triage.index >= triage.queue.length) {
-      $("#triageDialog").close();
-      render();
-      const left = state.data.tasks.filter((task) => !task.completed && task.folder === "inbox").length;
-      showToast(left ? `整理を終えました（あとで決める：${left}件）` : "INBOXが空になりました");
-      return;
-    }
-    showTriageStep("action", true);
-  }
-
-  $("#triageBtn").addEventListener("click", openTriage);
-  $("#triageClose").addEventListener("click", () => { $("#triageDialog").close(); render(); });
-  $("#triageSkip").addEventListener("click", nextTriageItem);
-  $("#triageBack").addEventListener("click", () => { if (triage.history.length) showTriageStep(triage.history.pop()); });
-  $("#triageBody").addEventListener("click", (event) => {
-    const choice = event.target.closest("[data-triage]")?.dataset.triage;
-    if (!choice) return;
-    const task = triageTask();
-    if (!task) return nextTriageItem();
-    const step = triage.step;
-    if (step === "action") return goTriage(choice === "yes" ? "project" : "nonaction");
-    if (step === "nonaction") {
-      if (choice === "wish") return settleTriage({ folder: "wish" }, "いつかやりたいへ移しました");
-      if (choice === "delete") {
-        if (!window.confirm(`「${task.title}」を削除しますか？`)) return;
-        state.data.tasks = state.data.tasks.filter((item) => item.id !== task.id);
-        persist();
-        render();
-        showToast("削除しました");
-        return nextTriageItem();
-      }
-      if (choice === "journal") {
-        $("#triageDialog").close();
-        return openRoute([task.id]);
-      }
-    }
-    if (step === "project") return choice === "yes" ? settleTriage({ folder: "project" }, "プロジェクトへ移しました") : goTriage("waiting");
-    if (step === "waiting") return choice === "yes" ? settleTriage({ folder: "waiting" }, "待ち状況へ移しました") : goTriage("remind");
-    if (step === "remind") return goTriage(choice === "yes" ? "remindForm" : "two");
-    if (step === "remindForm") {
-      const due = $("#triageDate").value || todayISO;
-      const time = $("#triageTime").value;
-      if (time) askNotificationPermission();
-      return settleTriage({ folder: "remind", due, time }, "リマインダーに入れました");
-    }
-    if (step === "two") return choice === "yes" ? goTriage("twoDo") : settleTriage({ folder: "next" }, "次にやるへ移しました");
-    if (step === "twoDo") {
-      if (choice === "done") {
-        task.folder = "next";
-        completeTask(task.id, true);
-        showToast("完了しました");
-        return nextTriageItem();
-      }
-      return settleTriage({ folder: "next", due: todayISO }, "今日の「次にやる」へ移しました");
-    }
   });
 
   // ---- 時刻つきタスクの通知（アプリを開いている間に確認） ----
@@ -1259,16 +1133,6 @@
     }
   });
 
-  $("#bulkFolder").addEventListener("change", (event) => {
-    const folder = event.target.value;
-    if (!folder) return;
-    state.data.tasks.forEach((task) => { if (state.selected.has(task.id)) task.folder = folder; });
-    state.selected.clear();
-    event.target.value = "";
-    persist();
-    render();
-    showToast("フォルダーを移動しました");
-  });
 
 
   $("#newTaskBtn").addEventListener("click", () => openTask());
@@ -1399,6 +1263,31 @@
     renderLogs();
   });
   $("#logPickBar").addEventListener("click", (event) => {
+    // v62：タスクの行き先も、この振り分けバーだけで決める
+    const folderButton = event.target.closest("[data-pick-folder]");
+    if (folderButton) {
+      const folder = folderButton.dataset.pickFolder;
+      if (!folderNames[folder]) return;
+      let moved = 0;
+      state.data.logs.filter((item) => state.pickedLogs.has(item.id)).forEach((item) => {
+        const task = state.data.tasks.find((entry) => entry.id === item.taskId);
+        if (!task || task.completed) return;
+        task.folder = folder;
+        if (folder === "remind") {
+          task.due = item.date || currentISO();
+          task.time = validTime(item.time);
+          if (task.time) askNotificationPermission();
+        }
+        task.updatedAt = new Date().toISOString();
+        moved += 1;
+      });
+      state.pickedLogs.clear();
+      persist();
+      render();
+      showToast(moved ? `${moved}件を「${folderNames[folder]}」へ振り分けました` : "タスクが見つかりませんでした");
+      return;
+    }
+
     const button = event.target.closest("[data-pick-type]");
     if (!button) return;
     const kind = button.dataset.pickType;
@@ -1432,42 +1321,7 @@
     persist();
     renderLogs();
   });
-  function setSortFolder(folder) {
-    $("#sortFolder").value = folder;
-    $("#sortWhen").hidden = folder !== "remind";
-    $("#sortDate").required = folder === "remind";
-  }
-  $("#sortFolder").addEventListener("change", (event) => setSortFolder(event.target.value));
-  $("#sortForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const task = state.data.tasks.find((item) => item.id === $("#sortTaskId").value);
-    const folder = $("#sortFolder").value;
-    if (!task || !folderNames[folder]) return;
-    task.folder = folder;
-    if (folder === "remind") {
-      task.due = $("#sortDate").value || todayISO;
-      task.time = /^\d{2}:\d{2}$/.test($("#sortTime").value) ? $("#sortTime").value : "";
-      if (task.time) askNotificationPermission();
-    }
-    task.updatedAt = new Date().toISOString();
-    persist();
-    $("#sortDialog").close();
-    render();
-    showToast(`「${folderNames[folder]}」へ振り分けました`);
-  });
   $("#logList").addEventListener("click", (event) => {
-    const sortId = event.target.closest("[data-sort-log]")?.dataset.sortLog;
-    if (sortId) {
-      const task = state.data.tasks.find((item) => item.id === sortId);
-      if (!task) return;
-      $("#sortTaskId").value = task.id;
-      $("#sortTitle").textContent = task.title;
-      setSortFolder("next");
-      $("#sortDate").value = task.due || todayISO;
-      $("#sortTime").value = task.time || "";
-      $("#sortDialog").showModal();
-      return;
-    }
     const editId = event.target.closest("[data-edit-log]")?.dataset.editLog;
     if (editId) {
       const record = state.data.logs.find((item) => item.id === editId);
@@ -1847,10 +1701,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=61"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=62"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 61;
+  const APP_VERSION = 62;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
