@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=60" />
+    <link rel="manifest" href="./manifest.webmanifest?v=61" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=60" />
+    <link rel="stylesheet" href="./styles.css?v=61" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -71,13 +71,6 @@
       <main class="main">
         <header class="topbar">
           <button class="mobile-menu" id="mobileMenu" aria-label="メニューを開く">☰</button>
-          <div class="quick-links" aria-label="クイック操作">
-            <button data-quick="postpone"><span>↷</span>先送り</button>
-            <button data-view="calendar"><span>▦</span>予定</button>
-            <button data-view="records"><span>✎</span>記録</button>
-            <button data-view="reflection"><span>☾</span>振り返り</button>
-            <button data-view="help"><span>?</span>使い方</button>
-          </div>
           <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="タスクを検索" aria-label="タスクを検索" /></label>
         </header>
 
@@ -92,7 +85,7 @@
                 <div class="home-section-head"><div><p class="help-kicker">タスク・記録</p><h2>INBOX</h2></div><button type="button" data-view="records">記録一覧</button></div>
                 <form class="capture" id="quickAddForm">
                   <span class="capture-icon">＋</span>
-                  <select id="quickType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
+                  <select id="quickType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
                   <input id="quickTaskInput" required maxlength="300" autocomplete="off" placeholder="内容（INBOXと記録に入ります）" aria-label="内容" />
                   <button type="submit">追加</button>
                   <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
@@ -103,31 +96,12 @@
                   <button type="button" id="todayAllBtn">⤓ 期限切れを今日に<em id="todayAllCount"></em></button>
                   <button type="button" id="habitTasksBtn">◉ ハビットを今日のタスクに</button>
                 </div>
-                <div class="toolbar">
-                  <div class="view-switch" id="viewSwitch" aria-label="表示形式">
-                    <button class="active" data-mode="list">一覧</button><button data-mode="table">表</button><button data-mode="week">週</button><button data-mode="month">月</button>
-                  </div>
-                  <div class="filters">
-                    <select id="tagFilter" aria-label="タグで絞り込み"><option value="all">すべてのタグ</option><option value="work">仕事</option><option value="private">プライベート</option><option value="none">タグなし</option></select>
-                    <select id="priorityFilter" aria-label="優先度で絞り込み"><option value="all">すべての優先度</option><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select>
-                  </div>
-                </div>
                 <div class="bulk-bar" id="bulkBar" hidden>
                   <strong id="selectedCount">0件選択</strong>
-                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：ハビット</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option></select>
+                  <select id="bulkFolder" aria-label="移動先"><option value="">振り分け先を選ぶ</option><option value="inbox">INBOX</option><option value="next">次にやる</option><option value="remind">リマインダー</option><option value="waiting">待ち状況</option><option value="project">プロジェクト</option><option value="wish">いつかやりたい</option></select>
                   <button data-bulk="today">今日にする</button><button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
                 </div>
                 <div id="taskContent"></div>
-              </section>
-              <section class="home-section home-journal" id="homeJournal" hidden>
-                <div class="home-section-head"><div><p class="help-kicker">手帳</p><h2>記録</h2></div><button type="button" data-view="records">記録一覧</button></div>
-                <p class="home-section-copy">出来事・メモ・アイデアを、日付と時刻つきで残します。</p>
-                <form class="home-log-form" id="homeLogForm">
-                  <div class="home-log-date"><input id="homeLogDate" type="date" required aria-label="記録する日付" /><input id="homeLogTime" type="time" aria-label="記録する時刻" /></div>
-                  <select id="homeLogType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
-                  <textarea id="homeLogText" required maxlength="300" rows="4" placeholder="手帳に記録する内容"></textarea>
-                  <button type="submit">記録する</button>
-                </form>
               </section>
             </div>
           </section>
@@ -163,14 +137,14 @@
             <form class="journal-form" id="logForm">
               <input id="logDate" type="date" required />
               <input id="logTime" type="time" aria-label="記録する時刻" /><input id="logEnd" type="time" aria-label="終了時刻" hidden />
-              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
+              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
               <input id="logText" required maxlength="300" placeholder="内容（INBOXと記録に入ります）" />
               <button type="submit">記録する</button>
               <textarea id="logDetail" rows="2" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
             </form>
             <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="logTodayBtn" hidden>今日に戻る</button><button type="button" id="showAllLogs">すべて表示</button></div>
             <p class="log-action-total" id="logActionTotal" hidden></p>
-            <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件のメモを</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="completed">× 完了</button><button type="button" data-pick-type="postponed">＞ 先送り</button><button type="button" data-pick-type="cancelled">－ キャンセル</button><button type="button" data-pick-type="todo">☐ やること</button><button type="button" data-pick-type="good">◎ よかったこと</button><button type="button" data-pick-type="learned">！ 気づいたこと</button><button type="button" data-pick-type="tomorrow">→ 明日やること</button><button type="button" data-pick-type="action">⏱ 行動</button><button type="button" data-pick-type="clear">解除</button></div>
+            <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件のメモを</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="good">◎ よかったこと</button><button type="button" data-pick-type="learned">！ 気づいたこと</button><button type="button" data-pick-type="tomorrow">→ 明日やること</button><button type="button" data-pick-type="action">⏱ 行動</button><button type="button" data-pick-type="clear">解除</button></div>
             <div class="journal-list" id="logList"></div>
           </section>
 
@@ -355,7 +329,7 @@
       <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
 
-    <dialog id="routeDialog"><form id="routeForm"><h2>INBOXから振り分け</h2><p id="routeSummary"></p><label class="field">振り分け先<select id="routeDestination"><option value="records">手帳：記録</option><option value="calendar">手帳：予定</option><option value="habits">手帳：ハビット</option><option value="collections">手帳：コレクション</option><option value="documents">手帳：ドキュメント</option><option value="budget">手帳：家計簿</option></select></label><label class="field">日付<input id="routeDate" type="date" required /></label><label class="field">分類<input id="routeCategory" value="INBOXから" maxlength="80" /></label><div id="routeMoney" hidden><label class="field">収支<select id="routeMoneyType"><option value="expense">支出</option><option value="income">収入</option></select></label><label class="field">金額（1件あたり）<input id="routeAmount" type="number" min="1" step="1" /></label></div><p>内容とメモを移動します。</p><p id="routeError" role="alert"></p><div class="dialog-actions"><button type="button" id="routeCancel">キャンセル</button><button type="submit">振り分ける</button></div></form></dialog><dialog id="taskDialog">
+    <dialog id="taskDialog">
       <form id="taskForm">
         <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">INBOXに追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
         <input type="hidden" id="taskId" />
@@ -402,7 +376,7 @@
           <label class="field"><span>時刻</span><input id="logEditTime" type="time" /></label>
           <label class="field" id="logEditEndField" hidden><span>終了</span><input id="logEditEnd" type="time" /></label>
         </div>
-        <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="completed">× 完了したこと</option><option value="postponed">＞ 先送りしたこと</option><option value="cancelled">－ キャンセルしたこと</option><option value="todo">☐ やること</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select></label>
+        <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="event">○ 予定・出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select></label>
         <label class="field"><span>内容</span><textarea id="logEditText" required maxlength="1200" rows="5"></textarea></label>
         <div class="dialog-actions"><button type="button" data-close="logEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
       </form>
@@ -441,8 +415,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=60"></script>
-    <script src="./cloud-sync.js?v=60" defer></script>
-    <script src="./google-calendar.js?v=60"></script>
+    <script src="./app.js?v=61"></script>
+    <script src="./cloud-sync.js?v=61" defer></script>
+    <script src="./google-calendar.js?v=61"></script>
   </body>
 </html>

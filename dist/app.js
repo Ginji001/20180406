@@ -79,11 +79,8 @@
   const state = {
     data: normalizeData(loadedData),
     view: "inbox",
-    mode: "list",
     projectId: null,
     search: "",
-    tag: "all",
-    priority: "all",
     calendarMonth: todayISO.slice(0, 7),
     habitMonth: todayISO.slice(0, 7),
     habitDate: todayISO,
@@ -163,7 +160,7 @@
   const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること", action: "行動" };
   const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→", action: "⏱" };
   const reflectionLogTypes = ["good", "learned", "tomorrow"]; // v59：振り返りの中身は記録から
-  const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類
+  const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類（v61からは新規に作らない）
 
   // v60：行動記録は開始・終了時刻を持ち、かかった時間を出す
   const validTime = (value) => (/^\d{2}:\d{2}$/.test(String(value || "")) ? String(value) : "");
@@ -404,10 +401,6 @@
         tasks = tasks.filter((task) => !task.completed && task.folder === state.view);
       }
     }
-    if (state.tag !== "all") {
-      tasks = tasks.filter((task) => state.tag === "none" ? !task.tag : task.tag === state.tag);
-    }
-    if (state.priority !== "all") tasks = tasks.filter((task) => task.priority === state.priority);
     if (state.search) {
       const query = state.search.toLocaleLowerCase("ja");
       tasks = tasks.filter((task) => `${task.title} ${task.notes || ""}`.toLocaleLowerCase("ja").includes(query));
@@ -457,41 +450,12 @@
     return groups.map(([name, items]) => `<section class="task-group"><div class="group-heading"><h2>${escapeHTML(name)}</h2><span>${items.length}件</span></div><div class="task-list">${items.map(taskRow).join("")}</div></section>`).join("");
   }
 
-  function renderTable(tasks) {
-    if (!tasks.length) return emptyState();
-    return `<table class="task-table"><thead><tr><th>タスク</th><th>フォルダー</th><th>期限</th><th>残り</th><th>タグ</th><th>優先度</th></tr></thead><tbody>${tasks.map((task) => `<tr data-id="${task.id}"><td>${escapeHTML(task.title)}</td><td>${folderNames[task.folder] || "INBOX"}</td><td>${formatDate(task.due)}</td><td>${daysText(task.due)}</td><td>${tagNames[task.tag] || "—"}</td><td>${priorityNames[task.priority] || "中"}</td></tr>`).join("")}</tbody></table>`;
-  }
-
-  function renderWeek(tasks) {
-    const days = Array.from({ length: 7 }, (_, index) => addDays(today, index));
-    return `<div class="week-board">${days.map((date) => {
-      const iso = toISO(date);
-      const items = tasks.filter((task) => task.due === iso);
-      return `<section class="week-column"><h3>${date.getMonth() + 1}/${date.getDate()}（${"日月火水木金土"[date.getDay()]}）</h3>${items.map((task) => `<button class="week-card" data-id="${task.id}">${escapeHTML(task.title)}</button>`).join("") || '<span class="task-meta">予定なし</span>'}</section>`;
-    }).join("")}</div>`;
-  }
-
-  function renderMonth(tasks) {
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    const start = addDays(first, -first.getDay());
-    const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
-    return `<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
-      const iso = toISO(date);
-      const items = tasks.filter((task) => task.due === iso);
-      return `<div class="calendar-day ${date.getMonth() !== today.getMonth() ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${items.map((task) => `<button class="calendar-task" data-id="${task.id}">${escapeHTML(task.title)}</button>`).join("")}</div>`;
-    }).join("")}</div>`;
-  }
-
   function emptyState() {
     return '<div class="empty-state"><strong>タスクはありません</strong><span>思いついたことをINBOXへ追加してください。</span></div>';
   }
 
   function renderTasks() {
-    const tasks = filteredTasks();
-    if (state.mode === "table") elements.taskContent.innerHTML = renderTable(tasks);
-    else if (state.mode === "week") elements.taskContent.innerHTML = renderWeek(tasks);
-    else if (state.mode === "month") elements.taskContent.innerHTML = renderMonth(tasks);
-    else elements.taskContent.innerHTML = renderList(tasks);
+    elements.taskContent.innerHTML = renderList(filteredTasks());
     renderBulkBar();
   }
 
@@ -531,7 +495,6 @@
 
   function renderNavigation() {
     $$("[data-view]").forEach((button) => button.classList.toggle("active", !state.projectId && (button.dataset.view === state.view || (state.view === "inboxList" && button.dataset.view === "inbox"))));
-    $$("[data-mode]").forEach((button) => button.classList.toggle("active", button.dataset.mode === state.mode));
     $$(".nav-group").forEach((group) => {
       if (group.querySelector(`[data-view="${state.view}"]`)) group.open = true;
     });
@@ -596,9 +559,6 @@
   }
 
   function renderHomeJournal() {
-    const area = $("#homeJournal");
-    const home = state.view === "inbox" && !state.projectId;
-    area.hidden = true; // v40：ホームの記録欄はINBOXの入力欄に統合
     $("#quickDate").value ||= todayISO;
   }
 
@@ -834,7 +794,6 @@
     state.view = view;
     state.projectId = null;
     state.selected.clear();
-    if (view === "week" && state.mode === "month") state.mode = "week";
     document.body.classList.remove("menu-open");
     render();
   }
@@ -1157,12 +1116,6 @@
       render();
     }
 
-    const modeButton = event.target.closest("[data-mode]");
-    if (modeButton) {
-      state.mode = modeButton.dataset.mode;
-      render();
-    }
-
     const taskElement = event.target.closest("[data-id]");
     if (taskElement && (event.target.closest(".task-body") || event.target.closest(".task-menu") || event.target.closest(".week-card") || event.target.closest(".calendar-task") || event.target.closest("tr"))) {
       openTask(taskElement.dataset.id);
@@ -1171,14 +1124,6 @@
     const closeButton = event.target.closest("[data-close]");
     if (closeButton) $("#" + closeButton.dataset.close + "Dialog")?.close();
 
-    const quick = event.target.closest("[data-quick]");
-    if (quick?.dataset.quick === "postpone") postpone([...state.selected]);
-    if (quick?.dataset.quick === "calendar") {
-      state.view = "all";
-      state.projectId = null;
-      state.mode = "month";
-      render();
-    }
   });
 
   // v57：INBOXと記録は同じ入力内容（種類・日付・時刻・内容）。INBOXと記録の両方に入れ、振り分けは記録から
@@ -1317,7 +1262,6 @@
   $("#bulkFolder").addEventListener("change", (event) => {
     const folder = event.target.value;
     if (!folder) return;
-    if (!folderNames[folder]) { openRoute([...state.selected], folder); event.target.value = ""; return; }
     state.data.tasks.forEach((task) => { if (state.selected.has(task.id)) task.folder = folder; });
     state.selected.clear();
     event.target.value = "";
@@ -1326,72 +1270,6 @@
     showToast("フォルダーを移動しました");
   });
 
-
-  let routeIds = [];
-  function openRoute(ids, destination = "records") {
-    routeIds = ids;
-    $("#routeDestination").value = destination;
-    $("#routeDate").value = state.data.tasks.find(t => t.id === ids[0])?.due || todayISO;
-    $("#routeSummary").textContent = ids.length + "件を振り分けます";
-    $("#routeError").textContent = "";
-    $("#routeMoney").hidden = destination !== "budget";
-    $("#routeAmount").required = destination === "budget";
-    $("#routeDialog").showModal();
-  }
-  $("#routeCancel").addEventListener("click", () => $("#routeDialog").close());
-  $("#routeDestination").addEventListener("change", e => {
-    $("#routeMoney").hidden = e.target.value !== "budget";
-    $("#routeAmount").required = e.target.value === "budget";
-  });
-  $("#routeItemBtn").addEventListener("click", () => {
-    if (!$("#taskTitle").value.trim()) { $("#taskTitle").focus(); return; }
-    const before = new Set(state.data.tasks.map(t => t.id));
-    const id = $("#taskId").value;
-    $("#taskForm").requestSubmit();
-    if (elements.taskDialog.open) return;
-    openRoute([id || state.data.tasks.find(t => !before.has(t.id)).id]);
-  });
-  $("#routeForm").addEventListener("submit", e => {
-    e.preventDefault();
-    const destination = $("#routeDestination").value;
-    const date = $("#routeDate").value;
-    const category = $("#routeCategory").value.trim() || "INBOXから";
-    const amount = Number($("#routeAmount").value);
-    const next = JSON.parse(JSON.stringify(state.data));
-    try {
-      if (!date || !["records","calendar","habits","collections","documents","budget","reflection"].includes(destination)) throw new Error("振り分け先と日付を確認してください");
-      if (destination === "budget" && (!Number.isSafeInteger(amount) || amount <= 0)) throw new Error("金額は1円以上の整数で入力してください");
-      const items = next.tasks.filter(t => routeIds.includes(t.id));
-      if (!items.length) throw new Error("振り分ける項目がありません");
-      for (const item of items) {
-        const text = [item.title, item.notes, item.url].filter(Boolean).join("\n");
-        const base = { id: uid(), createdAt: new Date().toISOString(), inboxSource: item };
-        if (destination === "records") next.logs.push({...base, date, type:"memo", text});
-        if (destination === "calendar") next.events.push({...base, date, title:text});
-        if (destination === "habits") next.habits.push({...base, name:text, dates:[]});
-        if (destination === "collections") next.collectionItems.push({...base, category, text, done:Boolean(item.completed)});
-        if (destination === "documents") next.documents.push({...base, title:text, url:/^https?:\/\//i.test(item.url || "") ? item.url : ""});
-        if (destination === "budget") next.transactions.push({...base, date, category, amount, type:$("#routeMoneyType").value, note:text});
-        if (destination === "reflection") {
-          const old = next.reflections.find(r => r.date === date);
-          if (old) { old.note = [old.note,text].filter(Boolean).join("\n"); (old.inboxSources ||= []).push(item); }
-          else next.reflections.push({...base, date, mood:3, good:"", learned:"", tomorrow:"", note:text});
-        }
-      }
-      next.tasks = next.tasks.filter(t => !routeIds.includes(t.id));
-      // Write the complete result before replacing the live state; quota errors leave it intact.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-      state.data = next;
-      state.selected.clear();
-      state.calendarMonth = date.slice(0,7);
-      state.logDate = date;
-      if (destination === "reflection") $("#reflectionDate").value = date;
-      if (destination === "budget") $("#budgetMonth").value = date.slice(0,7);
-      $("#routeDialog").close();
-      setView(destination);
-      showToast(items.length + "件を振り分けました");
-    } catch (error) { $("#routeError").textContent = isQuotaError(error) ? "端末の保存容量がいっぱいで保存できませんでした。不要な記録を削除してから、もう一度お試しください。" : error.message; }
-  });
 
   $("#newTaskBtn").addEventListener("click", () => openTask());
   $("#headingAddBtn").addEventListener("click", () => openTask());
@@ -1415,8 +1293,6 @@
     state.search = event.target.value.trim();
     if (!["overview", "documents", "habits", "records", "calendar", "collections", "budget", "data", "reflection", "help"].includes(state.view)) renderTasks();
   });
-  $("#tagFilter").addEventListener("change", (event) => { state.tag = event.target.value; renderTasks(); });
-  $("#priorityFilter").addEventListener("change", (event) => { state.priority = event.target.value; renderTasks(); });
 
   $("#documentForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1484,17 +1360,6 @@
   $("#habitCalendarPrev").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, -1); renderHabitCalendar(); });
   $("#habitCalendarNext").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, 1); renderHabitCalendar(); });
 
-  $("#homeLogForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const date = $("#homeLogDate").value;
-    if (!createLog($("#homeLogType").value, $("#homeLogText").value, date, $("#homeLogTime").value)) return;
-    $("#homeLogText").value = "";
-    $("#homeLogTime").value = "";
-    state.logDate = date;
-    renderHomeJournal();
-    showToast("手帳に記録しました");
-  });
-  $("#homeLogDate").addEventListener("change", renderHomeJournal);
 
   $("#logForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1982,10 +1847,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=60"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=61"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 60;
+  const APP_VERSION = 61;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
