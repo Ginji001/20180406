@@ -609,3 +609,8 @@ body.dark button.habit-calendar-day.today { background: #4a3923; }
 
 /* v57：記録画面の「くわしく」欄 */
 .journal-form #logDetail { grid-column: 1 / -1; min-width: 0; min-height: 56px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--text); background: var(--bg); font-size: .76rem; line-height: 1.5; resize: vertical; }
+
+/* v59：振り返りの中身（記録から） */
+.reflection-list { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+.reflection-list li { font-size: .78rem; line-height: 1.5; }
+.reflection-old { margin: 4px 0 0; color: var(--muted); font-size: .76rem; line-height: 1.5; }

@@ -160,8 +160,9 @@
   const tagNames = { work: "仕事", private: "プライベート" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
-  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること" };
-  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐" };
+  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること" };
+  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→" };
+  const reflectionLogTypes = ["good", "learned", "tomorrow"]; // v59：振り返りの中身は記録から
   const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類
 
   // v55：開いたまま日付が変わっても「今日」がずれないように、その時点の日付を使う
@@ -661,13 +662,44 @@
     return { completedTasks, completedHabits };
   }
 
+  // v59：振り返りの中身は、その日の記録（よかったこと・気づいたこと・明日やること）から作る
+  function reflectionLogsFor(date) {
+    const groups = { good: [], learned: [], tomorrow: [] };
+    state.data.logs.filter((item) => item.date === date && reflectionLogTypes.includes(item.type))
+      .sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")))
+      .forEach((item) => groups[item.type].push(String(item.text || "")));
+    return groups;
+  }
+  function reflectionHasContent(date) {
+    const groups = reflectionLogsFor(date);
+    return reflectionLogTypes.some((type) => groups[type].length);
+  }
+  function reflectionFieldsMarkup(date, record) {
+    const groups = reflectionLogsFor(date);
+    const legacy = { good: record?.good || "", learned: record?.learned || "", tomorrow: record?.tomorrow || "", note: record?.note || "" };
+    const block = (label, items, old) => {
+      const body = items.length
+        ? `<ul class="reflection-list">${items.map((text) => `<li>${escapeHTML(text).replace(/\n/g, "<br />")}</li>`).join("")}</ul>`
+        : (old ? "" : '<p class="reflection-empty">記録から振り分けると、ここに載ります。</p>');
+      const oldMarkup = old ? `<p class="reflection-old">${escapeHTML(old).replace(/\n/g, "<br />")}</p>` : "";
+      return `<div class="reflection-detail"><dt>${label}</dt><dd>${body}${oldMarkup}</dd></div>`;
+    };
+    return [
+      block("よかったこと", groups.good, legacy.good),
+      block("気づいたこと", groups.learned, legacy.learned),
+      block("明日やること", groups.tomorrow, legacy.tomorrow),
+      legacy.note ? `<div class="reflection-detail"><dt>ひとことメモ</dt><dd><p class="reflection-old">${escapeHTML(legacy.note).replace(/\n/g, "<br />")}</p></dd></div>` : ""
+    ].join("");
+  }
+
   function renderReflectionWeek(selectedDate) {
     const selected = fromISO(selectedDate) || today;
     const days = Array.from({ length: 7 }, (_, index) => addDays(selected, index - 6));
     $("#reflectionWeek").innerHTML = days.map((date) => {
       const iso = toISO(date);
       const record = state.data.reflections.find((item) => item.date === iso);
-      return `<button type="button" class="reflection-day ${iso === selectedDate ? "active" : ""}" data-reflection-date="${iso}"><span>${"日月火水木金土"[date.getDay()]}</span><strong>${date.getDate()}</strong><small>${record ? moodFaces[record.mood] || "●" : "・"}</small></button>`;
+      const mark = record ? moodFaces[record.mood] || "●" : reflectionHasContent(iso) ? "●" : "・";
+      return `<button type="button" class="reflection-day ${iso === selectedDate ? "active" : ""}" data-reflection-date="${iso}"><span>${"日月火水木金土"[date.getDay()]}</span><strong>${date.getDate()}</strong><small>${mark}</small></button>`;
     }).join("");
   }
 
@@ -688,23 +720,20 @@
     const mood = String(record?.mood || 3);
     const moodInput = $(`[name="reflectionMood"][value="${mood}"]`);
     if (moodInput) moodInput.checked = true;
-    $("#reflectionGood").value = record?.good || "";
-    $("#reflectionLearned").value = record?.learned || "";
-    $("#reflectionTomorrow").value = record?.tomorrow || "";
-    $("#reflectionNote").value = record?.note || "";
-    $("#reflectionSaveNote").textContent = record ? "この日の振り返りを編集中です。保存すると内容を更新します。" : "同じ日を保存すると、以前の内容を更新します。";
+    $("#reflectionFields").innerHTML = reflectionFieldsMarkup(date, record);
+    $("#reflectionSaveNote").textContent = "よかったこと・気づいたこと・明日やることは、記録から振り分けると、ここに載ります。保存すると気分が残ります。";
   }
 
   function renderReflectionHistory() {
-    const records = [...state.data.reflections].sort((a, b) => b.date.localeCompare(a.date));
+    const dates = [...new Set([...state.data.reflections.map((item) => item.date), ...state.data.logs.filter((item) => reflectionLogTypes.includes(item.type)).map((item) => item.date)])].filter(Boolean).sort((a, b) => b.localeCompare(a));
+    const records = dates.map((date) => state.data.reflections.find((item) => item.date === date) || { date });
     $("#reflectionHistoryCount").textContent = `${records.length}日分`;
     $("#reflectionHistory").innerHTML = records.map((record) => {
-      const details = [["よかったこと", record.good], ["気づいたこと", record.learned], ["明日やること", record.tomorrow], ["ひとことメモ", record.note]]
-        .map(([label, value]) => `<div class="reflection-detail"><dt>${label}</dt><dd>${value ? escapeHTML(value) : '<span class="reflection-empty">未記入</span>'}</dd></div>`).join("");
+      const details = reflectionFieldsMarkup(record.date, record);
       const completed = Number(record.completedCount) || 0;
       const habits = Number(record.habitCount) || 0;
       return `<article class="reflection-card">
-        <div class="reflection-card-head"><div><span class="reflection-face">${moodFaces[record.mood] || moodFaces[3]}</span><div><strong>${formatFullDate(record.date)}</strong><small>${moodNames[record.mood] || moodNames[3]}</small></div></div><div><button type="button" data-edit-reflection="${record.date}">編集</button><button type="button" class="danger-text" data-delete-reflection="${record.id}">削除</button></div></div>
+        <div class="reflection-card-head"><div><span class="reflection-face">${moodFaces[record.mood] || moodFaces[3]}</span><div><strong>${formatFullDate(record.date)}</strong><small>${moodNames[record.mood] || moodNames[3]}</small></div></div><div><button type="button" data-edit-reflection="${record.date}">開く</button>${record.id ? `<button type="button" class="danger-text" data-delete-reflection="${record.id}">削除</button>` : ""}</div></div>
         <dl class="reflection-details">${details}</dl>
         <footer><span>完了 ${completed}件</span><span>ハビット ${habits}件</span></footer>
       </article>`;
@@ -1749,10 +1778,6 @@
     const values = {
       date,
       mood: Number($("[name='reflectionMood']:checked")?.value || 3),
-      good: $("#reflectionGood").value.trim(),
-      learned: $("#reflectionLearned").value.trim(),
-      tomorrow: $("#reflectionTomorrow").value.trim(),
-      note: $("#reflectionNote").value.trim(),
       completedTasks: summary.completedTasks,
       completedCount: summary.completedTasks.length,
       completedHabits: summary.completedHabits,
@@ -1764,7 +1789,7 @@
     else state.data.reflections.push({ id: uid(), ...values, createdAt: new Date().toISOString() });
     persist();
     renderReflection(date);
-    showToast(existing ? "振り返りを更新しました" : "振り返りを保存しました");
+    showToast(existing ? "気分を更新しました" : "気分を保存しました");
   });
 
   $("#reflectionDate").addEventListener("change", (event) => renderReflection(event.target.value || todayISO));
@@ -1911,10 +1936,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=58"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=59"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 58;
+  const APP_VERSION = 59;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
