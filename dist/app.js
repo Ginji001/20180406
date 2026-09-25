@@ -157,8 +157,8 @@
   const tagNames = { work: "仕事", private: "プライベート" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
-  const logTypeNames = { memo: "メモ", idea: "アイデア", event: "予定・出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること", action: "行動" };
-  const logSymbols = { memo: "📝", idea: "💡", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→", action: "⏱" };
+  const logTypeNames = { memo: "メモ", idea: "アイデア", schedule: "予定", event: "出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること", action: "行動" };
+  const logSymbols = { memo: "📝", idea: "💡", schedule: "▦", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→", action: "⏱" };
   const reflectionLogTypes = ["good", "learned", "tomorrow"]; // v59：振り返りの中身は記録から
   const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類（v61からは新規に作らない）
 
@@ -1012,6 +1012,12 @@
     const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: detail, completed: false, order: Date.now(), createdAt: new Date().toISOString() };
     state.data.tasks.push(task);
     state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, ...(end ? { end } : {}), type, text: inboxLogText(task), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
+    // v63：種類が「予定」ならカレンダーにも入れる
+    if (type === "schedule") {
+      const eventId = uid();
+      state.data.events.push({ id: eventId, date, time, title, ...(detail ? { note: detail } : {}), createdAt: new Date().toISOString() });
+      state.data.logs[state.data.logs.length - 1].eventId = eventId;
+    }
     if (!persist()) return false;
     state.logDate = date;
     state.showAllLogs = false;
@@ -1292,7 +1298,7 @@
     if (!button) return;
     const kind = button.dataset.pickType;
     if (kind === "clear") { state.pickedLogs.clear(); renderLogs(); return; }
-    const type = kind === "schedule" ? "event" : kind;
+    const type = kind;
     if (!logTypeNames[type]) return;
     let count = 0;
     state.data.logs.filter((item) => state.pickedLogs.has(item.id) && item.type === "memo").forEach((item) => {
@@ -1701,10 +1707,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=62"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=63"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 62;
+  const APP_VERSION = 63;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
