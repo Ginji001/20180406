@@ -577,7 +577,7 @@
       const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? '<em class="journal-route">未振り分け</em>' : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
       const pick = item.type === "memo";
       const mark = pick ? `<label class="journal-check journal-pick" title="振り分けるメモを選ぶ"><input type="checkbox" data-pick-log="${item.id}" ${state.pickedLogs.has(item.id) ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}を選ぶ" /></label>` : check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
-      return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong><small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
+      return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong>${(item.images || []).length ? `<div class="log-images">${item.images.map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}<small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
     }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
     const actionMinutes = logs.reduce((sum, item) => sum + durationMinutes(item), 0);
     const actionCount = logs.filter((item) => item.type === "action").length;
@@ -587,6 +587,7 @@
     const memoIds = new Set(state.data.logs.filter((item) => item.type === "memo").map((item) => item.id));
     state.pickedLogs.forEach((id) => { if (!memoIds.has(id)) state.pickedLogs.delete(id); });
     $("#logPickBar").hidden = !state.pickedLogs.size;
+    fillLogImages();
     $("#logPickCount").textContent = `${state.pickedLogs.size}件を`;
   }
 
@@ -999,7 +1000,7 @@
   });
 
   // v57：INBOXと記録は同じ入力内容（種類・日付・時刻・内容）。INBOXと記録の両方に入れ、振り分けは記録から
-  function addInboxEntry({ title, detail = "", date, time, end = "", type }) {
+  function addInboxEntry({ title, detail = "", date, time, end = "", type, images = [] }) {
     title = String(title || "").trim();
     detail = String(detail || "").trim();
     if (!title) return false;
@@ -1009,7 +1010,7 @@
     end = type === "action" ? validTime(end) : "";
     const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: detail, completed: false, order: Date.now(), createdAt: new Date().toISOString() };
     state.data.tasks.push(task);
-    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, ...(end ? { end } : {}), type, text: inboxLogText(task), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
+    state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, ...(end ? { end } : {}), type, text: inboxLogText(task), ...(images.length ? { images } : {}), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
     // v63：種類が「予定」ならカレンダーにも入れる
     if (type === "schedule") {
       const eventId = uid();
@@ -1228,10 +1229,83 @@
   $("#habitCalendarNext").addEventListener("click", () => { state.habitMonth = changeMonth(state.habitMonth, 1); renderHabitCalendar(); });
 
 
-  $("#logForm").addEventListener("submit", (event) => {
+  // v65：記録に画像（スクショ）を添付。画像は端末内（IndexedDB）に保存し、記録には画像IDだけを持たせる
+  const IMG_DB = "hachiroku-images-v1";
+  function imgDB() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(IMG_DB, 1);
+      req.onupgradeneeded = () => req.result.createObjectStore("images");
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function imgStore(mode, fn) {
+    const db = await imgDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction("images", mode);
+      const req = fn(tx.objectStore("images"));
+      tx.oncomplete = () => resolve(req?.result);
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+  const imgPut = (id, blob) => imgStore("readwrite", (s) => s.put(blob, id));
+  const imgGet = (id) => imgStore("readonly", (s) => s.get(id));
+  const imgDelete = (id) => imgStore("readwrite", (s) => s.delete(id));
+  const imgURLs = new Map();
+  function shrinkImage(file, max = 1600) {
+    return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.naturalWidth * scale);
+        canvas.height = Math.round(img.naturalHeight * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(url);
+        canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", 0.8);
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
+  }
+  async function fillLogImages() {
+    for (const el of document.querySelectorAll("img[data-img-id]:not([src])")) {
+      const id = el.dataset.imgId;
+      try {
+        if (!imgURLs.has(id)) {
+          const blob = await imgGet(id);
+          imgURLs.set(id, blob ? URL.createObjectURL(blob) : "");
+        }
+        if (imgURLs.get(id)) el.src = imgURLs.get(id); else { el.alt = "この端末には画像がありません"; el.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; }
+      } catch (error) { /* 読めない画像は空のまま */ }
+    }
+  }
+  $("#logImage").addEventListener("change", () => {
+    const count = $("#logImage").files.length;
+    $("#logImageCount").textContent = count ? `${count}枚を添付` : "";
+  });
+  $("#logList").addEventListener("click", (event) => {
+    const img = event.target.closest("img[data-img-id]");
+    if (!img || !img.src) return;
+    $("#imageViewer img").src = img.src;
+    $("#imageViewer").hidden = false;
+  });
+  $("#imageViewer").addEventListener("click", () => { $("#imageViewer").hidden = true; });
+
+  $("#logForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const ok = addInboxEntry({ title: $("#logText").value, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, end: $("#logEnd").value, type: $("#logType").value });
-    if (!ok) return;
+    const files = [...($("#logImage").files || [])];
+    if (!$("#logText").value.trim() && !files.length) { $("#logText").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
+    const images = [];
+    try {
+      for (const file of files) { const id = `img-${uid()}`; await imgPut(id, await shrinkImage(file)); images.push(id); }
+    } catch (error) { showToast("画像を保存できませんでした"); return; }
+    const title = $("#logText").value.trim() || (files.length ? `📷 画像${files.length > 1 ? `（${files.length}枚）` : ""}` : "");
+    const ok = addInboxEntry({ title, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, end: $("#logEnd").value, type: $("#logType").value, images });
+    if (!ok) { images.forEach((id) => imgDelete(id).catch(() => {})); return; }
+    $("#logImage").value = "";
+    $("#logImageCount").textContent = "";
     $("#logText").value = "";
     $("#logDetail").value = "";
     $("#logTime").value = "";
@@ -1364,6 +1438,7 @@
     }
     const id = event.target.closest("[data-delete-log]")?.dataset.deleteLog;
     if (!id || !window.confirm("この記録を削除しますか？")) return;
+    (state.data.logs.find((item) => item.id === id)?.images || []).forEach((imgId) => imgDelete(imgId).catch(() => {}));
     state.data.logs = state.data.logs.filter((item) => item.id !== id);
     persist();
     renderLogs();
@@ -1727,10 +1802,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=64"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=65"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 64;
+  const APP_VERSION = 65;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
