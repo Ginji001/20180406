@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=63" />
+    <link rel="manifest" href="./manifest.webmanifest?v=64" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=63" />
+    <link rel="stylesheet" href="./styles.css?v=64" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -339,7 +339,6 @@
           <label class="field"><span>期限</span><input id="taskDue" type="date" /></label>
           <label class="field"><span>通知する時刻</span><input id="taskTime" type="time" /></label>
           <label class="field"><span>優先度</span><select id="taskPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
-          <label class="field"><span>タグ</span><select id="taskTag"><option value="">なし</option><option value="work">仕事</option><option value="private">プライベート</option></select></label>
           <label class="field"><span>プロジェクト</span><select id="taskProject"></select></label>
           <label class="field"><span>繰り返し</span><select id="taskRepeat"><option value="">なし</option><option value="daily">毎日</option><option value="weekly">毎週</option><option value="monthly">毎月</option></select></label>
         </div>
@@ -397,8 +396,8 @@
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=63"></script>
-    <script src="./cloud-sync.js?v=63" defer></script>
-    <script src="./google-calendar.js?v=63"></script>
+    <script src="./app.js?v=64"></script>
+    <script src="./cloud-sync.js?v=64" defer></script>
+    <script src="./google-calendar.js?v=64"></script>
   </body>
 </html>

@@ -421,7 +421,6 @@
           <span>${formatDate(task.due)}${task.time ? ` ${task.time}` : ""}</span>
           ${remaining ? `<span class="${remainingClass}">${remaining}</span>` : ""}
           <span class="pill">${folderNames[task.folder] || "INBOX"}</span>
-          ${task.tag ? `<span class="pill tag-${task.tag}">${tagNames[task.tag]}</span>` : ""}
           <span class="pill ${task.priority === "high" ? "priority-high" : task.priority === "low" ? "priority-low" : ""}">優先度 ${priorityNames[task.priority] || "中"}</span>
           ${project ? `<span class="pill"><i class="project-dot" style="display:inline-block;background:${project.color}"></i> ${escapeHTML(project.name)}</span>` : ""}
           ${task.repeat ? `<span>↻ ${{ daily: "毎日", weekly: "毎週", monthly: "毎月" }[task.repeat]}</span>` : ""}
@@ -807,7 +806,6 @@
     $("#taskTime").value = task?.time || "";
     $("#tomorrowTaskBtn").hidden = !task || task.completed;
     $("#taskPriority").value = task?.priority || "medium";
-    $("#taskTag").value = task?.tag || "";
     $("#taskProject").value = task?.projectId || state.projectId || "";
     $("#taskRepeat").value = task?.repeat || "";
     $("#taskPinned").checked = Boolean(task?.pinned);
@@ -1049,7 +1047,6 @@
       due: $("#taskDue").value,
       time: $("#taskTime").value,
       priority: $("#taskPriority").value,
-      tag: $("#taskTag").value,
       projectId: $("#taskProject").value || null,
       repeat: $("#taskRepeat").value,
       pinned: $("#taskPinned").checked,
@@ -1260,6 +1257,29 @@
     state.showAllLogs = !state.showAllLogs;
     renderLogs();
   });
+  // v64：タスク編集の「手帳へ振り分け」→ 記録画面でそのメモを選んだ状態にする
+  $("#routeItemBtn").addEventListener("click", () => {
+    const id = $("#taskId").value;
+    if (!id) { showToast("先に保存してください"); return; }
+    ensureInboxLogs();
+    let log = state.data.logs.find((item) => item.taskId === id);
+    const task = state.data.tasks.find((t) => t.id === id);
+    if (!log && task) {
+      log = { id: `inbox-${task.id}`, taskId: task.id, date: currentISO(), time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() };
+      state.data.logs.push(log);
+      persist();
+    }
+    if (!log) return;
+    $("#taskDialog").close();
+    setView("records");
+    state.logDate = log.date; state.showAllLogs = false;
+    state.pickedLogs.clear();
+    if (log.type === "memo") state.pickedLogs.add(log.id);
+    renderLogs();
+    $("#logPickBar").scrollIntoView({ block: "center", behavior: "smooth" });
+    if (log.type !== "memo") showToast(`この記録は「${logTypeNames[log.type] || "記録"}」に振り分け済みです`);
+  });
+
   // v50：チェックBOXと振り分け
   // v51：メモを選んで種類を振り分ける
   $("#logList").addEventListener("change", (event) => {
@@ -1707,10 +1727,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=63"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=64"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 63;
+  const APP_VERSION = 64;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
