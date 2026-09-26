@@ -1252,7 +1252,15 @@
   const imgGet = (id) => imgStore("readonly", (s) => s.get(id));
   const imgDelete = (id) => imgStore("readwrite", (s) => s.delete(id));
   const imgURLs = new Map();
-  function shrinkImage(file, max = 1600) {
+  async function shrinkImage(file) {
+    let blob = file;
+    for (const [max, quality] of [[1600, 0.8], [1400, 0.7], [1200, 0.6], [1000, 0.55], [800, 0.5]]) {
+      blob = await shrinkOnce(file, max, quality);
+      if (blob.size <= 650 * 1024) return blob;
+    }
+    return blob;
+  }
+  function shrinkOnce(file, max, quality) {
     return new Promise((resolve) => {
       const url = URL.createObjectURL(file);
       const img = new Image();
@@ -1263,24 +1271,63 @@
         canvas.height = Math.round(img.naturalHeight * scale);
         canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
         URL.revokeObjectURL(url);
-        canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", 0.8);
+        canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
       };
       img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
       img.src = url;
     });
   }
+  // v66：画像も同期（ログイン中）。この端末にない画像はクラウドから取り込み、未送信の画像は送る
+  const IMG_UP_KEY = "hachiroku-img-uploaded-v1";
+  const uploadedImgs = new Set((() => { try { return JSON.parse(localStorage.getItem(IMG_UP_KEY) || "[]"); } catch { return []; } })());
+  const markUploaded = (id, on = true) => { on ? uploadedImgs.add(id) : uploadedImgs.delete(id); try { localStorage.setItem(IMG_UP_KEY, JSON.stringify([...uploadedImgs])); } catch {} };
+  const blobToDataURL = (blob) => new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(blob); });
+  const imgBusy = new Set();
+  async function uploadImage(id, blob) {
+    const cloud = window.hachirokuImages;
+    if (!cloud?.signedIn() || uploadedImgs.has(id) || imgBusy.has(id)) return;
+    imgBusy.add(id);
+    try { blob ||= await imgGet(id); if (blob && await cloud.upload(id, await blobToDataURL(blob))) markUploaded(id); }
+    catch (error) { /* 次の機会に再送 */ }
+    finally { imgBusy.delete(id); }
+  }
+  async function removeImage(id) {
+    imgDelete(id).catch(() => {});
+    markUploaded(id, false);
+    try { await window.hachirokuImages?.remove(id); } catch (error) { /* 無視 */ }
+  }
+  async function loadImage(id) {
+    if (imgURLs.has(id)) return imgURLs.get(id);
+    let blob = await imgGet(id);
+    if (!blob && window.hachirokuImages?.signedIn() && !imgBusy.has(id)) {
+      imgBusy.add(id);
+      try {
+        const dataUrl = await window.hachirokuImages.download(id);
+        if (dataUrl) { blob = await (await fetch(dataUrl)).blob(); await imgPut(id, blob); markUploaded(id); }
+      } catch (error) { /* 取れなければ次回 */ }
+      finally { imgBusy.delete(id); }
+    }
+    if (!blob) return "";
+    const url = URL.createObjectURL(blob);
+    imgURLs.set(id, url);
+    return url;
+  }
   async function fillLogImages() {
     for (const el of document.querySelectorAll("img[data-img-id]:not([src])")) {
-      const id = el.dataset.imgId;
       try {
-        if (!imgURLs.has(id)) {
-          const blob = await imgGet(id);
-          imgURLs.set(id, blob ? URL.createObjectURL(blob) : "");
-        }
-        if (imgURLs.get(id)) el.src = imgURLs.get(id); else { el.alt = "この端末には画像がありません"; el.src = "data:image/gif;base64,R0lGODlhAQABAAAAACw="; }
+        const url = await loadImage(el.dataset.imgId);
+        if (url) { el.src = url; el.classList.remove("is-missing"); } else { el.classList.add("is-missing"); el.alt = window.hachirokuImages?.signedIn() ? "画像を読み込めません" : "ログインすると表示されます"; }
       } catch (error) { /* 読めない画像は空のまま */ }
     }
   }
+  async function syncPendingImages() {
+    if (!window.hachirokuImages?.signedIn()) return;
+    const ids = state.data.logs.flatMap((item) => item.images || []).filter((id) => !uploadedImgs.has(id));
+    for (const id of ids) await uploadImage(id);
+    fillLogImages();
+  }
+  setTimeout(syncPendingImages, 5000);
+  setInterval(syncPendingImages, 60000);
   $("#logImage").addEventListener("change", () => {
     const count = $("#logImage").files.length;
     $("#logImageCount").textContent = count ? `${count}枚を添付` : "";
@@ -1299,11 +1346,11 @@
     if (!$("#logText").value.trim() && !files.length) { $("#logText").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
     const images = [];
     try {
-      for (const file of files) { const id = `img-${uid()}`; await imgPut(id, await shrinkImage(file)); images.push(id); }
+      for (const file of files) { const id = `img-${uid()}`; const blob = await shrinkImage(file); await imgPut(id, blob); images.push(id); uploadImage(id, blob); }
     } catch (error) { showToast("画像を保存できませんでした"); return; }
     const title = $("#logText").value.trim() || (files.length ? `📷 画像${files.length > 1 ? `（${files.length}枚）` : ""}` : "");
     const ok = addInboxEntry({ title, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, end: $("#logEnd").value, type: $("#logType").value, images });
-    if (!ok) { images.forEach((id) => imgDelete(id).catch(() => {})); return; }
+    if (!ok) { images.forEach((id) => removeImage(id)); return; }
     $("#logImage").value = "";
     $("#logImageCount").textContent = "";
     $("#logText").value = "";
@@ -1438,7 +1485,7 @@
     }
     const id = event.target.closest("[data-delete-log]")?.dataset.deleteLog;
     if (!id || !window.confirm("この記録を削除しますか？")) return;
-    (state.data.logs.find((item) => item.id === id)?.images || []).forEach((imgId) => imgDelete(imgId).catch(() => {}));
+    (state.data.logs.find((item) => item.id === id)?.images || []).forEach((imgId) => removeImage(imgId));
     state.data.logs = state.data.logs.filter((item) => item.id !== id);
     persist();
     renderLogs();
@@ -1802,10 +1849,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=65"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=66"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 65;
+  const APP_VERSION = 66;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;

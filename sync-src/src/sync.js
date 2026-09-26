@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from "firebase/auth";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache, collection, doc, writeBatch, getDocs, onSnapshot, query, where, serverTimestamp, Timestamp } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache, collection, doc, writeBatch, getDocs, getDoc, setDoc, deleteDoc, onSnapshot, query, where, serverTimestamp, Timestamp } from "firebase/firestore";
 
 const DATA_KEY = "hachiware-todo-gtd-v2";
 const BASE_PREFIX = "hachiroku-sync-base-v1:";
@@ -240,4 +240,12 @@ function init() {
   render();
 }
 window.hachirokuSync = { toMap, applyToData };
+// v66：記録の添付画像を端末間で共有（users/{uid}/images/{id}。1枚1ドキュメント、dataURLで保存）
+const imgRef = (id) => doc(db, "users", st.user.uid, "images", safeId(id));
+window.hachirokuImages = {
+  signedIn: () => !!st.user,
+  async upload(id, dataUrl) { if (!st.user) return false; await setDoc(imgRef(id), { data: dataUrl, createdAt: serverTimestamp() }); return true; },
+  async download(id) { if (!st.user) return null; const snap = await getDoc(imgRef(id)); return snap.exists() ? snap.data().data || null : null; },
+  async remove(id) { if (!st.user) return false; await deleteDoc(imgRef(id)); return true; },
+};
 document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", init) : init();
