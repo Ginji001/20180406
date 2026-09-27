@@ -541,9 +541,9 @@
     $("#habitDate").value = day;
     $("#habitDate").max = todayISO;
     $("#habitTodayBtn").hidden = day === todayISO;
-    $("#habitList").innerHTML = state.data.habits.map((item) => {
+    $("#habitList").innerHTML = state.data.habits.map((item, index) => {
       const done = Array.isArray(item.dates) && item.dates.includes(day);
-      return `<article class="habit-item"><input type="checkbox" data-habit="${item.id}" ${done ? "checked" : ""} aria-label="${escapeHTML(item.name)}を${day === todayISO ? "今日" : formatDate(day)}に完了" /><label>${escapeHTML(item.name)}</label><button data-delete-habit="${item.id}">削除</button></article>`;
+      return `<article class="habit-item habit-color-${index % 8}"><input type="checkbox" data-habit="${item.id}" ${done ? "checked" : ""} aria-label="${escapeHTML(item.name)}を${day === todayISO ? "今日" : formatDate(day)}に完了" /><label>${escapeHTML(item.name)}</label><button data-delete-habit="${item.id}">削除</button></article>`;
     }).join("") || emptyState();
   }
 
@@ -1900,10 +1900,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=67"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=68"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 67;
+  const APP_VERSION = 68;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
