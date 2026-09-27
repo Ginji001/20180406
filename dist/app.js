@@ -416,7 +416,7 @@
       <input class="select-task" type="checkbox" ${state.selected.has(task.id) ? "checked" : ""} aria-label="${escapeHTML(task.title)}を選択" />
       <input class="complete-task" type="checkbox" ${task.completed ? "checked" : ""} aria-label="${escapeHTML(task.title)}を完了にする" />
       <div class="task-body" tabindex="0" role="button" aria-label="${escapeHTML(task.title)}を編集">
-        <p class="task-title">${task.pinned ? '<span class="pin">◆</span> ' : ""}${escapeHTML(task.title)}</p>
+        <p class="task-title">${task.pinned ? '<span class="pin">◆</span> ' : ""}${escapeHTML(task.title)}</p>${taskImageIds(task).length ? `<div class="log-images">${taskImageIds(task).map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}
         <div class="task-meta">
           <span>${formatDate(task.due)}${task.time ? ` ${task.time}` : ""}</span>
           ${remaining ? `<span class="${remainingClass}">${remaining}</span>` : ""}
@@ -750,6 +750,7 @@
   }
 
   function render() {
+    setTimeout(() => fillLogImages(), 0);
     renderCounts();
     renderProjects();
     renderNavigation();
@@ -798,6 +799,7 @@
     render();
   }
 
+  const taskImageIds = (task) => task.images || state.data.logs.find((item) => item.taskId === task.id)?.images || [];
   function openTask(id = "") {
     const task = state.data.tasks.find((item) => item.id === id);
     $("#taskId").value = task?.id || "";
@@ -811,6 +813,8 @@
     $("#taskRepeat").value = task?.repeat || "";
     $("#taskPinned").checked = Boolean(task?.pinned);
     $("#taskNotes").value = task?.notes || "";
+    const linkedLog = task && state.data.logs.find((item) => item.taskId === task.id);
+    pickers.task.set((linkedLog ? linkedLog.images : task?.images) || []);
     $("#dialogKicker").textContent = task ? folderNames[task.folder] || "タスク" : "INBOX";
     $("#dialogTitle").textContent = task ? "INBOXの内容を編集" : "INBOXに追加";
     $("#deleteTask").hidden = !task;
@@ -834,6 +838,7 @@
       repeat: ["daily", "weekly", "monthly"].includes(input.repeat) ? input.repeat : "",
       pinned: Boolean(input.pinned),
       notes: String(input.notes || ""),
+      ...(Array.isArray(input.images) && input.images.length ? { images: input.images } : {}),
       completed: false,
       completedAt: null,
       order: Date.now()
@@ -1025,10 +1030,14 @@
     return true;
   }
 
-  $("#quickAddForm").addEventListener("submit", (event) => {
+  $("#quickAddForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const ok = addInboxEntry({ title: $("#quickTaskInput").value, detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, end: $("#quickEnd").value, type: $("#quickType").value });
-    if (!ok) return;
+    const count = pickers.quick.count();
+    if (!$("#quickTaskInput").value.trim() && !count) { $("#quickTaskInput").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
+    let images = [];
+    try { images = await pickers.quick.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
+    const ok = addInboxEntry({ title: $("#quickTaskInput").value.trim() || imageTitle(count), detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, end: $("#quickEnd").value, type: $("#quickType").value, images });
+    if (!ok) { images.forEach((id) => removeImage(id)); return; }
     $("#quickTaskInput").value = "";
     $("#quickDetail").value = "";
     $("#quickTime").value = "";
@@ -1039,9 +1048,11 @@
   $("#logType").addEventListener("change", () => syncActionField("#logType", "#logEnd"));
   $("#logEditType").addEventListener("change", () => syncActionField("#logEditType", "#logEditEndField"));
 
-  $("#taskForm").addEventListener("submit", (event) => {
+  $("#taskForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     const id = $("#taskId").value;
+    let taskImages;
+    try { taskImages = await pickers.task.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
     const values = {
       title: $("#taskTitle").value.trim(),
       folder: $("#taskFolder").value,
@@ -1056,9 +1067,12 @@
     if (!values.title) return;
     if (values.time && !values.due) values.due = todayISO;
     if (values.time) askNotificationPermission();
+    const linkedLog = id && state.data.logs.find((item) => item.taskId === id);
+    if (linkedLog) { if (taskImages.length) linkedLog.images = taskImages; else delete linkedLog.images; }
+    else if (taskImages.length) values.images = taskImages;
     if (id) {
       const task = state.data.tasks.find((item) => item.id === id);
-      if (task) Object.assign(task, values);
+      if (task) { Object.assign(task, values); if (!values.images) delete task.images; }
       persist();
       render();
       showToast("変更を保存しました");
@@ -1072,6 +1086,7 @@
   $("#deleteTask").addEventListener("click", () => {
     const id = $("#taskId").value;
     if (!id || !window.confirm("このタスクを削除しますか？")) return;
+    (state.data.tasks.find((task) => task.id === id)?.images || []).forEach((imgId) => removeImage(imgId));
     state.data.tasks = state.data.tasks.filter((task) => task.id !== id);
     state.selected.delete(id);
     persist();
@@ -1322,16 +1337,51 @@
   }
   async function syncPendingImages() {
     if (!window.hachirokuImages?.signedIn()) return;
-    const ids = state.data.logs.flatMap((item) => item.images || []).filter((id) => !uploadedImgs.has(id));
+    const ids = [...state.data.logs, ...state.data.tasks].flatMap((item) => item.images || []).filter((id) => !uploadedImgs.has(id));
     for (const id of ids) await uploadImage(id);
     fillLogImages();
   }
   setTimeout(syncPendingImages, 5000);
   setInterval(syncPendingImages, 60000);
-  $("#logImage").addEventListener("change", () => {
-    const count = $("#logImage").files.length;
-    $("#logImageCount").textContent = count ? `${count}枚を添付` : "";
-  });
+  // v67：画像添付を各入力欄に（ホーム・記録・記録の編集・タスクの編集）
+  function makeImagePicker(root) {
+    const input = root.querySelector("input[type=file]");
+    const list = root.querySelector(".img-picker-list");
+    const p = { existing: [], files: [], removed: [] };
+    function draw() {
+      list.innerHTML = p.existing.map((id, i) => `<span class="img-thumb"><img data-img-id="${escapeHTML(id)}" alt="添付画像" /><button type="button" data-rm-old="${i}" aria-label="外す">×</button></span>`).join("")
+        + p.files.map((f, i) => `<span class="img-thumb"><img src="${f.url}" alt="添付画像" /><button type="button" data-rm-new="${i}" aria-label="外す">×</button></span>`).join("");
+      fillLogImages();
+    }
+    input.addEventListener("change", () => {
+      [...input.files].forEach((file) => p.files.push({ file, url: URL.createObjectURL(file) }));
+      input.value = "";
+      draw();
+    });
+    list.addEventListener("click", (event) => {
+      const oldIdx = event.target.closest("[data-rm-old]")?.dataset.rmOld;
+      const newIdx = event.target.closest("[data-rm-new]")?.dataset.rmNew;
+      if (oldIdx != null) p.removed.push(...p.existing.splice(Number(oldIdx), 1));
+      else if (newIdx != null) URL.revokeObjectURL(p.files.splice(Number(newIdx), 1)[0].url);
+      else return;
+      draw();
+    });
+    return {
+      set(ids = []) { p.files.forEach((f) => URL.revokeObjectURL(f.url)); p.existing = [...ids]; p.files = []; p.removed = []; draw(); },
+      count: () => p.existing.length + p.files.length,
+      // 新しい画像を保存し、外した画像を消して、最終的な画像IDの一覧を返す
+      async commit() {
+        const added = [];
+        for (const { file } of p.files) { const id = `img-${uid()}`; const blob = await shrinkImage(file); await imgPut(id, blob); added.push(id); uploadImage(id, blob); }
+        p.removed.forEach((id) => removeImage(id));
+        const ids = [...p.existing, ...added];
+        this.set([]);
+        return ids;
+      }
+    };
+  }
+  const pickers = { quick: makeImagePicker($("#quickImages")), log: makeImagePicker($("#logImages")), logEdit: makeImagePicker($("#logEditImages")), task: makeImagePicker($("#taskImages")) };
+  const imageTitle = (n) => `📷 画像${n > 1 ? `（${n}枚）` : ""}`;
   $("#logList").addEventListener("click", (event) => {
     const img = event.target.closest("img[data-img-id]");
     if (!img || !img.src) return;
@@ -1342,17 +1392,13 @@
 
   $("#logForm").addEventListener("submit", async (event) => {
     event.preventDefault();
-    const files = [...($("#logImage").files || [])];
-    if (!$("#logText").value.trim() && !files.length) { $("#logText").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
-    const images = [];
-    try {
-      for (const file of files) { const id = `img-${uid()}`; const blob = await shrinkImage(file); await imgPut(id, blob); images.push(id); uploadImage(id, blob); }
-    } catch (error) { showToast("画像を保存できませんでした"); return; }
-    const title = $("#logText").value.trim() || (files.length ? `📷 画像${files.length > 1 ? `（${files.length}枚）` : ""}` : "");
+    const count = pickers.log.count();
+    if (!$("#logText").value.trim() && !count) { $("#logText").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
+    let images = [];
+    try { images = await pickers.log.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
+    const title = $("#logText").value.trim() || imageTitle(count);
     const ok = addInboxEntry({ title, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, end: $("#logEnd").value, type: $("#logType").value, images });
     if (!ok) { images.forEach((id) => removeImage(id)); return; }
-    $("#logImage").value = "";
-    $("#logImageCount").textContent = "";
     $("#logText").value = "";
     $("#logDetail").value = "";
     $("#logTime").value = "";
@@ -1480,6 +1526,7 @@
       $("#logEditText").value = record.text || "";
       $("#logEditEnd").value = record.end || "";
       syncActionField("#logEditType", "#logEditEndField");
+      pickers.logEdit.set(record.images || []);
       $("#logEditDialog").showModal();
       return;
     }
@@ -1491,8 +1538,10 @@
     renderLogs();
     showToast("記録を削除しました");
   });
-  $("#logEditForm").addEventListener("submit", (event) => {
+  $("#logEditForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    let editImages;
+    try { editImages = await pickers.logEdit.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
     const record = state.data.logs.find((item) => item.id === $("#logEditId").value);
     const date = $("#logEditDate").value;
     const text = $("#logEditText").value.trim();
@@ -1510,8 +1559,10 @@
       end: editType === "action" ? validTime($("#logEditEnd").value) : "",
       type: editType,
       text,
+      images: editImages,
       updatedAt: new Date().toISOString()
     });
+    if (!record.images.length) delete record.images;
     state.logDate = date;
     persist();
     $("#logEditDialog").close();
@@ -1849,10 +1900,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=66"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=67"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 66;
+  const APP_VERSION = 67;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
