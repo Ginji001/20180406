@@ -24,15 +24,11 @@
   const emptyData = () => ({
     version: 5,
     tasks: [],
-    projects: [],
-    documents: [],
     habits: [],
     reflections: [],
     logs: [],
     events: [],
     collectionItems: [],
-    transactions: [],
-    budgets: {},
     monthlyGoals: {}
   });
 
@@ -51,16 +47,12 @@
     }
     return {
       version: 5,
-      tasks: Array.isArray(value.tasks) ? value.tasks : [],
-      projects: Array.isArray(value.projects) ? value.projects : [],
-      documents: Array.isArray(value.documents) ? value.documents : [],
+      tasks: Array.isArray(value.tasks) ? value.tasks.map((task) => (task && task.folder === "project" ? { ...task, folder: "next" } : task)) : [],
       habits: Array.isArray(value.habits) ? value.habits : [],
       reflections: Array.isArray(value.reflections) ? value.reflections : [],
       logs: Array.isArray(value.logs) ? value.logs : [],
       events,
       collectionItems: Array.isArray(value.collectionItems) ? value.collectionItems : [],
-      transactions: Array.isArray(value.transactions) ? value.transactions : [],
-      budgets: value.budgets && typeof value.budgets === "object" ? value.budgets : {},
       monthlyGoals: value.monthlyGoals && typeof value.monthlyGoals === "object" ? value.monthlyGoals : {}
     };
   }
@@ -79,7 +71,6 @@
   const state = {
     data: normalizeData(loadedData),
     view: "inbox",
-    projectId: null,
     search: "",
     calendarMonth: todayISO.slice(0, 7),
     habitMonth: todayISO.slice(0, 7),
@@ -95,13 +86,10 @@
   const $$ = (selector) => [...document.querySelectorAll(selector)];
   const elements = {
     taskWorkspace: $("#taskWorkspace"),
-    overviewWorkspace: $("#overviewWorkspace"),
-    documentsWorkspace: $("#documentsWorkspace"),
     habitsWorkspace: $("#habitsWorkspace"),
     recordsWorkspace: $("#recordsWorkspace"),
     calendarWorkspace: $("#calendarWorkspace"),
     collectionsWorkspace: $("#collectionsWorkspace"),
-    budgetWorkspace: $("#budgetWorkspace"),
     dataWorkspace: $("#dataWorkspace"),
     reflectionWorkspace: $("#reflectionWorkspace"),
     helpWorkspace: $("#helpWorkspace"),
@@ -109,12 +97,9 @@
     viewTitle: $("#viewTitle"),
     viewDescription: $("#viewDescription"),
     dateLabel: $("#dateLabel"),
-    projectList: $("#projectList"),
-    taskProject: $("#taskProject"),
     bulkBar: $("#bulkBar"),
     selectedCount: $("#selectedCount"),
     taskDialog: $("#taskDialog"),
-    projectDialog: $("#projectDialog"),
     backupDialog: $("#backupDialog"),
     toast: $("#toast")
   };
@@ -124,37 +109,27 @@
     next: "次にやる",
     remind: "リマインダー",
     waiting: "待ち状況",
-    project: "プロジェクト",
     wish: "いつかやりたい"
   };
   const viewNames = {
-    today: "今日",
-    week: "次の7日間",
-    all: "すべてのタスク",
     inbox: "INBOX",
     inboxList: "INBOX",
     next: "次にやる",
     remind: "リマインダー",
     waiting: "待ち状況",
-    projects: "プロジェクト",
     wish: "いつかやりたい",
     completed: "完了"
   };
   const descriptions = {
-    today: "今日取り組むことだけを表示します。",
-    week: "今日から7日間の予定を確認します。",
-    all: "未完了のタスクをすべて確認します。",
     inbox: "思いついたことを集め、あとで整理します。",
     inboxList: "INBOXに入っているタスクです。",
     next: "具体的に、次に行動するタスクです。",
     remind: "指定した日に思い出したいタスクです。",
     waiting: "ほかの人や出来事を待っているタスクです。",
-    projects: "複数の行動が必要なタスクです。",
     wish: "いつかやりたいことを保管します。",
     completed: "完了したタスクの記録です。"
   };
   const priorityNames = { high: "高", medium: "中", low: "低" };
-  const tagNames = { work: "仕事", private: "プライベート" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
   const logTypeNames = { memo: "メモ", idea: "アイデア", schedule: "予定", event: "出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること", action: "行動" };
@@ -346,10 +321,6 @@
     });
   }
 
-  function projectById(id) {
-    return state.data.projects.find((project) => project.id === id);
-  }
-
   function showToast(message) {
     elements.toast.textContent = message;
     elements.toast.classList.add("show");
@@ -381,49 +352,33 @@
 
   function filteredTasks() {
     let tasks = [...state.data.tasks];
-    if (state.projectId) {
-      tasks = tasks.filter((task) => task.projectId === state.projectId && !task.completed);
+    if (state.view === "inboxList") {
+      tasks = tasks.filter((task) => !task.completed && task.folder === "inbox");
+    } else if (state.view === "completed") {
+      tasks = tasks.filter((task) => task.completed);
     } else {
-      const weekEnd = toISO(addDays(today, 6));
-      if (state.view === "today") {
-        tasks = tasks.filter((task) => !task.completed && (task.pinned || task.folder === "inbox" || (task.due && task.due <= todayISO)));
-      } else if (state.view === "week") {
-        tasks = tasks.filter((task) => !task.completed && task.due && task.due >= todayISO && task.due <= weekEnd);
-      } else if (state.view === "all") {
-        tasks = tasks.filter((task) => !task.completed);
-      } else if (state.view === "inboxList") {
-        tasks = tasks.filter((task) => !task.completed && task.folder === "inbox");
-      } else if (state.view === "projects") {
-        tasks = tasks.filter((task) => !task.completed && task.folder === "project");
-      } else if (state.view === "completed") {
-        tasks = tasks.filter((task) => task.completed);
-      } else {
-        tasks = tasks.filter((task) => !task.completed && task.folder === state.view);
-      }
+      tasks = tasks.filter((task) => !task.completed && task.folder === state.view);
     }
     if (state.search) {
       const query = state.search.toLocaleLowerCase("ja");
       tasks = tasks.filter((task) => `${task.title} ${task.notes || ""}`.toLocaleLowerCase("ja").includes(query));
     }
-    return tasks.sort((a, b) => Number(b.pinned) - Number(a.pinned) || (a.order || 0) - (b.order || 0));
+    return tasks.sort((a, b) => (a.order || 0) - (b.order || 0));
   }
 
   function taskRow(task) {
-    const project = projectById(task.projectId);
     const remaining = daysText(task.due);
     const remainingClass = remaining.startsWith("期限超過") ? "days-over" : remaining === "今日まで" || remaining === "残り1日" ? "days-soon" : "";
     return `<article class="task-row ${task.completed ? "completed" : ""}" draggable="true" data-id="${task.id}">
       <input class="select-task" type="checkbox" ${state.selected.has(task.id) ? "checked" : ""} aria-label="${escapeHTML(task.title)}を選択" />
       <input class="complete-task" type="checkbox" ${task.completed ? "checked" : ""} aria-label="${escapeHTML(task.title)}を完了にする" />
       <div class="task-body" tabindex="0" role="button" aria-label="${escapeHTML(task.title)}を編集">
-        <p class="task-title">${task.pinned ? '<span class="pin">◆</span> ' : ""}${escapeHTML(task.title)}</p>${taskImageIds(task).length ? `<div class="log-images">${taskImageIds(task).map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}
+        <p class="task-title">${escapeHTML(task.title)}</p>${taskImageIds(task).length ? `<div class="log-images">${taskImageIds(task).map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}
         <div class="task-meta">
           <span>${formatDate(task.due)}${task.time ? ` ${task.time}` : ""}</span>
           ${remaining ? `<span class="${remainingClass}">${remaining}</span>` : ""}
           <span class="pill">${folderNames[task.folder] || "INBOX"}</span>
-          <span class="pill ${task.priority === "high" ? "priority-high" : task.priority === "low" ? "priority-low" : ""}">優先度 ${priorityNames[task.priority] || "中"}</span>
-          ${project ? `<span class="pill"><i class="project-dot" style="display:inline-block;background:${project.color}"></i> ${escapeHTML(project.name)}</span>` : ""}
-          ${task.repeat ? `<span>↻ ${{ daily: "毎日", weekly: "毎週", monthly: "毎月" }[task.repeat]}</span>` : ""}
+          ${task.priority === "high" || task.priority === "low" ? `<span class="pill priority-${task.priority}">優先度 ${priorityNames[task.priority]}</span>` : ""}
         </div>
       </div>
       <button class="task-menu" aria-label="${escapeHTML(task.title)}を編集">•••</button>
@@ -432,20 +387,7 @@
 
   function renderList(tasks) {
     if (!tasks.length) return emptyState();
-    let groups;
-    if (state.view === "today" && !state.projectId) {
-      groups = [
-        ["固定したタスク", tasks.filter((task) => task.pinned)],
-        ["INBOX", tasks.filter((task) => !task.pinned && task.folder === "inbox")],
-        ["プロジェクト・行動", tasks.filter((task) => !task.pinned && task.folder !== "inbox")]
-      ].filter(([, items]) => items.length);
-    } else if (state.view === "projects" && !state.projectId) {
-      const projectGroups = state.data.projects.map((project) => [project.name, tasks.filter((task) => task.projectId === project.id)]);
-      const unassigned = tasks.filter((task) => !task.projectId);
-      groups = [...projectGroups, ["プロジェクト未設定", unassigned]].filter(([, items]) => items.length);
-    } else {
-      groups = [[state.projectId ? projectById(state.projectId)?.name || "プロジェクト" : viewNames[state.view], tasks]];
-    }
+    const groups = [[viewNames[state.view], tasks]];
     return groups.map(([name, items]) => `<section class="task-group"><div class="group-heading"><h2>${escapeHTML(name)}</h2><span>${items.length}件</span></div><div class="task-list">${items.map(taskRow).join("")}</div></section>`).join("");
   }
 
@@ -460,64 +402,29 @@
 
   function renderCounts() {
     const open = state.data.tasks.filter((task) => !task.completed);
-    const weekEnd = toISO(addDays(today, 6));
     const counts = {
-      today: open.filter((task) => task.pinned || task.folder === "inbox" || (task.due && task.due <= todayISO)).length,
-      week: open.filter((task) => task.due && task.due >= todayISO && task.due <= weekEnd).length,
-      all: open.length,
       inbox: open.filter((task) => task.folder === "inbox").length,
       next: open.filter((task) => task.folder === "next").length,
       remind: open.filter((task) => task.folder === "remind").length,
       waiting: open.filter((task) => task.folder === "waiting").length,
-      projects: open.filter((task) => task.folder === "project").length,
       wish: open.filter((task) => task.folder === "wish").length,
       completed: state.data.tasks.filter((task) => task.completed).length
     };
     Object.entries(counts).forEach(([key, value]) => $$(`[data-count="${key}"]`).forEach((node) => { node.textContent = value; node.hidden = !value; }));
   }
 
-  function renderProjects() {
-    elements.projectList.innerHTML = state.data.projects.map((project) => {
-      const count = state.data.tasks.filter((task) => task.projectId === project.id && !task.completed).length;
-      return `<button class="project-button ${state.projectId === project.id ? "active" : ""}" data-project="${project.id}"><i class="project-dot" style="background:${project.color}"></i><span>${escapeHTML(project.name)}</span><em>${count}</em></button>`;
-    }).join("") || '<span class="task-meta" style="padding:7px 10px">まだありません</span>';
-    elements.taskProject.innerHTML = '<option value="">未設定</option>' + state.data.projects.map((project) => `<option value="${project.id}">${escapeHTML(project.name)}</option>`).join("");
-  }
-
   function renderHeading() {
-    const project = projectById(state.projectId);
-    const home = state.view === "inbox" && !project;
-    elements.viewTitle.textContent = home ? "ホーム" : project ? project.name : viewNames[state.view] || "今日";
-    elements.viewDescription.textContent = home ? "INBOXと手帳の記録を、ここからすぐ入力できます。" : project ? "このプロジェクトの未完了タスクです。" : descriptions[state.view] || "";
+    const home = state.view === "inbox";
+    elements.viewTitle.textContent = home ? "ホーム" : viewNames[state.view] || "INBOX";
+    elements.viewDescription.textContent = home ? "INBOXと手帳の記録を、ここからすぐ入力できます。" : descriptions[state.view] || "";
     elements.dateLabel.textContent = new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(today);
   }
 
   function renderNavigation() {
-    $$("[data-view]").forEach((button) => button.classList.toggle("active", !state.projectId && (button.dataset.view === state.view || (state.view === "inboxList" && button.dataset.view === "inbox"))));
+    $$("[data-view]").forEach((button) => button.classList.toggle("active", (button.dataset.view === state.view || (state.view === "inboxList" && button.dataset.view === "inbox"))));
     $$(".nav-group").forEach((group) => {
       if (group.querySelector(`[data-view="${state.view}"]`)) group.open = true;
     });
-  }
-
-  function renderOverview() {
-    const tasks = state.data.tasks;
-    const open = tasks.filter((task) => !task.completed);
-    const dueToday = open.filter((task) => task.due && task.due <= todayISO).length;
-    const completedToday = tasks.filter((task) => task.completedAt && toISO(new Date(task.completedAt)) === todayISO).length;
-    $("#overviewGrid").innerHTML = [
-      ["未完了", open.length],
-      ["今日まで", dueToday],
-      ["INBOX", open.filter((task) => task.folder === "inbox").length],
-      ["今日の完了", completedToday],
-      ["次にやる", open.filter((task) => task.folder === "next").length],
-      ["待ち状況", open.filter((task) => task.folder === "waiting").length],
-      ["プロジェクト", open.filter((task) => task.folder === "project").length],
-      ["いつかやりたい", open.filter((task) => task.folder === "wish").length]
-    ].map(([label, value]) => `<article class="overview-card"><span>${label}</span><strong>${value}</strong></article>`).join("");
-  }
-
-  function renderDocuments() {
-    $("#documentList").innerHTML = state.data.documents.map((item) => `<article class="simple-item">${item.url ? `<a href="${escapeHTML(item.url)}" target="_blank" rel="noopener">${escapeHTML(item.title)}</a>` : `<strong>${escapeHTML(item.title)}</strong>`}<button data-delete-document="${item.id}">削除</button></article>`).join("") || emptyState();
   }
 
   function renderHabitCalendar() {
@@ -630,25 +537,8 @@
     }).join("") || '<div class="empty-state"><strong>コレクションはまだありません</strong><span>欲しい物や読みたい物など、自由な一覧を作れます。</span></div>';
   }
 
-  function money(value) {
-    return `${new Intl.NumberFormat("ja-JP").format(Number(value) || 0)}円`;
-  }
-
-  function renderBudget() {
-    $("#budgetMonth").value ||= todayISO.slice(0, 7);
-    const month = $("#budgetMonth").value;
-    const items = state.data.transactions.filter((item) => item.date.startsWith(month)).sort((a, b) => b.date.localeCompare(a.date));
-    const income = items.filter((item) => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
-    const expense = items.filter((item) => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
-    const limit = Number(state.data.budgets[month]) || 0;
-    $("#budgetLimit").value = limit || "";
-    $("#transactionDate").value ||= todayISO;
-    $("#budgetSummary").innerHTML = [["予算", money(limit)], ["収入", money(income)], ["支出", money(expense)], ["残り", money(limit ? limit - expense : income - expense)]].map(([label, value]) => `<article><span>${label}</span><strong>${value}</strong></article>`).join("");
-    $("#transactionList").innerHTML = items.map((item) => `<article><span class="transaction-kind ${item.type}">${item.type === "income" ? "収入" : "支出"}</span><div><strong>${escapeHTML(item.category)}</strong><small>${formatFullDate(item.date)}${item.note ? `・${escapeHTML(item.note)}` : ""}</small></div><b>${item.type === "income" ? "+" : "−"}${money(item.amount)}</b><button type="button" data-delete-transaction="${item.id}">削除</button></article>`).join("") || '<div class="empty-state"><strong>この月の収支はありません</strong><span>収入や支出を登録してください。</span></div>';
-  }
-
   function renderDataSummary() {
-    const counts = [["タスク", state.data.tasks.length], ["記録", state.data.logs.length], ["予定", state.data.events.length], ["振り返り", state.data.reflections.length], ["コレクション", state.data.collectionItems.length], ["家計簿", state.data.transactions.length]];
+    const counts = [["タスク", state.data.tasks.length], ["記録", state.data.logs.length], ["予定", state.data.events.length], ["振り返り", state.data.reflections.length], ["コレクション", state.data.collectionItems.length]];
     $("#dataSummary").innerHTML = counts.map(([label, value]) => `<article><span>${label}</span><strong>${value}</strong></article>`).join("");
   }
 
@@ -750,33 +640,27 @@
     elements.selectedCount.textContent = `${visibleSelected.length}件選択`;
   }
 
+  const specialViews = ["habits", "records", "calendar", "collections", "data", "reflection", "help"];
   function render() {
     setTimeout(() => fillLogImages(), 0);
     renderCounts();
-    renderProjects();
     renderNavigation();
-    const home = state.view === "inbox" && !state.projectId;
+    const home = state.view === "inbox";
     document.body.classList.toggle("home-page", home);
     elements.taskWorkspace.classList.toggle("home-mode", home);
-    const special = ["overview", "documents", "habits", "records", "calendar", "collections", "budget", "data", "reflection", "help"].includes(state.view);
+    const special = specialViews.includes(state.view);
     elements.taskWorkspace.hidden = special;
-    elements.overviewWorkspace.hidden = state.view !== "overview";
-    elements.documentsWorkspace.hidden = state.view !== "documents";
     elements.habitsWorkspace.hidden = state.view !== "habits";
     elements.recordsWorkspace.hidden = state.view !== "records";
     elements.calendarWorkspace.hidden = state.view !== "calendar";
     elements.collectionsWorkspace.hidden = state.view !== "collections";
-    elements.budgetWorkspace.hidden = state.view !== "budget";
     elements.dataWorkspace.hidden = state.view !== "data";
     elements.reflectionWorkspace.hidden = state.view !== "reflection";
     elements.helpWorkspace.hidden = state.view !== "help";
-    if (state.view === "overview") renderOverview();
-    else if (state.view === "documents") renderDocuments();
-    else if (state.view === "habits") renderHabits();
+    if (state.view === "habits") renderHabits();
     else if (state.view === "records") renderLogs();
     else if (state.view === "calendar") renderCombinedCalendar();
     else if (state.view === "collections") renderCollections();
-    else if (state.view === "budget") renderBudget();
     else if (state.view === "data") renderDataSummary();
     else if (state.view === "reflection") renderReflection();
     else if (state.view !== "help") {
@@ -793,8 +677,7 @@
       state.logDate = currentISO();
       state.showAllLogs = false;
     }
-    state.view = view;
-    state.projectId = null;
+    state.view = Object.prototype.hasOwnProperty.call(viewNames, view) || specialViews.includes(view) ? view : "inbox";
     state.selected.clear();
     document.body.classList.remove("menu-open");
     render();
@@ -810,9 +693,6 @@
     $("#taskTime").value = task?.time || "";
     $("#tomorrowTaskBtn").hidden = !task || task.completed;
     $("#taskPriority").value = task?.priority || "medium";
-    $("#taskProject").value = task?.projectId || state.projectId || "";
-    $("#taskRepeat").value = task?.repeat || "";
-    $("#taskPinned").checked = Boolean(task?.pinned);
     $("#taskNotes").value = task?.notes || "";
     const linkedLog = task && state.data.logs.find((item) => item.taskId === task.id);
     pickers.task.set((linkedLog ? linkedLog.images : task?.images) || []);
@@ -834,10 +714,6 @@
       time: /^\d{2}:\d{2}$/.test(input.time || "") ? input.time : "",
       habitId: input.habitId || null,
       priority: ["high", "medium", "low"].includes(input.priority) ? input.priority : "medium",
-      tag: ["work", "private"].includes(input.tag) ? input.tag : "",
-      projectId: input.projectId || null,
-      repeat: ["daily", "weekly", "monthly"].includes(input.repeat) ? input.repeat : "",
-      pinned: Boolean(input.pinned),
       notes: String(input.notes || ""),
       ...(Array.isArray(input.images) && input.images.length ? { images: input.images } : {}),
       completed: false,
@@ -863,14 +739,6 @@
         habit.dates = Array.isArray(habit.dates) ? habit.dates.filter((date) => date !== day) : [];
         if (completed) habit.dates.push(day);
       }
-    }
-    if (completed && !wasCompleted && task.repeat) {
-      const base = fromISO(task.due) || today;
-      const nextDue = new Date(base);
-      if (task.repeat === "daily") nextDue.setDate(nextDue.getDate() + 1);
-      if (task.repeat === "weekly") nextDue.setDate(nextDue.getDate() + 7);
-      if (task.repeat === "monthly") nextDue.setMonth(nextDue.getMonth() + 1);
-      state.data.tasks.push({ ...task, id: uid(), due: toISO(nextDue), completed: false, completedAt: null, pinned: false, order: Date.now() });
     }
     state.selected.delete(id);
     persist();
@@ -934,7 +802,7 @@
     state.data.habits.forEach((habit) => {
       if (Array.isArray(habit.dates) && habit.dates.includes(todayISO)) return;
       if (state.data.tasks.some((task) => task.habitId === habit.id && task.due === todayISO)) return;
-      state.data.tasks.push({ id: uid(), title: habit.name, folder: "next", due: todayISO, time: "", habitId: habit.id, priority: "medium", tag: "", projectId: null, repeat: "", pinned: false, notes: "", completed: false, completedAt: null, order: Date.now() + added });
+      state.data.tasks.push({ id: uid(), title: habit.name, folder: "next", due: todayISO, time: "", habitId: habit.id, priority: "medium", notes: "", completed: false, completedAt: null, order: Date.now() + added });
       added += 1;
     });
     if (!added) return showToast("今日のハビットタスクは作成済みです");
@@ -986,17 +854,8 @@
     // v49：サイドバーの「INBOX」の件数を押すとINBOXの一覧を開く（文字部分はこれまでどおりホーム）
     if (viewButton) setView(event.target.closest('[data-count="inbox"]') ? "inboxList" : viewButton.dataset.view);
 
-    const projectButton = event.target.closest("[data-project]");
-    if (projectButton) {
-      state.projectId = projectButton.dataset.project;
-      state.view = "projects";
-      state.selected.clear();
-      document.body.classList.remove("menu-open");
-      render();
-    }
-
     const taskElement = event.target.closest("[data-id]");
-    if (taskElement && (event.target.closest(".task-body") || event.target.closest(".task-menu") || event.target.closest(".week-card") || event.target.closest(".calendar-task") || event.target.closest("tr"))) {
+    if (taskElement && (event.target.closest(".task-body") || event.target.closest(".task-menu") || event.target.closest(".calendar-task") || event.target.closest("tr"))) {
       openTask(taskElement.dataset.id);
     }
 
@@ -1014,7 +873,7 @@
     time = validTime(time);
     type = logTypeNames[type] ? type : "memo";
     end = type === "action" ? validTime(end) : "";
-    const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", tag: "", projectId: null, notes: detail, completed: false, order: Date.now(), createdAt: new Date().toISOString() };
+    const task = { id: uid(), title, folder: "inbox", due: "", time: "", habitId: null, priority: "medium", notes: detail, completed: false, order: Date.now(), createdAt: new Date().toISOString() };
     state.data.tasks.push(task);
     state.data.logs.push({ id: `inbox-${task.id}`, taskId: task.id, date, time, ...(end ? { end } : {}), type, text: inboxLogText(task), ...(images.length ? { images } : {}), ...(checkLogTypes.includes(type) ? { done: false } : {}), createdAt: new Date().toISOString() });
     // v63：種類が「予定」ならカレンダーにも入れる
@@ -1060,9 +919,6 @@
       due: $("#taskDue").value,
       time: $("#taskTime").value,
       priority: $("#taskPriority").value,
-      projectId: $("#taskProject").value || null,
-      repeat: $("#taskRepeat").value,
-      pinned: $("#taskPinned").checked,
       notes: $("#taskNotes").value.trim()
     };
     if (!values.title) return;
@@ -1159,42 +1015,9 @@
   $("#headingAddBtn").addEventListener("click", () => openTask());
   $("#mobileAdd").addEventListener("click", () => openTask());
   $("#mobileMenu").addEventListener("click", () => document.body.classList.toggle("menu-open"));
-  $("#newProjectBtn").addEventListener("click", () => elements.projectDialog.showModal());
-
-  $("#projectForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = $("#projectName").value.trim();
-    if (!name) return;
-    state.data.projects.push({ id: uid(), name, color: $("#projectColor").value });
-    $("#projectName").value = "";
-    persist();
-    render();
-    elements.projectDialog.close();
-    showToast("プロジェクトを追加しました");
-  });
-
   $("#searchInput").addEventListener("input", (event) => {
     state.search = event.target.value.trim();
-    if (!["overview", "documents", "habits", "records", "calendar", "collections", "budget", "data", "reflection", "help"].includes(state.view)) renderTasks();
-  });
-
-  $("#documentForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const title = $("#documentTitle").value.trim();
-    if (!title) return;
-    state.data.documents.push({ id: uid(), title, url: $("#documentUrl").value.trim() });
-    $("#documentTitle").value = "";
-    $("#documentUrl").value = "";
-    persist();
-    renderDocuments();
-    showToast("ドキュメントを追加しました");
-  });
-  $("#documentList").addEventListener("click", (event) => {
-    const id = event.target.closest("[data-delete-document]")?.dataset.deleteDocument;
-    if (!id || !window.confirm("このドキュメントを削除しますか？")) return;
-    state.data.documents = state.data.documents.filter((item) => item.id !== id);
-    persist();
-    renderDocuments();
+    if (!specialViews.includes(state.view)) renderTasks();
   });
 
   $("#habitForm").addEventListener("submit", (event) => {
@@ -1704,37 +1527,6 @@
     renderCollections();
   });
 
-  $("#budgetMonth").addEventListener("change", renderBudget);
-  $("#budgetPlanForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const month = $("#budgetMonth").value;
-    state.data.budgets[month] = Math.max(0, Number($("#budgetLimit").value) || 0);
-    persist();
-    renderBudget();
-    showToast("予算を保存しました");
-  });
-  $("#transactionForm").addEventListener("submit", (event) => {
-    event.preventDefault();
-    const date = $("#transactionDate").value;
-    const amount = Math.max(0, Number($("#transactionAmount").value) || 0);
-    const category = $("#transactionCategory").value.trim();
-    if (!date || !amount || !category) return;
-    state.data.transactions.push({ id: uid(), date, type: $("#transactionType").value, category, amount, note: $("#transactionNote").value.trim(), createdAt: new Date().toISOString() });
-    $("#budgetMonth").value = date.slice(0, 7);
-    $("#transactionAmount").value = "";
-    $("#transactionNote").value = "";
-    persist();
-    renderBudget();
-    showToast("家計簿へ登録しました");
-  });
-  $("#transactionList").addEventListener("click", (event) => {
-    const id = event.target.closest("[data-delete-transaction]")?.dataset.deleteTransaction;
-    if (!id || !window.confirm("この収支を削除しますか？")) return;
-    state.data.transactions = state.data.transactions.filter((item) => item.id !== id);
-    persist();
-    renderBudget();
-  });
-
   $("#reflectionForm").addEventListener("submit", (event) => {
     event.preventDefault();
     const date = $("#reflectionDate").value;
@@ -1786,7 +1578,6 @@
     try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ dark: document.body.classList.contains("dark") })); } catch (error) { notifySaveError(error); }
   });
 
-  $("#backupBtn").addEventListener("click", () => elements.backupDialog.showModal());
   $("#exportBtn").addEventListener("click", () => {
     const blob = new Blob([JSON.stringify(state.data, null, 2)], { type: "application/json" });
     const link = document.createElement("a");
@@ -1901,10 +1692,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=70"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=71"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 70;
+  const APP_VERSION = 71;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
@@ -1965,7 +1756,7 @@
         name: "list_tasks",
         title: "タスク一覧",
         description: "現在のタスクを取得します。",
-        inputSchema: { type: "object", properties: { folder: { type: "string", enum: ["inbox", "next", "remind", "waiting", "project", "wish"] }, status: { type: "string", enum: ["open", "completed", "all"] } }, additionalProperties: false },
+        inputSchema: { type: "object", properties: { folder: { type: "string", enum: ["inbox", "next", "remind", "waiting", "wish"] }, status: { type: "string", enum: ["open", "completed", "all"] } }, additionalProperties: false },
         annotations: { readOnlyHint: true, untrustedContentHint: true },
         execute(input = {}) {
           return state.data.tasks.filter((task) => (!input.folder || task.folder === input.folder) && (input.status === "all" || (input.status === "completed" ? task.completed : !task.completed))).map(({ id, title, folder, due, priority, completed }) => ({ id, title, folder, due, priority, completed }));
