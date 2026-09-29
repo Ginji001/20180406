@@ -576,7 +576,8 @@
       const task = item.taskId && taskMap.get(item.taskId);
       const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? '<em class="journal-route">未振り分け</em>' : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
       const pick = item.type === "memo";
-      const mark = pick ? `<label class="journal-check journal-pick" title="振り分けるメモを選ぶ"><input type="checkbox" data-pick-log="${item.id}" ${state.pickedLogs.has(item.id) ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}を選ぶ" /></label>` : check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
+      // v70：四角（チェックBOX）からの振り分けはなし。振り分けは「編集」の種類から
+      const mark = check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
       return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong>${(item.images || []).length ? `<div class="log-images">${item.images.map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}<small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
     }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
     const actionMinutes = logs.reduce((sum, item) => sum + durationMinutes(item), 0);
@@ -1900,10 +1901,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=69"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=70"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 69;
+  const APP_VERSION = 70;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
