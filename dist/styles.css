@@ -658,3 +658,14 @@ body.dark button.habit-calendar-day.today { background: #4a3923; }
 .habit-item.habit-color-7 { --habit-color: #d06a9e; }
 .habit-item[class*="habit-color-"] { border-left: 5px solid var(--habit-color); background: color-mix(in srgb, var(--habit-color) 9%, var(--paper)); }
 .habit-item[class*="habit-color-"] input { accent-color: var(--habit-color); }
+
+/* v69：スマホで画面が横にスクロールしないようにする */
+html { overflow-x: hidden; overflow-x: clip; }
+body { max-width: 100%; overflow-x: hidden; overflow-x: clip; overflow-wrap: anywhere; }
+img, video, canvas, svg, iframe { max-width: 100%; }
+pre { white-space: pre-wrap; }
+.main, .content, .content > *, .habit-item label, .simple-item > *, .budget-summary article, .reflection-summary article { min-width: 0; }
+@media (max-width: 620px) {
+  .reflection-summary { grid-template-columns: 1fr; }
+  .quick-links, .view-switch, .week-board { overscroll-behavior-x: contain; }
+}
