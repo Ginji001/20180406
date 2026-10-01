@@ -634,3 +634,15 @@ pre { white-space: pre-wrap; }
   .dialog-actions { flex-wrap: wrap; }
   .dialog-actions button { white-space: nowrap; }
 }
+
+/* v72：添付画像は切り抜かず比率のまま、大きさをそろえてレイアウトを崩さない */
+.log-images { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; max-width: 100%; margin-top: 6px; }
+.log-images img { display: block; width: auto; height: auto; max-width: min(100%, 180px); max-height: 120px; object-fit: contain; border-radius: 8px; border: 1px solid var(--line); background: var(--paper-2, var(--bg)); cursor: zoom-in; }
+.journal-row .log-images img { max-width: min(100%, 140px); max-height: 96px; }
+.log-images img.is-missing { min-width: 72px; min-height: 72px; max-width: 100%; }
+.img-picker { max-width: 100%; }
+.img-picker-list { max-width: 100%; align-items: flex-start; }
+.img-thumb img { width: auto; height: auto; min-width: 48px; min-height: 48px; max-width: 120px; max-height: 96px; object-fit: contain; background: var(--paper-2, var(--bg)); }
+.capture .img-picker { grid-column: 2 / -1; margin: 0; min-width: 0; }
+.task-body, .journal-row > div { min-width: 0; }
+.image-viewer img { width: auto; height: auto; max-width: 100%; max-height: 90dvh; object-fit: contain; }

@@ -886,7 +886,7 @@
     state.logDate = date;
     state.showAllLogs = false;
     render();
-    showToast(`INBOXと${date === currentISO() ? "今日" : formatDate(date)}の記録へ追加しました`);
+    showToast(`INBOXと${date === currentISO() ? "今日" : formatDate(date)}の記録へ追加しました${images.length ? `（画像${images.length}枚つき）` : ""}`);
     return true;
   }
 
@@ -1171,16 +1171,25 @@
   function makeImagePicker(root) {
     const input = root.querySelector("input[type=file]");
     const list = root.querySelector(".img-picker-list");
-    const p = { existing: [], files: [], removed: [] };
+    const p = { existing: [], files: [], removed: [], loading: 0, pending: Promise.resolve() };
     function draw() {
       list.innerHTML = p.existing.map((id, i) => `<span class="img-thumb"><img data-img-id="${escapeHTML(id)}" alt="添付画像" /><button type="button" data-rm-old="${i}" aria-label="外す">×</button></span>`).join("")
         + p.files.map((f, i) => `<span class="img-thumb"><img src="${f.url}" alt="添付画像" /><button type="button" data-rm-new="${i}" aria-label="外す">×</button></span>`).join("");
       fillLogImages();
     }
     input.addEventListener("change", () => {
-      [...input.files].forEach((file) => p.files.push({ file, url: URL.createObjectURL(file) }));
-      input.value = "";
-      draw();
+      const picked = [...input.files];
+      p.loading += picked.length;
+      p.pending = p.pending.then(async () => {
+        for (const file of picked) {
+          let blob = file;
+          try { blob = await shrinkImage(file); } catch (error) { /* 縮小できなければ元の画像のまま */ }
+          p.files.push({ blob, url: URL.createObjectURL(blob) });
+          p.loading -= 1;
+          draw();
+        }
+        input.value = "";
+      });
     });
     list.addEventListener("click", (event) => {
       const oldIdx = event.target.closest("[data-rm-old]")?.dataset.rmOld;
@@ -1192,11 +1201,12 @@
     });
     return {
       set(ids = []) { p.files.forEach((f) => URL.revokeObjectURL(f.url)); p.existing = [...ids]; p.files = []; p.removed = []; draw(); },
-      count: () => p.existing.length + p.files.length,
+      count: () => p.existing.length + p.files.length + p.loading,
       // 新しい画像を保存し、外した画像を消して、最終的な画像IDの一覧を返す
       async commit() {
+        await p.pending;
         const added = [];
-        for (const { file } of p.files) { const id = `img-${uid()}`; const blob = await shrinkImage(file); await imgPut(id, blob); added.push(id); uploadImage(id, blob); }
+        for (const { blob } of p.files) { const id = `img-${uid()}`; await imgPut(id, blob); added.push(id); uploadImage(id, blob); }
         p.removed.forEach((id) => removeImage(id));
         const ids = [...p.existing, ...added];
         this.set([]);
@@ -1206,12 +1216,15 @@
   }
   const pickers = { quick: makeImagePicker($("#quickImages")), log: makeImagePicker($("#logImages")), logEdit: makeImagePicker($("#logEditImages")), task: makeImagePicker($("#taskImages")) };
   const imageTitle = (n) => `📷 画像${n > 1 ? `（${n}枚）` : ""}`;
-  $("#logList").addEventListener("click", (event) => {
-    const img = event.target.closest("img[data-img-id]");
-    if (!img || !img.src) return;
+  // v72：一覧の添付画像はどの画面でもタップで拡大（タスクを開く動作より先に処理）
+  document.addEventListener("click", (event) => {
+    const img = event.target.closest(".log-images img[data-img-id]");
+    if (!img) return;
+    event.stopPropagation();
+    if (!img.src) return;
     $("#imageViewer img").src = img.src;
     $("#imageViewer").hidden = false;
-  });
+  }, true);
   $("#imageViewer").addEventListener("click", () => { $("#imageViewer").hidden = true; });
 
   $("#logForm").addEventListener("submit", async (event) => {
@@ -1692,7 +1705,7 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=71"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=72"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
   const APP_VERSION = 71;
