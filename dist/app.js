@@ -1705,10 +1705,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=72"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=73"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 71;
+  const APP_VERSION = 73;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
@@ -1733,6 +1733,13 @@
       const text = await (await fetch(`./sw.js?check=${Date.now()}`, { cache: "no-store" })).text();
       const latest = Number((text.match(/hachiroku-techo-v(\d+)/) || [])[1] || 0);
       if (latest > APP_VERSION || currentISO() !== todayISO) {
+        // v73：同じ版のための再読み込みは1回だけ（版番号の付け忘れ等で再読み込みが繰り返されないように）
+        if (latest > APP_VERSION && currentISO() === todayISO) {
+          try {
+            if (sessionStorage.getItem("hachiroku-update-tried") === String(latest)) return;
+            sessionStorage.setItem("hachiroku-update-tried", String(latest));
+          } catch (error) { /* 保存できなくても続ける */ }
+        }
         navigator.serviceWorker?.getRegistration().then((reg) => reg?.update()).catch(() => {});
         if (busyEditing()) showUpdateBar();
         else location.reload();
