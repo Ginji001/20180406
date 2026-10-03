@@ -1,5 +1,5 @@
-const CACHE = "hachiroku-techo-v73";
-const ASSETS = ["./about.html", "./privacy.html", "./terms.html", "./", "./index.html?v=73", "./styles.css?v=73", "./app.js?v=73", "./manifest.webmanifest?v=73", "./favicon-anime.png", "./apple-touch-icon-anime.png", "./icon-anime-192.png", "./icon-anime-512.png", "./icon-anime-maskable-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=73", "./cloud-sync.js?v=73"];
+const CACHE = "hachiroku-techo-v74";
+const ASSETS = ["./about.html", "./privacy.html", "./terms.html", "./", "./index.html?v=74", "./styles.css?v=74", "./app.js?v=74", "./manifest.webmanifest?v=74", "./favicon-anime.png", "./apple-touch-icon-anime.png", "./icon-anime-192.png", "./icon-anime-512.png", "./icon-anime-maskable-512.png", "./paper-sheet.pdf", "./google-calendar.js?v=74", "./cloud-sync.js?v=74"];
 self.addEventListener("install", (event) => { self.skipWaiting(); event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(ASSETS))); });
 self.addEventListener("activate", (event) => event.waitUntil(caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", (event) => {

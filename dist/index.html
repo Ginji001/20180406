@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=73" />
+    <link rel="manifest" href="./manifest.webmanifest?v=74" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=73" />
+    <link rel="stylesheet" href="./styles.css?v=74" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -78,7 +78,7 @@
                   <input id="quickTaskInput" maxlength="300" autocomplete="off" placeholder="内容（INBOXと記録に入ります）" aria-label="内容" />
                   <button type="submit">追加</button>
                   <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
-                  <div class="img-picker" id="quickImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple hidden /></label><div class="img-picker-list"></div></div>
+                  <div class="img-picker" id="quickImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><div class="img-picker-list"></div></div>
                   <div class="capture-when" id="quickWhen"><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="開始時刻（任意）" /><input id="quickEnd" type="time" aria-label="終了時刻" hidden /></div>
                 </form>
                 <div class="gtd-panel" id="gtdPanel">
@@ -115,7 +115,7 @@
               <input id="logText" maxlength="300" placeholder="内容（INBOXと記録に入ります）" />
               <button type="submit">記録する</button>
               <textarea id="logDetail" rows="2" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
-              <div class="img-picker" id="logImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple hidden /></label><div class="img-picker-list"></div></div>
+              <div class="img-picker" id="logImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><div class="img-picker-list"></div></div>
             </form>
             <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="logTodayBtn" hidden>今日に戻る</button><button type="button" id="showAllLogs">すべて表示</button></div>
             <p class="log-action-total" id="logActionTotal" hidden></p>
@@ -252,7 +252,7 @@
           <label class="field"><span>優先度</span><select id="taskPriority"><option value="high">高</option><option value="medium">中</option><option value="low">低</option></select></label>
         </div>
         <label class="field"><span>メモ</span><textarea id="taskNotes" rows="4" maxlength="500" placeholder="必要な情報を残せます"></textarea></label>
-        <div class="img-picker" id="taskImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple hidden /></label><div class="img-picker-list"></div></div>
+        <div class="img-picker" id="taskImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><div class="img-picker-list"></div></div>
         <div class="dialog-actions"><button type="button" id="tomorrowTaskBtn" hidden>明日へ</button><button type="button" id="routeItemBtn">手帳へ振り分け</button><button type="button" class="danger" id="deleteTask" hidden>削除</button><button type="button" data-close="task">キャンセル</button><button class="primary" type="submit">保存</button></div>
       </form>
     </dialog>
@@ -269,7 +269,7 @@
         </div>
         <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="schedule">▦ 予定</option><option value="event">○ 出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select></label>
         <label class="field"><span>内容</span><textarea id="logEditText" required maxlength="1200" rows="5"></textarea></label>
-        <div class="img-picker" id="logEditImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple hidden /></label><div class="img-picker-list"></div></div>
+        <div class="img-picker" id="logEditImages"><label class="log-photo-btn">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><div class="img-picker-list"></div></div>
         <div class="dialog-actions"><button type="button" data-close="logEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
       </form>
     </dialog>
@@ -298,8 +298,8 @@
     <div class="image-viewer" id="imageViewer" hidden><img alt="添付画像" /></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=73"></script>
-    <script src="./cloud-sync.js?v=73" defer></script>
-    <script src="./google-calendar.js?v=73"></script>
+    <script src="./app.js?v=74"></script>
+    <script src="./cloud-sync.js?v=74" defer></script>
+    <script src="./google-calendar.js?v=74"></script>
   </body>
 </html>

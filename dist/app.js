@@ -895,7 +895,7 @@
     const count = pickers.quick.count();
     if (!$("#quickTaskInput").value.trim() && !count) { $("#quickTaskInput").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
     let images = [];
-    try { images = await pickers.quick.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
+    try { images = await pickers.quick.commit(); } catch (error) { showToast(imageErrorText(error)); return; }
     const ok = addInboxEntry({ title: $("#quickTaskInput").value.trim() || imageTitle(count), detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, end: $("#quickEnd").value, type: $("#quickType").value, images });
     if (!ok) { images.forEach((id) => removeImage(id)); return; }
     $("#quickTaskInput").value = "";
@@ -912,7 +912,7 @@
     event.preventDefault();
     const id = $("#taskId").value;
     let taskImages;
-    try { taskImages = await pickers.task.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
+    try { taskImages = await pickers.task.commit(); } catch (error) { showToast(imageErrorText(error)); return; }
     const values = {
       title: $("#taskTitle").value.trim(),
       folder: $("#taskFolder").value,
@@ -1070,51 +1070,81 @@
 
   // v65：記録に画像（スクショ）を添付。画像は端末内（IndexedDB）に保存し、記録には画像IDだけを持たせる
   const IMG_DB = "hachiroku-images-v1";
+  let imgDBPromise = null;
   function imgDB() {
-    return new Promise((resolve, reject) => {
+    if (imgDBPromise) return imgDBPromise;
+    imgDBPromise = new Promise((resolve, reject) => {
       const req = indexedDB.open(IMG_DB, 1);
       req.onupgradeneeded = () => req.result.createObjectStore("images");
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => reject(req.error);
+      req.onsuccess = () => { const db = req.result; db.onversionchange = () => { db.close(); imgDBPromise = null; }; resolve(db); };
+      req.onerror = () => { imgDBPromise = null; reject(req.error); };
+      req.onblocked = () => { imgDBPromise = null; reject(new Error("blocked")); };
     });
+    return imgDBPromise;
   }
   async function imgStore(mode, fn) {
     const db = await imgDB();
     return new Promise((resolve, reject) => {
-      const tx = db.transaction("images", mode);
-      const req = fn(tx.objectStore("images"));
-      tx.oncomplete = () => resolve(req?.result);
-      tx.onerror = () => reject(tx.error);
+      let req;
+      try {
+        const tx = db.transaction("images", mode);
+        req = fn(tx.objectStore("images"));
+        tx.oncomplete = () => resolve(req?.result);
+        tx.onerror = () => reject(tx.error || req?.error);
+        tx.onabort = () => reject(tx.error || req?.error || new Error("abort"));
+      } catch (error) { reject(error); }
     });
   }
-  const imgPut = (id, blob) => imgStore("readwrite", (s) => s.put(blob, id));
-  const imgGet = (id) => imgStore("readonly", (s) => s.get(id));
+  function fileToBuffer(blob) {
+    if (blob.arrayBuffer) return blob.arrayBuffer();
+    return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsArrayBuffer(blob); });
+  }
+  async function imgPut(id, blob) {
+    try { return await imgStore("readwrite", (s) => s.put(blob, id)); }
+    catch (error) {
+      // 一部のSafariはBlobをそのまま保存できないので、中身（ArrayBuffer）で保存し直す
+      const buf = await fileToBuffer(blob);
+      return imgStore("readwrite", (s) => s.put({ hachirokuImg: true, type: blob.type || "image/jpeg", buf }, id));
+    }
+  }
+  async function imgGet(id) {
+    const value = await imgStore("readonly", (s) => s.get(id));
+    if (value && !(value instanceof Blob) && value.buf) return new Blob([value.buf], { type: value.type || "image/jpeg" });
+    return value;
+  }
   const imgDelete = (id) => imgStore("readwrite", (s) => s.delete(id));
   const imgURLs = new Map();
-  async function shrinkImage(file) {
-    let blob = file;
-    for (const [max, quality] of [[1600, 0.8], [1400, 0.7], [1200, 0.6], [1000, 0.55], [800, 0.5]]) {
-      blob = await shrinkOnce(file, max, quality);
-      if (blob.size <= 650 * 1024) return blob;
-    }
-    return blob;
-  }
-  function shrinkOnce(file, max, quality) {
-    return new Promise((resolve) => {
-      const url = URL.createObjectURL(file);
+  function decodeImage(blob) {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(blob);
       const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.naturalWidth * scale);
-        canvas.height = Math.round(img.naturalHeight * scale);
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        URL.revokeObjectURL(url);
-        canvas.toBlob((blob) => resolve(blob || file), "image/jpeg", quality);
-      };
-      img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("decode")); };
       img.src = url;
     });
+  }
+  // v74：画像を1回だけ読み込み、大きさを順に下げて約650KB以下のJPEGにする（iPhoneのメモリ節約のためキャンバスは都度解放）
+  async function shrinkImage(blob) {
+    const img = await decodeImage(blob);
+    const w0 = img.naturalWidth || img.width;
+    const h0 = img.naturalHeight || img.height;
+    let out = blob;
+    for (const [max, quality] of [[1600, 0.8], [1400, 0.7], [1200, 0.6], [1000, 0.55], [800, 0.5]]) {
+      const scale = Math.min(1, max / Math.max(w0, h0));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(w0 * scale));
+      canvas.height = Math.max(1, Math.round(h0 * scale));
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const jpeg = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", quality));
+      canvas.width = canvas.height = 0;
+      if (!jpeg) break;
+      out = jpeg;
+      if (out.size <= 650 * 1024) break;
+    }
+    return out;
   }
   // v66：画像も同期（ログイン中）。この端末にない画像はクラウドから取り込み、未送信の画像は送る
   const IMG_UP_KEY = "hachiroku-img-uploaded-v1";
@@ -1174,22 +1204,31 @@
     const p = { existing: [], files: [], removed: [], loading: 0, pending: Promise.resolve() };
     function draw() {
       list.innerHTML = p.existing.map((id, i) => `<span class="img-thumb"><img data-img-id="${escapeHTML(id)}" alt="添付画像" /><button type="button" data-rm-old="${i}" aria-label="外す">×</button></span>`).join("")
-        + p.files.map((f, i) => `<span class="img-thumb"><img src="${f.url}" alt="添付画像" /><button type="button" data-rm-new="${i}" aria-label="外す">×</button></span>`).join("");
+        + p.files.map((f, i) => `<span class="img-thumb"><img src="${f.url}" alt="添付画像" /><button type="button" data-rm-new="${i}" aria-label="外す">×</button></span>`).join("")
+        + (p.loading > 0 ? `<span class="img-loading">読み込み中…（あと${p.loading}枚）</span>` : "");
       fillLogImages();
     }
     input.addEventListener("change", () => {
       const picked = [...input.files];
+      if (!picked.length) return;
       p.loading += picked.length;
-      p.pending = p.pending.then(async () => {
+      draw();
+      // v74：1枚ずつ順番に。選んだ直後に中身をメモリへコピーしてから縮小（iPhoneは元ファイルが後から読めなくなることがある）
+      const task = async () => {
+        let failed = 0;
         for (const file of picked) {
-          let blob = file;
-          try { blob = await shrinkImage(file); } catch (error) { /* 縮小できなければ元の画像のまま */ }
-          p.files.push({ blob, url: URL.createObjectURL(blob) });
+          try {
+            let blob = new Blob([await fileToBuffer(file)], { type: file.type || "image/jpeg" });
+            try { blob = await shrinkImage(blob); } catch (error) { /* 縮小できなければ元の画像のまま */ }
+            p.files.push({ blob, url: URL.createObjectURL(blob) });
+          } catch (error) { failed += 1; }
           p.loading -= 1;
           draw();
         }
-        input.value = "";
-      });
+        try { input.value = ""; } catch (error) { /* 無視 */ }
+        if (failed) showToast(`画像${failed}枚を読み込めませんでした`);
+      };
+      p.pending = p.pending.then(task, task);
     });
     list.addEventListener("click", (event) => {
       const oldIdx = event.target.closest("[data-rm-old]")?.dataset.rmOld;
@@ -1215,6 +1254,7 @@
     };
   }
   const pickers = { quick: makeImagePicker($("#quickImages")), log: makeImagePicker($("#logImages")), logEdit: makeImagePicker($("#logEditImages")), task: makeImagePicker($("#taskImages")) };
+  const imageErrorText = (error) => `画像を保存できませんでした${error?.name ? `（${error.name}）` : ""}`;
   const imageTitle = (n) => `📷 画像${n > 1 ? `（${n}枚）` : ""}`;
   // v72：一覧の添付画像はどの画面でもタップで拡大（タスクを開く動作より先に処理）
   document.addEventListener("click", (event) => {
@@ -1232,7 +1272,7 @@
     const count = pickers.log.count();
     if (!$("#logText").value.trim() && !count) { $("#logText").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
     let images = [];
-    try { images = await pickers.log.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
+    try { images = await pickers.log.commit(); } catch (error) { showToast(imageErrorText(error)); return; }
     const title = $("#logText").value.trim() || imageTitle(count);
     const ok = addInboxEntry({ title, detail: $("#logDetail").value, date: $("#logDate").value, time: $("#logTime").value, end: $("#logEnd").value, type: $("#logType").value, images });
     if (!ok) { images.forEach((id) => removeImage(id)); return; }
@@ -1378,7 +1418,7 @@
   $("#logEditForm").addEventListener("submit", async (event) => {
     event.preventDefault();
     let editImages;
-    try { editImages = await pickers.logEdit.commit(); } catch (error) { showToast("画像を保存できませんでした"); return; }
+    try { editImages = await pickers.logEdit.commit(); } catch (error) { showToast(imageErrorText(error)); return; }
     const record = state.data.logs.find((item) => item.id === $("#logEditId").value);
     const date = $("#logEditDate").value;
     const text = $("#logEditText").value.trim();
@@ -1705,10 +1745,10 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=73"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=74"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 73;
+  const APP_VERSION = 74;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
