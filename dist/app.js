@@ -1198,6 +1198,8 @@
   setTimeout(syncPendingImages, 5000);
   setInterval(syncPendingImages, 60000);
   // v67：画像添付を各入力欄に（ホーム・記録・記録の編集・タスクの編集）
+  // v76：写真を選んでいる間・選んだ直後に自動更新（再読み込み）が走ると選んだ画像が消えるため、その間は再読み込みしない
+  let filePickerOpenedAt = 0;
   function makeImagePicker(root) {
     const input = root.querySelector("input[type=file]");
     const list = root.querySelector(".img-picker-list");
@@ -1208,7 +1210,9 @@
         + (p.loading > 0 ? `<span class="img-loading">読み込み中…（あと${p.loading}枚）</span>` : "");
       fillLogImages();
     }
+    input.addEventListener("click", () => { filePickerOpenedAt = Date.now(); });
     input.addEventListener("change", () => {
+      filePickerOpenedAt = Date.now();
       const picked = [...input.files];
       if (!picked.length) return;
       p.loading += picked.length;
@@ -1241,6 +1245,7 @@
     return {
       set(ids = []) { p.files.forEach((f) => URL.revokeObjectURL(f.url)); p.existing = [...ids]; p.files = []; p.removed = []; draw(); },
       count: () => p.existing.length + p.files.length + p.loading,
+      hasUnsaved: () => p.files.length + p.loading > 0,
       // 新しい画像を保存し、外した画像を消して、最終的な画像IDの一覧を返す
       async commit() {
         await p.pending;
@@ -1745,13 +1750,15 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=75"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=76"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 75;
+  const APP_VERSION = 76;
   let updateChecking = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
+    if (Date.now() - filePickerOpenedAt < 3 * 60 * 1000) return true;
+    if (Object.values(pickers).some((pk) => pk.hasUnsaved())) return true;
     const el = document.activeElement;
     return Boolean(el && el.matches("input, textarea, select") && (el.value || "").trim() && el.type !== "checkbox" && el.type !== "date" && el.type !== "time" && el.tagName !== "SELECT");
   }
