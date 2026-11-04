@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=76" />
+    <link rel="manifest" href="./manifest.webmanifest?v=77" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=76" />
+    <link rel="stylesheet" href="./styles.css?v=77" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -168,6 +168,7 @@
               <button type="button" id="dataExportBtn">バックアップを書き出す</button>
               <label>ファイルから復元<input id="dataImportInput" type="file" accept="application/json,.json" /></label>
               <button type="button" id="dataBackupBtn">詳細を開く</button>
+              <button type="button" id="attachLogBtn">添付の記録（不具合調査用）</button>
             </div>
             <p class="data-note">データはこの端末のブラウザ内に保存されます。下の「端末間の同期」をオンにすると、ほかの端末とも自動で共有できます。</p>
             <section class="cloud-sync-panel" id="cloudSyncPanel">
@@ -298,8 +299,8 @@
     <div class="image-viewer" id="imageViewer" hidden><img alt="添付画像" /></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=76"></script>
-    <script src="./cloud-sync.js?v=76" defer></script>
-    <script src="./google-calendar.js?v=76"></script>
+    <script src="./app.js?v=77"></script>
+    <script src="./cloud-sync.js?v=77" defer></script>
+    <script src="./google-calendar.js?v=77"></script>
   </body>
 </html>

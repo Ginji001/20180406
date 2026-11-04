@@ -203,7 +203,7 @@
       if (same) { same.taskId = task.id; linked.add(task.id); return; }
       const id = `inbox-${task.id}`;
       if (ids.has(id)) return;
-      state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
+      state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), ...(task.images?.length ? { images: [...task.images] } : {}), createdAt: new Date().toISOString() });
       linked.add(task.id); ids.add(id);
     });
   }
@@ -695,7 +695,7 @@
     $("#taskPriority").value = task?.priority || "medium";
     $("#taskNotes").value = task?.notes || "";
     const linkedLog = task && state.data.logs.find((item) => item.taskId === task.id);
-    pickers.task.set((linkedLog ? linkedLog.images : task?.images) || []);
+    pickers.task.set([...new Set([...(linkedLog?.images || []), ...(task?.images || [])])]);
     $("#dialogKicker").textContent = task ? folderNames[task.folder] || "タスク" : "INBOX";
     $("#dialogTitle").textContent = task ? "INBOXの内容を編集" : "INBOXに追加";
     $("#deleteTask").hidden = !task;
@@ -1198,67 +1198,165 @@
   setTimeout(syncPendingImages, 5000);
   setInterval(syncPendingImages, 60000);
   // v67：画像添付を各入力欄に（ホーム・記録・記録の編集・タスクの編集）
-  // v76：写真を選んでいる間・選んだ直後に自動更新（再読み込み）が走ると選んだ画像が消えるため、その間は再読み込みしない
+  // v77：画像添付を作り直し（全ての添付欄で共通）
+  // ・選んだ画像は縮小した時点で端末内（IndexedDB）に下書き保存。アプリが再読み込み・再起動されても、ホームと記録の添付欄に戻す
+  // ・写真選択から戻ったときに change が届かない端末に備え、input / 戻ったとき / 定期確認でも選んだファイルを拾う（同じ選択は1回だけ処理）
+  // ・添付の経過を「添付の記録」に残す（データ管理から確認できる）
   let filePickerOpenedAt = 0;
-  function makeImagePicker(root) {
+  const ATTACH_LOG_KEY = "hachiroku-attach-log-v1";
+  const DRAFT_KEY = "hachiroku-img-drafts-v1";
+  const PICKER_OPEN_KEY = "hachiroku-picker-open-v1";
+  function attachLog(message) {
+    try {
+      const list = JSON.parse(localStorage.getItem(ATTACH_LOG_KEY) || "[]");
+      list.push(`${new Date().toLocaleString("ja-JP")} ${message}`);
+      localStorage.setItem(ATTACH_LOG_KEY, JSON.stringify(list.slice(-60)));
+    } catch (error) { /* 記録できなくても続ける */ }
+  }
+  function readDrafts() { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "{}") || {}; } catch (error) { return {}; } }
+  function writeDrafts(name, ids) {
+    try { const d = readDrafts(); if (ids.length) d[name] = ids; else delete d[name]; localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (error) { /* 無視 */ }
+  }
+  function makeImagePicker(root, name) {
     const input = root.querySelector("input[type=file]");
     const list = root.querySelector(".img-picker-list");
-    const p = { existing: [], files: [], removed: [], loading: 0, pending: Promise.resolve() };
+    const p = { existing: [], files: [], removed: [], loading: 0, pending: Promise.resolve(), handled: "" };
     function draw() {
       list.innerHTML = p.existing.map((id, i) => `<span class="img-thumb"><img data-img-id="${escapeHTML(id)}" alt="添付画像" /><button type="button" data-rm-old="${i}" aria-label="外す">×</button></span>`).join("")
         + p.files.map((f, i) => `<span class="img-thumb"><img src="${f.url}" alt="添付画像" /><button type="button" data-rm-new="${i}" aria-label="外す">×</button></span>`).join("")
         + (p.loading > 0 ? `<span class="img-loading">読み込み中…（あと${p.loading}枚）</span>` : "");
       fillLogImages();
     }
-    input.addEventListener("click", () => { filePickerOpenedAt = Date.now(); });
-    input.addEventListener("change", () => {
-      filePickerOpenedAt = Date.now();
-      const picked = [...input.files];
+    const saveDraftList = () => writeDrafts(name, p.files.map((f) => f.id));
+    function handlePicked(source) {
+      const picked = [...(input.files || [])];
       if (!picked.length) return;
+      const sig = picked.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|");
+      if (sig === p.handled) return;
+      p.handled = sig;
+      filePickerOpenedAt = Date.now();
+      try { localStorage.removeItem(PICKER_OPEN_KEY); } catch (error) { /* 無視 */ }
+      attachLog(`${name}: ${picked.length}枚を受け取り（${source}）`);
       p.loading += picked.length;
       draw();
-      // v74：1枚ずつ順番に。選んだ直後に中身をメモリへコピーしてから縮小（iPhoneは元ファイルが後から読めなくなることがある）
       const task = async () => {
-        let failed = 0;
+        // まず全部の中身をメモリへコピー（iPhoneは元ファイルが後から読めなくなることがある）
+        const buffers = [];
         for (const file of picked) {
+          try { buffers.push({ buf: await fileToBuffer(file), type: file.type || "image/jpeg" }); }
+          catch (error) { buffers.push({ error }); }
+        }
+        try { input.value = ""; } catch (error) { /* 無視 */ }
+        p.handled = "";
+        let failed = 0;
+        for (const item of buffers) {
           try {
-            let blob = new Blob([await fileToBuffer(file)], { type: file.type || "image/jpeg" });
-            try { blob = await shrinkImage(blob); } catch (error) { /* 縮小できなければ元の画像のまま */ }
-            p.files.push({ blob, url: URL.createObjectURL(blob) });
-          } catch (error) { failed += 1; }
+            if (item.error) throw item.error;
+            let blob = new Blob([item.buf], { type: item.type });
+            try { blob = await shrinkImage(blob); } catch (error) { attachLog(`${name}: 縮小できず元のまま（${error?.name || error}）`); }
+            const id = `img-${uid()}`;
+            try { await imgPut(id, blob); } catch (error) { attachLog(`${name}: 下書き保存に失敗（${error?.name || error}）`); }
+            p.files.push({ id, blob, url: URL.createObjectURL(blob) });
+            saveDraftList();
+          } catch (error) { failed += 1; attachLog(`${name}: 読み込み失敗（${error?.name || error}）`); }
           p.loading -= 1;
           draw();
         }
-        try { input.value = ""; } catch (error) { /* 無視 */ }
+        attachLog(`${name}: 添付欄に${p.files.length}枚`);
         if (failed) showToast(`画像${failed}枚を読み込めませんでした`);
       };
       p.pending = p.pending.then(task, task);
+    }
+    let watchTimer = 0;
+    input.addEventListener("click", () => {
+      filePickerOpenedAt = Date.now();
+      attachLog(`${name}: 写真の選択を開いた`);
+      try { localStorage.setItem(PICKER_OPEN_KEY, String(Date.now())); } catch (error) { /* 無視 */ }
+      clearInterval(watchTimer);
+      const until = Date.now() + 5 * 60 * 1000;
+      watchTimer = setInterval(() => { if (Date.now() > until) clearInterval(watchTimer); else handlePicked("確認"); }, 700);
     });
+    input.addEventListener("change", () => handlePicked("change"));
+    input.addEventListener("input", () => handlePicked("input"));
+    input.addEventListener("cancel", () => { clearInterval(watchTimer); attachLog(`${name}: 選択をキャンセル`); try { localStorage.removeItem(PICKER_OPEN_KEY); } catch (error) { /* 無視 */ } });
+    const recheck = () => setTimeout(() => handlePicked("戻ったとき"), 300);
+    window.addEventListener("focus", recheck);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) recheck(); });
     list.addEventListener("click", (event) => {
       const oldIdx = event.target.closest("[data-rm-old]")?.dataset.rmOld;
       const newIdx = event.target.closest("[data-rm-new]")?.dataset.rmNew;
       if (oldIdx != null) p.removed.push(...p.existing.splice(Number(oldIdx), 1));
-      else if (newIdx != null) URL.revokeObjectURL(p.files.splice(Number(newIdx), 1)[0].url);
-      else return;
+      else if (newIdx != null) {
+        const [f] = p.files.splice(Number(newIdx), 1);
+        URL.revokeObjectURL(f.url);
+        imgDelete(f.id).catch(() => {});
+        saveDraftList();
+      } else return;
       draw();
     });
+    function clearFiles(deleteStored) {
+      p.files.forEach((f) => { URL.revokeObjectURL(f.url); if (deleteStored) imgDelete(f.id).catch(() => {}); });
+      p.files = [];
+      saveDraftList();
+    }
     return {
-      set(ids = []) { p.files.forEach((f) => URL.revokeObjectURL(f.url)); p.existing = [...ids]; p.files = []; p.removed = []; draw(); },
+      set(ids = []) { clearFiles(true); p.existing = [...ids]; p.removed = []; draw(); },
       count: () => p.existing.length + p.files.length + p.loading,
       hasUnsaved: () => p.files.length + p.loading > 0,
-      // 新しい画像を保存し、外した画像を消して、最終的な画像IDの一覧を返す
+      // 下書きとして保存してある画像を添付欄に戻す（再読み込み・再起動のあと）
+      async restore() {
+        const ids = readDrafts()[name] || [];
+        if (!ids.length) return 0;
+        for (const id of ids) {
+          if (p.files.some((f) => f.id === id)) continue;
+          try { const blob = await imgGet(id); if (blob) p.files.push({ id, blob, url: URL.createObjectURL(blob) }); } catch (error) { /* 無視 */ }
+        }
+        saveDraftList();
+        draw();
+        return p.files.length;
+      },
+      async discardDrafts() {
+        const ids = readDrafts()[name] || [];
+        ids.forEach((id) => imgDelete(id).catch(() => {}));
+        writeDrafts(name, []);
+      },
+      // 新しい画像（保存済みの下書き）を確定し、外した画像を消して、最終的な画像IDの一覧を返す
       async commit() {
         await p.pending;
         const added = [];
-        for (const { blob } of p.files) { const id = `img-${uid()}`; await imgPut(id, blob); added.push(id); uploadImage(id, blob); }
+        for (const f of p.files) {
+          let stored = null;
+          try { stored = await imgGet(f.id); } catch (error) { stored = null; }
+          if (!stored) await imgPut(f.id, f.blob);
+          added.push(f.id);
+          uploadImage(f.id, f.blob);
+        }
         p.removed.forEach((id) => removeImage(id));
         const ids = [...p.existing, ...added];
+        if (added.length) attachLog(`${name}: ${added.length}枚を保存`);
+        clearFiles(false);
         this.set([]);
         return ids;
       }
     };
   }
-  const pickers = { quick: makeImagePicker($("#quickImages")), log: makeImagePicker($("#logImages")), logEdit: makeImagePicker($("#logEditImages")), task: makeImagePicker($("#taskImages")) };
+  const pickers = { quick: makeImagePicker($("#quickImages"), "quick"), log: makeImagePicker($("#logImages"), "log"), logEdit: makeImagePicker($("#logEditImages"), "logEdit"), task: makeImagePicker($("#taskImages"), "task") };
+  // 起動時：ホームと記録の添付欄は下書きを戻す。編集画面（タスク・記録の編集）の下書きは閉じたあとなので片付ける
+  (async () => {
+    try {
+      let restored = 0;
+      for (const key of ["quick", "log"]) restored += await pickers[key].restore();
+      for (const key of ["task", "logEdit"]) await pickers[key].discardDrafts();
+      if (restored) { attachLog(`起動時に下書き${restored}枚を戻した`); showToast(`選んでいた画像${restored}枚を添付欄に戻しました`); }
+      const openedAt = Number(localStorage.getItem(PICKER_OPEN_KEY) || 0);
+      localStorage.removeItem(PICKER_OPEN_KEY);
+      if (!restored && openedAt && Date.now() - openedAt < 10 * 60 * 1000) {
+        attachLog("写真を選んでいる間にアプリが再起動された");
+        showToast("写真を選んでいる間にアプリが再起動されました。もう一度選んでください");
+      }
+      attachLog(`起動（v${APP_VERSION}）`);
+    } catch (error) { /* 無視 */ }
+  })();
   const imageErrorText = (error) => `画像を保存できませんでした${error?.name ? `（${error.name}）` : ""}`;
   const imageTitle = (n) => `📷 画像${n > 1 ? `（${n}枚）` : ""}`;
   // v72：一覧の添付画像はどの画面でもタップで拡大（タスクを開く動作より先に処理）
@@ -1314,7 +1412,7 @@
     let log = state.data.logs.find((item) => item.taskId === id);
     const task = state.data.tasks.find((t) => t.id === id);
     if (!log && task) {
-      log = { id: `inbox-${task.id}`, taskId: task.id, date: currentISO(), time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() };
+      log = { id: `inbox-${task.id}`, taskId: task.id, date: currentISO(), time: "", type: "memo", text: inboxLogText(task), ...(task.images?.length ? { images: [...task.images] } : {}), createdAt: new Date().toISOString() };
       state.data.logs.push(log);
       persist();
     }
@@ -1664,6 +1762,13 @@
     event.target.value = "";
   });
   $("#dataExportBtn").addEventListener("click", () => $("#exportBtn").click());
+  $("#attachLogBtn")?.addEventListener("click", async () => {
+    let text = "";
+    try { text = JSON.parse(localStorage.getItem(ATTACH_LOG_KEY) || "[]").slice(-30).join("\n"); } catch (error) { text = ""; }
+    text = `ハチロク手帳 v${APP_VERSION}\n${navigator.userAgent}\n${text || "（記録なし）"}`;
+    try { await navigator.clipboard.writeText(text); showToast("添付の記録をコピーしました"); } catch (error) { /* コピーできなくても表示はする */ }
+    window.alert(text);
+  });
   $("#dataBackupBtn").addEventListener("click", () => elements.backupDialog.showModal());
   $("#dataImportInput").addEventListener("change", (event) => {
     const file = event.target.files?.[0];
@@ -1724,7 +1829,7 @@
       if (ids.has(id)) return;
       const at = task.createdAt ? new Date(task.createdAt) : new Date(Number(task.order) || Date.now());
       const date = Number.isNaN(at.getTime()) ? todayISO : toISO(at);
-      state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), createdAt: new Date().toISOString() });
+      state.data.logs.push({ id, taskId: task.id, date, time: "", type: "memo", text: inboxLogText(task), ...(task.images?.length ? { images: [...task.images] } : {}), createdAt: new Date().toISOString() });
     });
     if (!persist()) return;
     try { localStorage.setItem(FLAG, "1"); } catch (error) {}
@@ -1750,15 +1855,20 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=76"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=77"));
 
-  // v53：アプリに戻ったとき・開いたときに新しい版があれば自動で更新する
-  const APP_VERSION = 76;
+  // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
+  // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
+  //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
+  const APP_VERSION = 77;
   let updateChecking = false;
+  let hiddenAt = 0;
+  let awayLong = false;
   function busyEditing() {
     if (document.querySelector("dialog[open]")) return true;
-    if (Date.now() - filePickerOpenedAt < 3 * 60 * 1000) return true;
+    if (Date.now() - filePickerOpenedAt < 10 * 60 * 1000) return true;
     if (Object.values(pickers).some((pk) => pk.hasUnsaved())) return true;
+    if (["#quickTaskInput", "#logText", "#logDetail", "#quickDetail"].some((sel) => ($(sel)?.value || "").trim())) return true;
     const el = document.activeElement;
     return Boolean(el && el.matches("input, textarea, select") && (el.value || "").trim() && el.type !== "checkbox" && el.type !== "date" && el.type !== "time" && el.tagName !== "SELECT");
   }
@@ -1769,11 +1879,18 @@
     bar.id = "updateBar";
     bar.className = "update-bar";
     bar.textContent = "タップして最新の状態に更新";
-    bar.addEventListener("click", () => location.reload());
+    bar.addEventListener("click", () => { attachLog("更新バーから再読み込み"); location.reload(); });
     document.body.appendChild(bar);
   }
-  async function checkForUpdate() {
-    if (!updateChecking && currentISO() !== todayISO && !navigator.onLine) { if (busyEditing()) showUpdateBar(); else location.reload(); return; }
+  function reloadOrBar(trigger, reason) {
+    const allowed = (trigger === "start" || (trigger === "resume" && awayLong)) && !busyEditing();
+    if (!allowed) { showUpdateBar(); return; }
+    attachLog(`自動で再読み込み（${reason}）`);
+    location.reload();
+  }
+  async function checkForUpdate(trigger) {
+    const dayChanged = currentISO() !== todayISO;
+    if (!updateChecking && dayChanged && !navigator.onLine) { reloadOrBar(trigger, "日付が変わった"); return; }
     if (updateChecking || !navigator.onLine) return;
     updateChecking = true;
     try {
@@ -1788,8 +1905,7 @@
           } catch (error) { /* 保存できなくても続ける */ }
         }
         navigator.serviceWorker?.getRegistration().then((reg) => reg?.update()).catch(() => {});
-        if (busyEditing()) showUpdateBar();
-        else location.reload();
+        reloadOrBar(trigger, latest > APP_VERSION ? `新しい版 v${latest}` : "日付が変わった");
       }
     } catch (error) {
       // 通信できないときは何もしない
@@ -1797,11 +1913,14 @@
       updateChecking = false;
     }
   }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) checkForUpdate(); });
-  window.addEventListener("focus", checkForUpdate);
-  window.addEventListener("pageshow", (event) => { if (event.persisted) checkForUpdate(); });
-  setInterval(() => { if (!document.hidden) checkForUpdate(); }, 30 * 60 * 1000);
-  setTimeout(checkForUpdate, 3000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) { hiddenAt = Date.now(); return; }
+    awayLong = hiddenAt > 0 && Date.now() - hiddenAt >= 10 * 60 * 1000;
+    checkForUpdate("resume");
+  });
+  window.addEventListener("pageshow", (event) => { if (event.persisted) checkForUpdate("resume"); });
+  setInterval(() => { if (!document.hidden) checkForUpdate("interval"); }, 30 * 60 * 1000);
+  setTimeout(() => checkForUpdate("start"), 3000);
 
   function registerWebMCP() {
     const context = document.modelContext;
