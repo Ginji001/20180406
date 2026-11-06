@@ -671,3 +671,8 @@ pre { white-space: pre-wrap; }
 
 /* v78：ドラッグ中の添付欄 */
 .img-picker.img-drop { outline: 2px dashed currentColor; outline-offset: 4px; border-radius: 10px; }
+/* v79：添付ボタンと貼り付けボタンを横に並べる・読めなかったときの案内 */
+.img-picker-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; max-width: 100%; }
+.img-picker .img-picker-actions .img-paste-btn { min-height: 0; padding: 8px 12px; border: 1px dashed var(--line); border-radius: 7px; color: var(--text); background: var(--bg); font: inherit; font-size: .74rem; font-weight: 400; line-height: normal; box-shadow: none; }
+.img-picker-note { margin: 0; max-width: 40em; padding: 8px 10px; border-radius: 7px; background: #fff4e5; color: #6b3d00; font-size: .76rem; line-height: 1.5; }
+.img-picker-note[hidden] { display: none; }

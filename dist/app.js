@@ -1254,6 +1254,7 @@
     }
     throw firstError || lastError || new Error("read");
   }
+  const IS_MAC = /Macintosh/.test(navigator.userAgent) && !(navigator.maxTouchPoints > 1);
   const fileInfo = (file) => `${file.name || "(名前なし)"} / ${file.type || "種類不明"} / ${Math.round((file.size || 0) / 1024)}KB`;
   function makeImagePicker(root, name) {
     const input = root.querySelector("input[type=file]");
@@ -1266,6 +1267,30 @@
       fillLogImages();
     }
     const saveDraftList = () => writeDrafts(name, p.files.map((f) => f.id));
+    let note = root.querySelector(".img-picker-note");
+    if (!note) { note = document.createElement("p"); note.className = "img-picker-note"; note.hidden = true; root.appendChild(note); }
+    function showNote(text) { note.textContent = text; note.hidden = false; }
+    function hideNote() { note.hidden = true; note.textContent = ""; }
+    const pasteBtn = root.querySelector(".img-paste-btn");
+    pasteBtn?.addEventListener("click", async () => {
+      hideNote();
+      if (!navigator.clipboard?.read) { showNote(IS_MAC ? "⌘V で貼り付けてください。" : "画像をコピーしてから、入力欄を長押しして「ペースト」を選んでください。"); return; }
+      try {
+        const items = await navigator.clipboard.read();
+        const files = [];
+        for (const item of items) {
+          const type = item.types.find((t) => t.startsWith("image/"));
+          if (!type) continue;
+          const blob = await item.getType(type);
+          files.push(new File([blob], `paste-${Date.now()}.${type.split("/")[1] || "png"}`, { type }));
+        }
+        if (!files.length) { showNote("コピーされている画像がありません。画像をコピー（⌘C）してから押してください。"); return; }
+        addFiles(files, "貼り付けボタン", false);
+      } catch (error) {
+        attachLog(`${name}: 貼り付けボタン失敗（${error?.name || error}）`);
+        showNote(IS_MAC ? "貼り付けできませんでした。⌘V を押して貼り付けてください。" : "貼り付けできませんでした。入力欄を長押しして「ペースト」を選んでください。");
+      }
+    });
     function handlePicked(source) {
       const picked = [...(input.files || [])];
       if (!picked.length) return;
@@ -1280,15 +1305,15 @@
       filePickerOpenedAt = Date.now();
       try { localStorage.removeItem(PICKER_OPEN_KEY); } catch (error) { /* 無視 */ }
       attachLog(`${name}: ${picked.length}枚を受け取り（${source}）`);
+      hideNote();
       p.loading += picked.length;
       draw();
+      // v79：受け取った瞬間に読み込みを始める（後から読めなくなるファイルに備える）
+      const early = picked.map((file) => readPickedFile(file).catch((error) => ({ error, info: fileInfo(file) })));
       const task = async () => {
         // まず全部の中身をメモリへコピー（iPhoneは元ファイルが後から読めなくなることがある）
         const buffers = [];
-        for (const file of picked) {
-          try { buffers.push(await readPickedFile(file)); }
-          catch (error) { buffers.push({ error, info: fileInfo(file) }); }
-        }
+        for (const pending of early) buffers.push(await pending);
         if (fromInput) {
           try { input.value = ""; } catch (error) { /* 無視 */ }
           p.handled = "";
@@ -1308,7 +1333,12 @@
           draw();
         }
         attachLog(`${name}: 添付欄に${p.files.length}枚`);
-        if (failed) showToast(`画像${failed}枚を読み込めませんでした。端末に保存してある画像を選び直すか、画像をコピーして貼り付けてください`);
+        if (failed) {
+          showNote(IS_MAC
+            ? `画像${failed}枚を読み込めませんでした。Macの「写真」から選んだ画像は、ブラウザが読めないことがあります。写真アプリで画像を選んで ⌘C を押し、ここの「📋 貼り付け」を押してください（⌘V でも貼り付けできます）。`
+            : `画像${failed}枚を読み込めませんでした。もう一度選び直すか、画像をコピーしてここの「📋 貼り付け」を押してください。`);
+          showToast(`画像${failed}枚を読み込めませんでした`);
+        }
       };
       p.pending = p.pending.then(task, task);
     }
@@ -1929,12 +1959,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=78"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=79"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 78;
+  const APP_VERSION = 79;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
