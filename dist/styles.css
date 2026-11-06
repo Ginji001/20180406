@@ -668,3 +668,6 @@ pre { white-space: pre-wrap; }
   .capture, .home-mode .capture { grid-template-columns: 20px 76px minmax(0, 1fr) auto; }
   .capture #quickType { width: 76px; }
 }
+
+/* v78：ドラッグ中の添付欄 */
+.img-picker.img-drop { outline: 2px dashed currentColor; outline-offset: 4px; border-radius: 10px; }

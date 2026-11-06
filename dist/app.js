@@ -1217,6 +1217,44 @@
   function writeDrafts(name, ids) {
     try { const d = readDrafts(); if (ids.length) d[name] = ids; else delete d[name]; localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch (error) { /* 無視 */ }
   }
+  // v78：選んだファイルの中身を読む。読めないとき（NotReadableError など）は方法を変えて最大3回試す
+  function readAsBufferViaReader(file) {
+    return new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error || new Error("read")); r.readAsArrayBuffer(file); });
+  }
+  async function readViaImage(file) {
+    let source;
+    let width;
+    let height;
+    if (window.createImageBitmap) {
+      try { source = await createImageBitmap(file); width = source.width; height = source.height; } catch (error) { source = null; }
+    }
+    if (!source) { source = await decodeImage(file); width = source.naturalWidth || source.width; height = source.naturalHeight || source.height; }
+    const scale = Math.min(1, 1600 / Math.max(width, height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(width * scale));
+    canvas.height = Math.max(1, Math.round(height * scale));
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    source.close?.();
+    const jpeg = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    canvas.width = canvas.height = 0;
+    if (!jpeg) throw new Error("toBlob");
+    return { buf: await fileToBuffer(jpeg), type: "image/jpeg" };
+  }
+  async function readPickedFile(file) {
+    let lastError = null;
+    let firstError = null;
+    for (let round = 0; round < 3; round += 1) {
+      if (round) await new Promise((resolve) => setTimeout(resolve, 600 * round));
+      try { if (file.arrayBuffer) return { buf: await file.arrayBuffer(), type: file.type || "image/jpeg" }; } catch (error) { lastError = error; firstError = firstError || error; }
+      try { return { buf: await readAsBufferViaReader(file), type: file.type || "image/jpeg" }; } catch (error) { lastError = error; firstError = firstError || error; }
+      try { return await readViaImage(file); } catch (error) { lastError = error; firstError = firstError || error; }
+    }
+    throw firstError || lastError || new Error("read");
+  }
+  const fileInfo = (file) => `${file.name || "(名前なし)"} / ${file.type || "種類不明"} / ${Math.round((file.size || 0) / 1024)}KB`;
   function makeImagePicker(root, name) {
     const input = root.querySelector("input[type=file]");
     const list = root.querySelector(".img-picker-list");
@@ -1234,6 +1272,11 @@
       const sig = picked.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|");
       if (sig === p.handled) return;
       p.handled = sig;
+      addFiles(picked, source, true);
+    }
+    function addFiles(picked, source, fromInput) {
+      picked = picked.filter((f) => f && (!f.type || f.type.startsWith("image/") || /\.(heic|heif|jpe?g|png|gif|webp)$/i.test(f.name || "")));
+      if (!picked.length) return;
       filePickerOpenedAt = Date.now();
       try { localStorage.removeItem(PICKER_OPEN_KEY); } catch (error) { /* 無視 */ }
       attachLog(`${name}: ${picked.length}枚を受け取り（${source}）`);
@@ -1243,11 +1286,13 @@
         // まず全部の中身をメモリへコピー（iPhoneは元ファイルが後から読めなくなることがある）
         const buffers = [];
         for (const file of picked) {
-          try { buffers.push({ buf: await fileToBuffer(file), type: file.type || "image/jpeg" }); }
-          catch (error) { buffers.push({ error }); }
+          try { buffers.push(await readPickedFile(file)); }
+          catch (error) { buffers.push({ error, info: fileInfo(file) }); }
         }
-        try { input.value = ""; } catch (error) { /* 無視 */ }
-        p.handled = "";
+        if (fromInput) {
+          try { input.value = ""; } catch (error) { /* 無視 */ }
+          p.handled = "";
+        }
         let failed = 0;
         for (const item of buffers) {
           try {
@@ -1258,12 +1303,12 @@
             try { await imgPut(id, blob); } catch (error) { attachLog(`${name}: 下書き保存に失敗（${error?.name || error}）`); }
             p.files.push({ id, blob, url: URL.createObjectURL(blob) });
             saveDraftList();
-          } catch (error) { failed += 1; attachLog(`${name}: 読み込み失敗（${error?.name || error}）`); }
+          } catch (error) { failed += 1; attachLog(`${name}: 読み込み失敗（${error?.name || error}）${item.info ? ` ${item.info}` : ""}`); }
           p.loading -= 1;
           draw();
         }
         attachLog(`${name}: 添付欄に${p.files.length}枚`);
-        if (failed) showToast(`画像${failed}枚を読み込めませんでした`);
+        if (failed) showToast(`画像${failed}枚を読み込めませんでした。端末に保存してある画像を選び直すか、画像をコピーして貼り付けてください`);
       };
       p.pending = p.pending.then(task, task);
     }
@@ -1282,6 +1327,15 @@
     const recheck = () => setTimeout(() => handlePicked("戻ったとき"), 300);
     window.addEventListener("focus", recheck);
     document.addEventListener("visibilitychange", () => { if (!document.hidden) recheck(); });
+    root.addEventListener("dragover", (event) => { if ([...(event.dataTransfer?.types || [])].includes("Files")) { event.preventDefault(); root.classList.add("img-drop"); } });
+    root.addEventListener("dragleave", () => root.classList.remove("img-drop"));
+    root.addEventListener("drop", (event) => {
+      root.classList.remove("img-drop");
+      const files = [...(event.dataTransfer?.files || [])];
+      if (!files.length) return;
+      event.preventDefault();
+      addFiles(files, "ドラッグ", false);
+    });
     list.addEventListener("click", (event) => {
       const oldIdx = event.target.closest("[data-rm-old]")?.dataset.rmOld;
       const newIdx = event.target.closest("[data-rm-new]")?.dataset.rmNew;
@@ -1303,6 +1357,8 @@
       set(ids = []) { clearFiles(true); p.existing = [...ids]; p.removed = []; draw(); },
       count: () => p.existing.length + p.files.length + p.loading,
       hasUnsaved: () => p.files.length + p.loading > 0,
+      addFiles: (files, source) => addFiles(files, source, false),
+      visible: () => Boolean(root.offsetParent || root.getClientRects().length),
       // 下書きとして保存してある画像を添付欄に戻す（再読み込み・再起動のあと）
       async restore() {
         const ids = readDrafts()[name] || [];
@@ -1341,6 +1397,24 @@
     };
   }
   const pickers = { quick: makeImagePicker($("#quickImages"), "quick"), log: makeImagePicker($("#logImages"), "log"), logEdit: makeImagePicker($("#logEditImages"), "logEdit"), task: makeImagePicker($("#taskImages"), "task") };
+  // v78：画像の貼り付けで添付（写真の選択が使えないときの確実な方法）
+  function activePicker() {
+    if (document.querySelector("#taskDialog[open]")) return pickers.task;
+    if (document.querySelector("#logEditDialog[open]")) return pickers.logEdit;
+    if (document.querySelector("dialog[open]")) return null;
+    if (pickers.log.visible()) return pickers.log;
+    if (pickers.quick.visible()) return pickers.quick;
+    return null;
+  }
+  document.addEventListener("paste", (event) => {
+    const files = [...(event.clipboardData?.items || [])].filter((item) => item.kind === "file" && item.type.startsWith("image/")).map((item) => item.getAsFile()).filter(Boolean);
+    if (!files.length) return;
+    const picker = activePicker();
+    if (!picker) return;
+    event.preventDefault();
+    picker.addFiles(files, "貼り付け");
+    showToast(`画像${files.length}枚を貼り付けました`);
+  });
   // 起動時：ホームと記録の添付欄は下書きを戻す。編集画面（タスク・記録の編集）の下書きは閉じたあとなので片付ける
   (async () => {
     try {
@@ -1855,12 +1929,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=77"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=78"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 77;
+  const APP_VERSION = 78;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
