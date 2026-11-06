@@ -1243,14 +1243,27 @@
     if (!jpeg) throw new Error("toBlob");
     return { buf: await fileToBuffer(jpeg), type: "image/jpeg" };
   }
+  // v80：Macでブラウザに写真ライブラリへのアクセス許可が無いと、読み込みが終わらないまま止まる。制限時間を設ける
+  function withTimeout(promise, ms) {
+    return Promise.race([promise, new Promise((resolve, reject) => setTimeout(() => reject(new DOMException("timeout", "TimeoutError")), ms))]);
+  }
   async function readPickedFile(file) {
+    try {
+      if (file.arrayBuffer) return { buf: await withTimeout(file.arrayBuffer(), 60000), type: file.type || "image/jpeg" };
+    } catch (error) {
+      if (error?.name === "TimeoutError") throw error;
+    }
+    return readPickedFileSlow(file);
+  }
+  async function readPickedFileSlow(file) {
     let lastError = null;
     let firstError = null;
     for (let round = 0; round < 3; round += 1) {
       if (round) await new Promise((resolve) => setTimeout(resolve, 600 * round));
-      try { if (file.arrayBuffer) return { buf: await file.arrayBuffer(), type: file.type || "image/jpeg" }; } catch (error) { lastError = error; firstError = firstError || error; }
-      try { return { buf: await readAsBufferViaReader(file), type: file.type || "image/jpeg" }; } catch (error) { lastError = error; firstError = firstError || error; }
-      try { return await readViaImage(file); } catch (error) { lastError = error; firstError = firstError || error; }
+      try { if (file.arrayBuffer) return { buf: await withTimeout(file.arrayBuffer(), 15000), type: file.type || "image/jpeg" }; } catch (error) { lastError = error; firstError = firstError || error; }
+      try { return { buf: await withTimeout(readAsBufferViaReader(file), 15000), type: file.type || "image/jpeg" }; } catch (error) { lastError = error; firstError = firstError || error; }
+      try { return await withTimeout(readViaImage(file), 15000); } catch (error) { lastError = error; firstError = firstError || error; }
+      if (lastError?.name === "TimeoutError") break;
     }
     throw firstError || lastError || new Error("read");
   }
@@ -1310,6 +1323,12 @@
       draw();
       // v79：受け取った瞬間に読み込みを始める（後から読めなくなるファイルに備える）
       const early = picked.map((file) => readPickedFile(file).catch((error) => ({ error, info: fileInfo(file) })));
+      const slowTimer = setTimeout(() => {
+        if (p.loading > 0) showNote(IS_MAC
+          ? "読み込みに時間がかかっています。Macの画面に「写真ライブラリへのアクセスを許可しますか？」が出ていたら「フルアクセスを許可」を選んでください。"
+          : "読み込みに時間がかかっています。しばらく待っても進まないときは、もう一度選び直してください。");
+      }, 5000);
+      Promise.allSettled(early).then(() => clearTimeout(slowTimer));
       const task = async () => {
         // まず全部の中身をメモリへコピー（iPhoneは元ファイルが後から読めなくなることがある）
         const buffers = [];
@@ -1333,9 +1352,10 @@
           draw();
         }
         attachLog(`${name}: 添付欄に${p.files.length}枚`);
+        if (!failed) hideNote();
         if (failed) {
           showNote(IS_MAC
-            ? `画像${failed}枚を読み込めませんでした。Macの「写真」から選んだ画像は、ブラウザが読めないことがあります。写真アプリで画像を選んで ⌘C を押し、ここの「📋 貼り付け」を押してください（⌘V でも貼り付けできます）。`
+            ? `画像${failed}枚を読み込めませんでした。Macの「写真」の画像を使うには、ブラウザに写真ライブラリへのアクセスを許可する必要があります。システム設定の「プライバシーとセキュリティ」→「写真」で、使っているブラウザをオンにしてから、もう一度選んでください。`
             : `画像${failed}枚を読み込めませんでした。もう一度選び直すか、画像をコピーしてここの「📋 貼り付け」を押してください。`);
           showToast(`画像${failed}枚を読み込めませんでした`);
         }
@@ -1959,12 +1979,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=79"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=80"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 79;
+  const APP_VERSION = 80;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
