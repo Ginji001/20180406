@@ -29,6 +29,7 @@
     logs: [],
     events: [],
     collectionItems: [],
+    sharedSettings: [],
     monthlyGoals: {}
   });
 
@@ -53,6 +54,8 @@
       logs: Array.isArray(value.logs) ? value.logs : [],
       events,
       collectionItems: Array.isArray(value.collectionItems) ? value.collectionItems : [],
+      // v82：端末間で共有する設定（Googleカレンダーの専用カレンダーIDなど）
+      sharedSettings: Array.isArray(value.sharedSettings) ? value.sharedSettings : [],
       monthlyGoals: value.monthlyGoals && typeof value.monthlyGoals === "object" ? value.monthlyGoals : {}
     };
   }
@@ -1859,7 +1862,8 @@
   if (settings.dark) document.body.classList.add("dark");
   $("#themeBtn").addEventListener("click", () => {
     document.body.classList.toggle("dark");
-    try { localStorage.setItem(SETTINGS_KEY, JSON.stringify({ dark: document.body.classList.contains("dark") })); } catch (error) { notifySaveError(error); }
+    // v82：ほかの設定（Googleカレンダー連携など）を消さないよう、既存の設定に上書きする
+    try { const current = loadJSON(SETTINGS_KEY, {}); localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...(current && typeof current === "object" ? current : {}), dark: document.body.classList.contains("dark") })); } catch (error) { notifySaveError(error); }
   });
 
   $("#exportBtn").addEventListener("click", () => {
@@ -1983,12 +1987,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=81"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=82"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 81;
+  const APP_VERSION = 82;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
