@@ -1307,7 +1307,7 @@
     function handlePicked(source) {
       const picked = [...(input.files || [])];
       if (!picked.length) return;
-      const sig = picked.map((f) => `${f.name}:${f.size}:${f.lastModified}`).join("|");
+      const sig = picked.map((f) => f.name).join("|"); // v81：ここで size / lastModified に触れない
       if (sig === p.handled) return;
       p.handled = sig;
       addFiles(picked, source, true);
@@ -1322,7 +1322,11 @@
       p.loading += picked.length;
       draw();
       // v79：受け取った瞬間に読み込みを始める（後から読めなくなるファイルに備える）
-      const early = picked.map((file) => readPickedFile(file).catch((error) => ({ error, info: fileInfo(file) })));
+      const waitMs = fromInput && IS_MAC ? 2500 : 0; // v81：Macの「写真」の書き出しが終わるのを待つ
+      const early = picked.map((file) => new Promise((resolve) => setTimeout(resolve, waitMs))
+        .then(() => readPickedFile(file))
+        .then((item) => { attachLog(`${name}: 読み込み成功 ${fileInfo(file)}${waitMs ? `（${waitMs / 1000}秒待ってから）` : ""}`); return item; })
+        .catch((error) => ({ error, info: fileInfo(file) })));
       const slowTimer = setTimeout(() => {
         if (p.loading > 0) showNote(IS_MAC
           ? "読み込みに時間がかかっています。Macの画面に「写真ライブラリへのアクセスを許可しますか？」が出ていたら「フルアクセスを許可」を選んでください。"
@@ -1355,7 +1359,7 @@
         if (!failed) hideNote();
         if (failed) {
           showNote(IS_MAC
-            ? `画像${failed}枚を読み込めませんでした。Macの「写真」の画像を使うには、ブラウザに写真ライブラリへのアクセスを許可する必要があります。システム設定の「プライバシーとセキュリティ」→「写真」で、使っているブラウザをオンにしてから、もう一度選んでください。`
+            ? `画像${failed}枚を読み込めませんでした。もう一度選び直してください。それでも入らないときは、写真アプリで画像を選んで ⌘C を押し、ここの「📋 貼り付け」を押すか、写真アプリからここへドラッグしてください。`
             : `画像${failed}枚を読み込めませんでした。もう一度選び直すか、画像をコピーしてここの「📋 貼り付け」を押してください。`);
           showToast(`画像${failed}枚を読み込めませんでした`);
         }
@@ -1979,12 +1983,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=80"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=81"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 80;
+  const APP_VERSION = 81;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
