@@ -1707,11 +1707,11 @@
   });
   $("#eventTiming").addEventListener("change", (event) => {
     const monthOnly = event.target.value === "month";
-    $("#eventDate").hidden = monthOnly;
+    $("#eventDateField").hidden = monthOnly;
     $("#eventDate").required = !monthOnly;
-    $("#eventMonth").hidden = !monthOnly;
+    $("#eventMonthField").hidden = !monthOnly;
     $("#eventMonth").required = monthOnly;
-    $("#eventTime").hidden = monthOnly;
+    $("#eventTimeField").hidden = monthOnly;
   });
   function setEventEditTiming(timing) {
     const monthOnly = timing === "month";
@@ -1987,12 +1987,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=84"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=85"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 84;
+  const APP_VERSION = 85;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
