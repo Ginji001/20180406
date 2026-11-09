@@ -124,13 +124,13 @@
     completed: "完了"
   };
   const descriptions = {
-    inbox: "思いついたことを集め、あとで整理します。",
-    inboxList: "INBOXに入っているタスクです。",
-    next: "具体的に、次に行動するタスクです。",
-    remind: "指定した日に思い出したいタスクです。",
-    waiting: "ほかの人や出来事を待っているタスクです。",
-    wish: "いつかやりたいことを保管します。",
-    completed: "完了したタスクの記録です。"
+    inbox: "思いついたことを集める場所。",
+    inboxList: "INBOXのタスク。",
+    next: "次に行動するタスク。",
+    remind: "指定日に思い出すタスク。",
+    waiting: "人や出来事を待つタスク。",
+    wish: "いつかやりたいこと。",
+    completed: "完了したタスク。"
   };
   const priorityNames = { high: "高", medium: "中", low: "低" };
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
@@ -395,7 +395,7 @@
   }
 
   function emptyState() {
-    return '<div class="empty-state"><strong>タスクはありません</strong><span>思いついたことをINBOXへ追加してください。</span></div>';
+    return '<div class="empty-state"><strong>タスクはありません</strong><span>INBOXへ追加してください。</span></div>';
   }
 
   function renderTasks() {
@@ -419,7 +419,7 @@
   function renderHeading() {
     const home = state.view === "inbox";
     elements.viewTitle.textContent = home ? "ホーム" : viewNames[state.view] || "INBOX";
-    elements.viewDescription.textContent = home ? "INBOXと手帳の記録を、ここからすぐ入力できます。" : descriptions[state.view] || "";
+    elements.viewDescription.textContent = home ? "INBOXと記録をここから入力。" : descriptions[state.view] || "";
     elements.dateLabel.textContent = new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(today);
   }
 
@@ -489,7 +489,7 @@
       // v70：四角（チェックBOX）からの振り分けはなし。振り分けは「編集」の種類から
       const mark = check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
       return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong>${(item.images || []).length ? `<div class="log-images">${item.images.map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}<small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
-    }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残してみましょう。</span></div>';
+    }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残しましょう。</span></div>';
     const actionMinutes = logs.reduce((sum, item) => sum + durationMinutes(item), 0);
     const actionCount = logs.filter((item) => item.type === "action").length;
     $("#logActionTotal").hidden = !actionCount;
@@ -537,7 +537,7 @@
         const imageMarkup = image ? `<img class="collection-image" src="${escapeHTML(image)}" alt="" loading="lazy" />` : '<span class="collection-image collection-image-placeholder" aria-hidden="true"></span>';
         return `<article><input type="checkbox" data-collection-check="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text)}を完了" />${imageMarkup}<div class="collection-item-body"><p class="${item.done ? "done" : ""}">${url ? `<a href="${escapeHTML(url)}" target="_blank" rel="noopener">${escapeHTML(item.text)}</a>` : escapeHTML(item.text)}</p>${url ? `<a class="collection-link" href="${escapeHTML(url)}" target="_blank" rel="noopener">URLを開く</a>` : ""}</div><button type="button" data-delete-collection="${item.id}">削除</button></article>`;
       }).join("")}</section>`;
-    }).join("") || '<div class="empty-state"><strong>コレクションはまだありません</strong><span>欲しい物や読みたい物など、自由な一覧を作れます。</span></div>';
+    }).join("") || '<div class="empty-state"><strong>コレクションはまだありません</strong><span>欲しい物などの一覧を作れます。</span></div>';
   }
 
   function renderDataSummary() {
@@ -610,7 +610,7 @@
     const moodInput = $(`[name="reflectionMood"][value="${mood}"]`);
     if (moodInput) moodInput.checked = true;
     $("#reflectionFields").innerHTML = reflectionFieldsMarkup(date, record);
-    $("#reflectionSaveNote").textContent = "よかったこと・気づいたこと・明日やることは、記録から振り分けると、ここに載ります。保存すると気分が残ります。";
+    $("#reflectionSaveNote").textContent = "記録から振り分けるとここに載ります。";
   }
 
   function renderReflectionHistory() {
@@ -626,7 +626,7 @@
         <dl class="reflection-details">${details}</dl>
         <footer><span>完了 ${completed}件</span><span>ハビット ${habits}件</span></footer>
       </article>`;
-    }).join("") || '<div class="empty-state"><strong>振り返りはまだありません</strong><span>今日の気分や、よかったことから記録してみましょう。</span></div>';
+    }).join("") || '<div class="empty-state"><strong>振り返りはまだありません</strong><span>気分を記録しましょう。</span></div>';
   }
 
   function renderReflection(date = $("#reflectionDate").value || todayISO) {
@@ -1987,12 +1987,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=82"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=83"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 82;
+  const APP_VERSION = 83;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;

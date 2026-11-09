@@ -12,6 +12,8 @@
   const GOOGLE_ID_PROPERTY = "hachiwareTechoId";
   const GOOGLE_COMPLETED_PROPERTY = "hachiwareTechoCompleted";
   const SHARED_CALENDAR_KEY = "google-calendar"; // v82：端末間で同じ専用カレンダーを使う
+  const TOKEN_KEY = "hachiroku-google-token-v1"; // v83：再読み込みしても接続を保つ（有効期限まで）
+  const AUTO_SYNC_MS = 5 * 60 * 1000; // v83：開いている間は5分ごとにGoogle側の変更を取り込む
   const googleState = { token: null, expiresAt: 0, syncing: false, queued: false, statusMessage: "", statusTone: "", timer: null };
   googleState.calendarId = "";
 
@@ -73,6 +75,21 @@
     }
   }
 
+  function saveToken() {
+    try {
+      if (googleState.token) localStorage.setItem(TOKEN_KEY, JSON.stringify({ token: googleState.token, expiresAt: googleState.expiresAt }));
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch (_) {}
+  }
+
+  function restoreToken() {
+    const saved = loadJSON(TOKEN_KEY, null);
+    if (saved && saved.token && Number(saved.expiresAt) > Date.now() + 60000) {
+      googleState.token = saved.token;
+      googleState.expiresAt = Number(saved.expiresAt);
+    }
+  }
+
   function connected() {
     return Boolean(googleState.token && googleState.expiresAt > Date.now() + 5000);
   }
@@ -107,13 +124,15 @@
     syncButton.disabled = !connected() || googleState.syncing;
     disconnectButton.hidden = !googleState.token;
     if (googleState.syncing) {
-      setStatus("Googleカレンダーと同期しています…", "syncing");
+      setStatus("同期中…", "syncing");
+    } else if (googleState.statusTone === "syncing" && googleState.lastResult) {
+      setStatus(googleState.lastResult, googleState.lastTone);
     } else if (connected() && !googleState.statusMessage) {
-      setStatus("接続中です。「今すぐ同期」で予定を反映します。", "connected");
+      setStatus("接続中。自動で同期します。", "connected");
     } else if (!connected() && googleState.token) {
-      setStatus("接続の有効期限が切れました。もう一度接続してください。", "");
+      setStatus("期限切れ。もう一度接続してください。", "");
     } else if (!connected() && !googleState.statusMessage) {
-      setStatus("未接続です。接続すると、期限のあるタスクと予定を同期できます。", "");
+      setStatus("未接続です。", "");
     }
   }
 
@@ -159,10 +178,15 @@
             }
             googleState.token = response.access_token;
             googleState.expiresAt = Date.now() + Math.max(60, Number(response.expires_in) || 3600) * 1000;
+            saveToken();
+            const granted = appSettings();
+            granted.google.consented = true;
+            granted.google.autoSync = true;
+            saveSettings(granted);
             resolve(response);
           }
         });
-        client.requestAccessToken({ prompt: googleState.token ? "" : "consent" });
+        client.requestAccessToken({ prompt: settings.google.consented ? "" : "consent" });
       } catch (error) {
         reject(error);
       }
@@ -186,6 +210,7 @@
       if (response.status === 401) {
         googleState.token = null;
         googleState.expiresAt = 0;
+        saveToken();
       }
       const error = new Error(body?.error?.message || "Googleカレンダーとの通信に失敗しました（" + response.status + "）");
       error.status = response.status;
@@ -236,7 +261,7 @@
         if (error.status && error.status !== 403 && error.status !== 404) throw error;
       }
     }
-    if (!chosen && (shared || local)) throw new Error("保存済みの専用カレンダーに接続できません。同じGoogleアカウントを選び直してください。既存の予定は変更していません。");
+    if (!chosen && (shared || local)) throw new Error("専用カレンダーに接続できません。同じアカウントで接続してください。");
     if (!chosen) {
       const calendar = await googleRequest("/calendars", { method: "POST", body: JSON.stringify({ summary: "ハチロク手帳", description: "ハチロク手帳の同期専用カレンダー。\n" + CALENDAR_MARKER, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Tokyo" }) });
       if (!calendar?.id?.endsWith("@group.calendar.google.com")) throw new Error("専用カレンダーの作成結果を確認できませんでした");
@@ -343,7 +368,8 @@
     if (!date) return null;
     const symbol = descriptor.kind === "task" ? (descriptor.item.completed ? "✓" : "・") : "○";
     const label = descriptor.kind === "task" ? "タスク" : "予定";
-    const notes = descriptor.kind === "task" && descriptor.item.notes ? "\nメモ：" + descriptor.item.notes : "";
+    const memo = descriptor.kind === "task" ? descriptor.item.notes : descriptor.item.note;
+    const notes = memo ? "\nメモ：" + memo : "";
     return {
       summary: symbol + " " + descriptor.title,
       description: "ハチロク手帳の" + label + "\nアプリと同期中" + notes,
@@ -387,6 +413,22 @@
     return events;
   }
 
+  // v83：Googleカレンダーで直接入れた予定（アプリの印がないもの）。繰り返し予定があるので期間を区切る
+  async function listUnmanaged() {
+    const events = [];
+    let pageToken = "";
+    const from = addDays(new Date(), -90);
+    const to = addDays(new Date(), 400);
+    do {
+      const params = new URLSearchParams({ showDeleted: "false", singleEvents: "true", maxResults: "2500", timeMin: from.toISOString(), timeMax: to.toISOString() });
+      if (pageToken) params.set("pageToken", pageToken);
+      const result = await googleRequest(calendarPath() + "/events?" + params.toString());
+      events.push(...(result?.items || []).filter((remote) => !remoteKey(remote) && remote.status !== "cancelled"));
+      pageToken = result?.nextPageToken || "";
+    } while (pageToken);
+    return events;
+  }
+
   function matches(remote, body) {
     const props = remotePrivate(remote);
     const expected = body.extendedProperties.private;
@@ -403,6 +445,14 @@
     }
   }
 
+  // v83：Google側の説明文から手帳のメモを取り出す
+  function remoteMemo(remote) {
+    const text = String(remote?.description || "");
+    if (!text.startsWith("ハチロク手帳の")) return text.trim();
+    const index = text.indexOf("\nメモ：");
+    return index >= 0 ? text.slice(index + 4).trim() : "";
+  }
+
   function applyRemote(remote, kind, local) {
     const date = remoteDate(remote);
     if (!date || !local) return;
@@ -413,9 +463,12 @@
       const completed = props[GOOGLE_COMPLETED_PROPERTY] === "1" || /^✓\s*/.test(String(remote.summary || ""));
       local.completed = completed;
       local.completedAt = completed ? (local.completedAt || remote.updated || new Date().toISOString()) : null;
+      local.notes = remoteMemo(remote);
     } else {
       local.date = date;
       local.time = remoteTime(remote);
+      const memo = remoteMemo(remote);
+      if (memo) local.note = memo; else delete local.note;
     }
     local.googleEventId = remote.id;
     local.googleCalendarId = googleState.calendarId;
@@ -431,11 +484,12 @@
     const title = remoteTitle(remote);
     if (kind === "task") {
       const completed = props[GOOGLE_COMPLETED_PROPERTY] === "1" || /^✓\s*/.test(String(remote.summary || ""));
-      const task = { id, title, folder: "inbox", due: date, priority: "medium", tag: "", projectId: null, repeat: "", pinned: false, notes: "", completed, completedAt: completed ? now : null, order: Date.now(), createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
+      const task = { id, title, folder: "inbox", due: date, priority: "medium", tag: "", projectId: null, repeat: "", pinned: false, notes: remoteMemo(remote), completed, completedAt: completed ? now : null, order: Date.now(), createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
       data.tasks.push(task);
       return task;
     }
-    const item = { id, date, time: remoteTime(remote), title, createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
+    const memo = remoteMemo(remote);
+    const item = { id, date, time: remoteTime(remote), title, ...(memo ? { note: memo } : {}), createdAt: now, updatedAt: now, googleEventId: remote.id, googleCalendarId: googleState.calendarId, googleSyncedAt: now };
     data.events.push(item);
     return item;
   }
@@ -473,6 +527,13 @@
         remoteEvents.push(remote);
       }
       const remoteByKey = new Map(remoteEvents.map((remote) => [remoteKey(remote), remote]).filter(([key]) => key));
+      // v83：Google側で追加された予定を手帳に取り込む（このあと手帳の印を付けて書き戻す）
+      for (const remote of await listUnmanaged()) {
+        const created = importRemote(data, remote, "event");
+        if (!created) continue;
+        remoteByKey.set("event:" + created.id, remote);
+        stats.imported += 1;
+      }
       const localKeys = new Set(descriptors(data).map((item) => item.kind + ":" + item.id));
       const known = settings.google.known;
       for (const knownItem of known) {
@@ -514,6 +575,24 @@
           }
         }
       }
+
+      // v83：Google側で削除されたもの（前回同期後に手帳で変更していないもの）は手帳からも消す
+      const removedEvents = new Set();
+      for (const descriptor of descriptors(data)) {
+        const item = descriptor.item;
+        const key = descriptor.kind + ":" + descriptor.id;
+        if (!descriptor.date || remoteByKey.has(key)) continue;
+        const wasSynced = item.googleEventId && item.googleCalendarId === googleState.calendarId && item.googleSyncedAt;
+        const changedHere = item.updatedAt && item.updatedAt > item.googleSyncedAt;
+        if (!wasSynced || changedHere) continue;
+        if (descriptor.kind === "event") removedEvents.add(item.id);
+        else item.due = "";
+        item.googleEventId = "";
+        item.googleCalendarId = "";
+        item.googleSyncedAt = "";
+        stats.pulled += 1;
+      }
+      if (removedEvents.size) data.events = data.events.filter((item) => !removedEvents.has(item.id));
 
       for (const descriptor of descriptors(data)) {
         const item = descriptor.item;
@@ -558,21 +637,28 @@
       settings.google.known = descriptors(data).filter((item) => item.item.googleEventId).map((item) => ({ kind: item.kind, id: item.id, googleEventId: item.item.googleEventId }));
       saveSettings(settings);
       stats.deleted += await cleanupOldCalendars(silent);
-      const summary = "専用カレンダーに同期完了：追加" + stats.created + "・更新" + stats.updated + "・取り込み" + stats.imported + "・削除" + stats.deleted;
+      const summary = "同期完了：追加" + stats.created + "・更新" + stats.updated + "・取り込み" + stats.imported + "・削除" + stats.deleted;
+      googleState.lastResult = summary;
+      googleState.lastTone = "connected";
       setStatus(summary, "connected");
       renderPanel();
       if (!silent) window.alert(summary);
-      if (stats.imported || stats.pulled) window.setTimeout(() => window.location.reload(), 350);
+      googleState.fingerprint = fingerprint();
+      googleState.lastSyncAt = Date.now();
+      if ((stats.imported || stats.pulled) && !window.hachirokuApp?.replaceData) window.setTimeout(() => window.location.reload(), 350);
       return true;
     } catch (error) {
       console.error("Googleカレンダー同期エラー", error);
-      setStatus("同期できませんでした：" + error.message, "");
+      googleState.lastResult = "同期できませんでした：" + error.message;
+      googleState.lastTone = "";
+      setStatus(googleState.lastResult, "");
       renderPanel();
       if (!silent) window.alert("同期できませんでした：" + error.message);
       return false;
     } finally {
       googleState.syncing = false;
       renderPanel();
+      renderResumeBar();
       if (googleState.queued) {
         googleState.queued = false;
         scheduleSync();
@@ -580,10 +666,74 @@
     }
   }
 
-  function scheduleSync() {
-    if (!connected()) return;
+  function scheduleSync(delay) {
+    if (!connected()) { renderResumeBar(); return; }
     window.clearTimeout(googleState.timer);
-    googleState.timer = window.setTimeout(() => syncGoogleCalendar(true), 700);
+    googleState.timer = window.setTimeout(() => syncGoogleCalendar(true), delay ?? 700);
+  }
+
+  // v83：同期の対象（期限付きタスク・予定）が手帳で変わったかを見る控え
+  function fingerprint() {
+    try {
+      const data = appData();
+      return JSON.stringify(descriptors(data).map((d) => [d.kind, d.id, d.date, d.time || "", d.title, d.item.completed ? 1 : 0, d.item.notes || d.item.note || ""]));
+    } catch (_) {
+      return "";
+    }
+  }
+
+  // v83：接続の期限が切れたら、タップ1回で再接続できるバーを出す
+  function renderResumeBar() {
+    let bar = document.getElementById("googleResumeBar");
+    const show = Boolean(appSettings().google.autoSync) && !connected() && !googleState.syncing;
+    if (!bar && !show) return;
+    if (!bar) {
+      bar = document.createElement("button");
+      bar.type = "button";
+      bar.id = "googleResumeBar";
+      bar.className = "google-resume-bar";
+      bar.textContent = "Googleカレンダーと同期（タップ）";
+      bar.addEventListener("click", async () => {
+        bar.hidden = true;
+        try {
+          await requestGoogleAccessToken();
+          await syncGoogleCalendar(true);
+        } catch (error) {
+          setStatus("接続できませんでした：" + error.message, "");
+          renderResumeBar();
+        }
+      });
+      document.body.appendChild(bar);
+    }
+    bar.hidden = !show;
+  }
+
+  function startAutoSync() {
+    restoreToken();
+    googleState.fingerprint = fingerprint();
+    // 手帳で予定・タスクが変わったら少し待ってGoogleへ
+    const rawSetItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      rawSetItem.call(this, key, value);
+      if (this === window.localStorage && key === STORAGE_KEY && !googleState.syncing) {
+        window.clearTimeout(googleState.changeTimer);
+        googleState.changeTimer = window.setTimeout(() => {
+          if (googleState.syncing) return;
+          const next = fingerprint();
+          if (next !== googleState.fingerprint) scheduleSync(300);
+        }, 1200);
+      }
+    };
+    // 開いたとき・戻ってきたとき・開いている間は定期的にGoogleの変更を取り込む
+    const pull = () => {
+      if (document.visibilityState !== "visible") return;
+      if (!appSettings().google.autoSync) return;
+      if (!connected()) { renderResumeBar(); return; }
+      if (Date.now() - (googleState.lastSyncAt || 0) > 30000) scheduleSync(300);
+    };
+    document.addEventListener("visibilitychange", pull);
+    window.setInterval(() => { googleState.lastSyncAt = 0; pull(); }, AUTO_SYNC_MS);
+    window.setTimeout(pull, 1500);
   }
 
   function init() {
@@ -593,6 +743,7 @@
     const disconnectButton = $("#googleDisconnectBtn");
     if (!clientInput || !connectButton || !syncButton || !disconnectButton) return;
     clientInput.value = appSettings().google.clientId;
+    startAutoSync();
     clientInput.addEventListener("change", (event) => {
       const settings = appSettings();
       const value = event.target.value.trim();
@@ -628,6 +779,7 @@
       } catch (error) {
         googleState.token = null;
         googleState.expiresAt = 0;
+        saveToken();
         setStatus("接続できませんでした：" + error.message, "");
         renderPanel();
         window.alert("接続できませんでした：" + error.message);
@@ -639,7 +791,12 @@
       googleState.token = null;
       googleState.expiresAt = 0;
       googleState.calendarId = "";
-      googleState.statusMessage = "接続を解除しました。Googleカレンダーの予定は削除していません。";
+      saveToken();
+      const stopped = appSettings();
+      stopped.google.autoSync = false;
+      saveSettings(stopped);
+      renderResumeBar();
+      googleState.statusMessage = "接続を解除しました。";
       googleState.statusTone = "";
       renderPanel();
     });
@@ -654,7 +811,7 @@
       setSharedCalendarId(data, id);
       saveData(data);
       googleState.calendarId = "";
-      setStatus("カレンダーIDを保存しました。接続または同期時に専用カレンダーか確認します。", "");
+      setStatus("IDを保存しました。", "");
       renderPanel();
     });
     renderPanel();

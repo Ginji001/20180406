@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=82" />
+    <link rel="manifest" href="./manifest.webmanifest?v=83" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=82" />
+    <link rel="stylesheet" href="./styles.css?v=83" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -97,9 +97,9 @@
           </section>
 
           <section id="habitsWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>ハビット</h1><p>ハビット専用の月間カレンダーで達成日を確認し、今日のハビットをチェックします。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>ハビット</h1><p>達成日を見て、今日のハビットをチェック。</p></div></div>
             <div class="calendar-controls habit-calendar-controls"><button type="button" id="habitCalendarPrev" aria-label="前の月">‹</button><strong id="habitCalendarMonthLabel"></strong><button type="button" id="habitCalendarNext" aria-label="次の月">›</button></div>
-            <p class="habit-calendar-help">✓ は達成したハビットです。日にちを押すと、その日の記録を直せます。</p>
+            <p class="habit-calendar-help">✓は達成。日にちを押すとその日を編集。</p>
             <div id="habitCalendar" class="habit-calendar"></div>
             <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しいハビット" /><button>追加</button></form>
             <div class="habit-day-head"><strong id="habitDayLabel">今日のハビット</strong><input id="habitDate" type="date" aria-label="編集する日付" /><button type="button" id="habitTodayBtn" hidden>今日に戻る</button></div>
@@ -107,7 +107,7 @@
           </section>
 
           <section id="recordsWorkspace" class="special-workspace journal-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">デイリーログ</p><h1>記録</h1><p>INBOXに入れた内容がここに載ります。振り分けは各記録の「編集」から種類を変えます。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">デイリーログ</p><h1>記録</h1><p>INBOXの内容。振り分けは「編集」から。</p></div></div>
             <form class="journal-form" id="logForm">
               <input id="logDate" type="date" required />
               <input id="logTime" type="time" aria-label="記録する時刻" /><input id="logEnd" type="time" aria-label="終了時刻" hidden />
@@ -124,10 +124,10 @@
           </section>
 
           <section id="calendarWorkspace" class="special-workspace calendar-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">日付あり・日付未定</p><h1>予定</h1><p>日付が決まった予定も、月だけ決まった予定も、ここでまとめて管理します。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">日付あり・日付未定</p><h1>予定</h1><p>日付ありも月だけの予定もここで管理。</p></div></div>
             <div class="calendar-controls"><button type="button" id="calendarPrev" aria-label="前の月">‹</button><strong id="calendarMonthLabel"></strong><button type="button" id="calendarNext" aria-label="次の月">›</button></div>
             <form class="month-goal-form" id="monthGoalForm"><label><span>今月の目標</span><input id="monthGoal" maxlength="200" placeholder="今月大切にすること" /></label><button type="submit">保存</button></form>
-            <p class="calendar-help">カレンダー内の予定を押すと編集できます。</p>
+            <p class="calendar-help">予定を押すと編集できます。</p>
             <div class="combined-calendar" id="combinedCalendar"></div>
             <form class="journal-form event-form" id="eventForm">
               <select id="eventTiming" aria-label="予定の日程"><option value="date">日付を指定</option><option value="month">月だけ指定</option></select>
@@ -139,7 +139,7 @@
             </form>
             <section class="google-calendar-panel" id="googleCalendarPanel">
               <div class="google-calendar-head">
-                <div><p class="help-kicker">Googleカレンダー連携</p><h2>予定を同期</h2><p id="googleCalendarStatus">未接続です。接続すると、期限のあるタスクと予定を同期できます。</p></div>
+                <div><p class="help-kicker">Googleカレンダー連携</p><h2>予定を同期</h2><p id="googleCalendarStatus">未接続です。</p></div>
                 <span class="google-calendar-badge" id="googleCalendarBadge">未接続</span>
               </div>
               <div class="google-calendar-controls">
@@ -147,22 +147,20 @@
                 <label><span>同期先</span><input id="googleCalendarId" type="text" value="ハチロク手帳（専用カレンダー）" disabled /></label>
               </div>
               <div class="google-calendar-actions"><button type="button" class="google-connect" id="googleConnectBtn">Googleカレンダーに接続</button><button type="button" id="googleSyncBtn" disabled>今すぐ同期</button><button type="button" id="googleDisconnectBtn" hidden>接続を解除</button></div>
-              <p class="google-calendar-note">初回接続時にGoogle内へ「ハチロク手帳」専用カレンダーを作成します。タイトル・日付・タスクのメモ・完了状態を送信し、接続直後に同期します。<a href="./privacy.html" target="_blank" rel="noopener">データの取り扱い</a></p>
-              <p class="google-calendar-note">同期対象は、期限のあるタスクと日付が決まった予定です。ハビットは同期しません。時刻のある予定は1時間の予定、それ以外は終日の予定として登録されます。月だけ決まった予定は、日付を決めてから同期できます。</p>
-              <p class="google-calendar-note">以前の主カレンダーの予定は残ります。今後は専用カレンダーだけに同期します。両方を表示すると同じ予定が重なる場合があります。</p>
-              <details class="google-calendar-help"><summary>別の端末で同じ専用カレンダーを使う</summary><p>接続後に表示されるIDを控え、別の端末で接続する前に保存してください。Googleカレンダーの設定からも確認できます。IDがない端末では新しく作成します。</p><label>専用カレンダーID<input id="googleDedicatedCalendarId" type="text" autocomplete="off" placeholder="…@group.calendar.google.com" /></label><button type="button" id="googleUseCalendarBtn">このIDを保存</button></details>
-              <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押します。</li><li>Googleアカウントを選び、カレンダーへのアクセスを許可します。</li><li>「今すぐ同期」で期限付きタスクと予定を同期できます。</li></ol></details>
+              <p class="google-calendar-note">「ハチロク手帳」カレンダーと自動で相互同期。<a href="./privacy.html" target="_blank" rel="noopener">取り扱い</a></p>
+              <details class="google-calendar-help"><summary>カレンダーIDを指定する</summary><p>通常は不要。うまく同期しないときだけ。</p><label>専用カレンダーID<input id="googleDedicatedCalendarId" type="text" autocomplete="off" placeholder="…@group.calendar.google.com" /></label><button type="button" id="googleUseCalendarBtn">このIDを保存</button></details>
+              <details class="google-calendar-help"><summary>Google認証について</summary><ol><li>「Googleカレンダーに接続」を押す。</li><li>アカウントを選んで許可する。</li><li>以後は自動で同期。</li></ol></details>
             </section>
           </section>
 
           <section id="collectionsWorkspace" class="special-workspace collections-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">自由な一覧</p><h1>コレクション</h1><p>欲しい物・読みたい物などを、端末の画像やURL付きでまとめます。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">自由な一覧</p><h1>コレクション</h1><p>欲しい物・読みたい物の一覧。</p></div></div>
             <form class="journal-form collection-form" id="collectionForm"><input id="collectionCategory" required maxlength="50" placeholder="一覧の名前（例：読みたい本）" /><input id="collectionItem" required maxlength="180" placeholder="追加する内容" /><input id="collectionImage" type="file" accept="image/*" aria-label="画像ファイル（任意）" /><input id="collectionUrl" type="url" maxlength="500" placeholder="URL（任意）" /><button type="submit">追加</button></form>
             <div class="collection-grid" id="collectionList"></div>
           </section>
 
           <section id="dataWorkspace" class="special-workspace data-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">保存と復元</p><h1>データ管理</h1><p>この端末に保存されている内容を確認し、まとめてバックアップします。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">保存と復元</p><h1>データ管理</h1><p>端末内のデータの確認とバックアップ。</p></div></div>
             <div class="data-summary" id="dataSummary"></div>
             <div class="data-actions">
               <button type="button" id="dataExportBtn">バックアップを書き出す</button>
@@ -170,15 +168,15 @@
               <button type="button" id="dataBackupBtn">詳細を開く</button>
               <button type="button" id="attachLogBtn">添付の記録（不具合調査用）</button>
             </div>
-            <p class="data-note">データはこの端末のブラウザ内に保存されます。下の「端末間の同期」をオンにすると、ほかの端末とも自動で共有できます。</p>
+            <p class="data-note">端末内に保存。同期をオンで他の端末と共有。</p>
             <section class="cloud-sync-panel" id="cloudSyncPanel">
               <div class="cloud-sync-head">
-                <div><p class="help-kicker">端末間の同期</p><h2>iPhone・Mac・Windowsで同じ記録を使う</h2><p id="cloudSyncStatus">オフです。</p></div>
+                <div><p class="help-kicker">端末間の同期</p><h2>全端末で同じ記録を使う</h2><p id="cloudSyncStatus">オフです。</p></div>
                 <span class="cloud-sync-badge" id="cloudSyncBadge">オフ</span>
               </div>
               <p class="cloud-sync-account" id="cloudSyncAccount" hidden></p>
               <div class="cloud-sync-actions"><button type="button" id="cloudSyncBtn">Googleでログインして同期</button><button type="button" id="cloudSyncResyncBtn" hidden>クラウドから全部読み込み直す</button><button type="button" id="cloudSyncStopBtn" hidden>ログアウト（同期をやめる）</button></div>
-              <p class="data-note">使う端末それぞれで、同じGoogleアカウントでログインしてください。入力した内容は数秒でほかの端末にも反映されます。通信がないときもこれまでどおり記録でき、つながったときに自動で同期します。記録はログインしたご本人だけが読み書きできる場所に保存されます。</p>
+              <p class="data-note">各端末で同じGoogleアカウントでログイン。</p>
             </section>
           </section>
 
@@ -207,7 +205,7 @@
               </fieldset>
 
               <div class="reflection-fields" id="reflectionFields"></div>
-              <p class="reflection-save-note" id="reflectionSaveNote">よかったこと・気づいたこと・明日やることは、記録から振り分けると、ここに載ります。</p>
+              <p class="reflection-save-note" id="reflectionSaveNote">記録から振り分けるとここに載ります。</p>
             </form>
 
             <section class="reflection-history-section">
@@ -217,17 +215,17 @@
           </section>
 
           <section id="helpWorkspace" class="special-workspace help-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>思いついたことをINBOXに入れ、記録から振り分けます。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>INBOXに入れ、記録から振り分け。</p></div></div>
             <div class="help-section help-details">
-              <article><h2>1. INBOXに入れる</h2><p>ホームの入力欄に書いて「追加」。内容はINBOXと記録の両方に入ります。種類（メモ・予定・出来事など）もここで選べます。</p></article>
-              <article><h2>2. 記録から振り分ける</h2><p>「記録」で各項目の「編集」を開き、種類を変えます。タスクは項目を開いてフォルダー（次にやる・リマインダー・待ち状況・いつかやりたい）を選びます。</p></article>
-              <article><h2>3. 夜に振り返る</h2><p>記録の「よかったこと・気づいたこと・明日やること」が「振り返り」に載ります。振り返りでは気分を残せます。</p></article>
-              <article><h2>予定・ハビット・コレクション</h2><p>「予定」で月の予定とGoogleカレンダー連携、「ハビット」で毎日のチェック、「コレクション」で読みたい本などの一覧をまとめます。</p></article>
-              <article><h2>データを守る</h2><p>「データ管理」で端末間の同期（Googleログイン）とバックアップができます。</p></article>
+              <article><h2>1. INBOXに入れる</h2><p>ホームで入力。INBOXと記録に入ります。</p></article>
+              <article><h2>2. 記録から振り分ける</h2><p>記録の「編集」で種類を変えます。</p></article>
+              <article><h2>3. 夜に振り返る</h2><p>よかったこと等が「振り返り」に載ります。</p></article>
+              <article><h2>予定・ハビット・コレクション</h2><p>メニューから各画面を開きます。</p></article>
+              <article><h2>データを守る</h2><p>「データ管理」で同期とバックアップ。</p></article>
             </div>
             <div class="help-note">
               <strong>iPhoneのホーム画面へ追加</strong>
-              <p>Safariでこのページを開き、共有ボタンから「ホーム画面に追加」を選ぶと、アプリのように起動できます。</p>
+              <p>Safariの共有→「ホーム画面に追加」。</p>
             </div>
             <a class="paper-download" href="./paper-sheet.pdf" target="_blank" rel="noopener">紙の記録シートを印刷する（PDF）</a>
           </section>
@@ -290,7 +288,7 @@
     <dialog id="backupDialog">
       <form>
         <div class="dialog-head"><div><small>データ管理</small><h2>バックアップ</h2></div><button type="button" class="icon-button" data-close="backup">×</button></div>
-        <p class="dialog-copy">端末内のタスク・予定・記録・ハビット・コレクション・振り返りをまとめて書き出し／復元できます。</p>
+        <p class="dialog-copy">全データを書き出し／復元します。</p>
         <div class="backup-actions"><button type="button" id="exportBtn">バックアップを書き出す</button><label>ファイルから復元<input id="importInput" type="file" accept="application/json,.json" /></label></div>
         <div class="dialog-actions"><button type="button" data-close="backup">閉じる</button><button type="button" class="danger" id="clearDataBtn">全データ削除</button></div>
       </form>
@@ -299,8 +297,8 @@
     <div class="image-viewer" id="imageViewer" hidden><img alt="添付画像" /></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=82"></script>
-    <script src="./cloud-sync.js?v=82" defer></script>
-    <script src="./google-calendar.js?v=82"></script>
+    <script src="./app.js?v=83"></script>
+    <script src="./cloud-sync.js?v=83" defer></script>
+    <script src="./google-calendar.js?v=83"></script>
   </body>
 </html>

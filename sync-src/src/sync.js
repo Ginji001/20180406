@@ -155,7 +155,7 @@ async function start(user) {
   st.unsub?.(); st.unsub = null;
   st.user = user; st.ready = false;
   try { if (!localStorage.getItem(RESYNC_FLAG + user.uid)) { resetSyncState(); rawSetItem.call(localStorage, RESYNC_FLAG + user.uid, "1"); } } catch {}
-  setStatus("記録を同期しています…", "syncing");
+  setStatus("同期中…", "syncing");
   try {
     const meta = loadMeta(), base = loadBase(), now = Date.now();
     const needFull = base.size === 0 || !meta || !meta.full || now - meta.full > FULL_INTERVAL;
@@ -186,17 +186,17 @@ function resyncAll() {
 
 function errorText(e) {
   const c = e?.code || "";
-  if (c.includes("permission-denied")) return "同期の権限がありません。いったんログアウトして、もう一度ログインしてください。";
-  if (c.includes("unavailable")) return "オフラインです。通信が戻ると自動で同期します。";
+  if (c.includes("permission-denied")) return "権限がありません。ログインし直してください。";
+  if (c.includes("unavailable")) return "オフライン。通信が戻ると同期します。";
   if (c.includes("popup-closed") || c.includes("cancelled-popup")) return "ログインが中断されました。";
-  if (c.includes("unauthorized-domain")) return "このURLではログインできません。公開URLから開いてください。";
-  if (c.includes("resource-exhausted")) return "本日の同期上限に達しました。明日また自動で同期します。";
+  if (c.includes("unauthorized-domain")) return "このURLではログインできません。";
+  if (c.includes("resource-exhausted")) return "本日の同期上限です。明日また同期します。";
   return "同期できませんでした" + (c ? "（" + c + "）" : "");
 }
 async function login() {
   const p = new GoogleAuthProvider();
   p.setCustomParameters({ prompt: "select_account" });
-  setStatus("Googleのログイン画面を開いています…", "syncing");
+  setStatus("ログイン画面を開いています…", "syncing");
   try { await signInWithPopup(auth, p); }
   catch (e) {
     if (["auth/popup-blocked", "auth/operation-not-supported-in-this-environment"].includes(e?.code)) { await signInWithRedirect(auth, p); return; }
@@ -215,7 +215,7 @@ function render() {
   const status = $("#cloudSyncStatus"), badge = $("#cloudSyncBadge"), btn = $("#cloudSyncBtn"), stop = $("#cloudSyncStopBtn"), account = $("#cloudSyncAccount"), pill = $("#cloudSyncPill");
   const on = !!st.user;
   let msg = st.message;
-  if (!msg) msg = on ? (navigator.onLine ? "自動で同期しています。" + (st.lastSyncedAt ? "最終同期：" + fmt(st.lastSyncedAt) : "") : "オフラインです。入力は保存され、通信が戻ると自動で同期します。") : "オフです。Googleでログインすると、iPhone・Mac・Windowsで同じ記録を使えます。";
+  if (!msg) msg = on ? (navigator.onLine ? "自動で同期しています。" + (st.lastSyncedAt ? "最終同期：" + fmt(st.lastSyncedAt) : "") : "オフライン。通信が戻ると同期します。") : "オフです。";
   if (status) { status.textContent = msg; status.dataset.tone = st.tone || ""; }
   if (badge) { badge.textContent = st.tone === "syncing" ? "同期中" : st.tone === "error" ? "要確認" : on ? "オン" : "オフ"; badge.className = "cloud-sync-badge " + (st.tone === "syncing" ? "syncing" : st.tone === "error" ? "waiting" : on ? "connected" : ""); }
   if (btn) btn.hidden = on;
