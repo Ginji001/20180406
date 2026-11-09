@@ -10,10 +10,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=85" />
+    <link rel="manifest" href="./manifest.webmanifest?v=86" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=85" />
+    <link rel="stylesheet" href="./styles.css?v=86" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
@@ -79,7 +79,7 @@
                   <button type="submit">追加</button>
                   <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
                   <div class="img-picker" id="quickImages"><div class="img-picker-actions"><label class="log-photo-btn" title="画像をコピーして貼り付け（⌘V）・ドラッグでも添付できます">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><button type="button" class="img-paste-btn log-photo-btn" title="コピーした画像を貼り付け">📋 貼り付け</button></div><div class="img-picker-list"></div></div>
-                  <div class="capture-when" id="quickWhen"><input id="quickDate" type="date" aria-label="記録する日付" /><input id="quickTime" type="time" aria-label="開始時刻（任意）" /><input id="quickEnd" type="time" aria-label="終了時刻" hidden /></div>
+                  <div class="capture-when" id="quickWhen"><label class="event-field" id="quickDateField"><span>日付</span><input id="quickDate" type="date" aria-label="記録する日付" /></label><label class="event-field" id="quickTimeField"><span data-start-for="quickEnd">時刻</span><input id="quickTime" type="time" aria-label="時刻（任意）" /></label><label class="event-field" id="quickEndField" hidden><span>終了</span><input id="quickEnd" type="time" aria-label="終了時刻" /></label></div>
                 </form>
                 <div class="gtd-panel" id="gtdPanel">
                   
@@ -109,8 +109,8 @@
           <section id="recordsWorkspace" class="special-workspace journal-workspace" hidden>
             <div class="page-heading"><div><p class="eyebrow">デイリーログ</p><h1>記録</h1><p>INBOXの内容。振り分けは「編集」から。</p></div></div>
             <form class="journal-form" id="logForm">
-              <input id="logDate" type="date" required />
-              <input id="logTime" type="time" aria-label="記録する時刻" /><input id="logEnd" type="time" aria-label="終了時刻" hidden />
+              <label class="event-field" id="logDateField"><span>日付</span><input id="logDate" type="date" required aria-label="記録する日付" /></label>
+              <label class="event-field" id="logTimeField"><span data-start-for="logEnd">時刻</span><input id="logTime" type="time" aria-label="時刻（任意）" /></label><label class="event-field" id="logEndField" hidden><span>終了</span><input id="logEnd" type="time" aria-label="終了時刻" /></label>
               <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="schedule">▦ 予定</option><option value="event">○ 出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
               <input id="logText" maxlength="300" placeholder="内容（INBOXと記録に入ります）" />
               <button type="submit">記録する</button>
@@ -297,8 +297,8 @@
     <div class="image-viewer" id="imageViewer" hidden><img alt="添付画像" /></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=85"></script>
-    <script src="./cloud-sync.js?v=85" defer></script>
-    <script src="./google-calendar.js?v=85"></script>
+    <script src="./app.js?v=86"></script>
+    <script src="./cloud-sync.js?v=86" defer></script>
+    <script src="./google-calendar.js?v=86"></script>
   </body>
 </html>

@@ -168,7 +168,11 @@
   function syncActionField(select, field) {
     const target = $(field);
     if (!target) return;
-    target.hidden = $(select)?.value !== "action";
+    // v86：見出し付きの欄ごと出し入れし、「行動」のときは開始・終了と表示する
+    const action = $(select)?.value === "action";
+    (target.closest(".event-field") || target).hidden = !action;
+    const start = document.querySelector(`[data-start-for="${target.id}"]`);
+    if (start) start.textContent = action ? "開始" : "時刻";
   }
 
   // v55：開いたまま日付が変わっても「今日」がずれないように、その時点の日付を使う
@@ -1987,12 +1991,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=85"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=86"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 85;
+  const APP_VERSION = 86;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
