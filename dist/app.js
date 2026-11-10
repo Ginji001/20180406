@@ -1384,9 +1384,7 @@
         if (!failed) hideNote();
         if (failed) {
           showNote(IS_MAC
-            ? (HAS_FSA
-              ? `画像${failed}枚を読み込めませんでした。もう一度選び直してください。それでも入らないときは、写真アプリで画像を選んで ⌘C を押し、ここで ⌘V を押してください。`
-              : `画像${failed}枚を読み込めませんでした。このブラウザでは、Macの「写真」から選んだ画像を読めないことがあります。Google Chromeでハチロク手帳を開いて添付するか、写真アプリで画像を選んで ⌘C を押し、ここで ⌘V を押してください。`)
+            ? `画像${failed}枚を読み込めませんでした。Macの「写真」から選ぶと、iCloudから届いたばかりの写真などは読み込めないことがあります。写真アプリで写真を選んで ⌘C を押し、ここで ⌘V を押すと確実に添付できます。`
             : `画像${failed}枚を読み込めませんでした。もう一度選び直すか、画像をコピーしてここの「📋 貼り付け」を押してください。`);
           showToast(`画像${failed}枚を読み込めませんでした`);
         }
@@ -2033,12 +2031,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=87"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=88"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 87;
+  const APP_VERSION = 88;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
