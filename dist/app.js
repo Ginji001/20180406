@@ -1275,6 +1275,25 @@
     throw firstError || lastError || new Error("read");
   }
   const IS_MAC = /Macintosh/.test(navigator.userAgent) && !(navigator.maxTouchPoints > 1);
+  // v87：Macの「写真」から選んだ画像は、写真アプリの書き出しが終わる前だとブラウザが読めないことがある。
+  //      ファイルの「取っ手」（File System Access API）で選ぶと、読むたびに最新の状態を取り直せるので、読めるまで待って読み直す
+  const HAS_FSA = typeof window.showOpenFilePicker === "function";
+  async function readHandle(handle) {
+    let lastError = null;
+    const until = Date.now() + 30000;
+    for (let i = 0; Date.now() < until; i += 1) {
+      if (i) await new Promise((resolve) => setTimeout(resolve, Math.min(300 * i, 2000)));
+      try {
+        const file = await handle.getFile();
+        const buf = await withTimeout(file.arrayBuffer(), 20000);
+        return { buf, type: file.type || "image/jpeg", tries: i + 1 };
+      } catch (error) {
+        lastError = error;
+        if (error?.name === "TimeoutError" || error?.name === "NotAllowedError") break;
+      }
+    }
+    throw lastError || new Error("read");
+  }
   const fileInfo = (file) => `${file.name || "(名前なし)"} / ${file.type || "種類不明"} / ${Math.round((file.size || 0) / 1024)}KB`;
   function makeImagePicker(root, name) {
     const input = root.querySelector("input[type=file]");
@@ -1330,9 +1349,8 @@
       draw();
       // v79：受け取った瞬間に読み込みを始める（後から読めなくなるファイルに備える）
       const waitMs = fromInput && IS_MAC ? 2500 : 0; // v81：Macの「写真」の書き出しが終わるのを待つ
-      const early = picked.map((file) => new Promise((resolve) => setTimeout(resolve, waitMs))
-        .then(() => readPickedFile(file))
-        .then((item) => { attachLog(`${name}: 読み込み成功 ${fileInfo(file)}${waitMs ? `（${waitMs / 1000}秒待ってから）` : ""}`); return item; })
+      const early = picked.map((file) => (file.readHandle ? file.readHandle() : new Promise((resolve) => setTimeout(resolve, waitMs)).then(() => readPickedFile(file)))
+        .then((item) => { attachLog(`${name}: 読み込み成功 ${file.readHandle ? `${file.name}（${item.tries}回目で読めた）` : `${fileInfo(file)}${waitMs ? `（${waitMs / 1000}秒待ってから）` : ""}`}`); return item; })
         .catch((error) => ({ error, info: fileInfo(file) })));
       const slowTimer = setTimeout(() => {
         if (p.loading > 0) showNote(IS_MAC
@@ -1366,7 +1384,9 @@
         if (!failed) hideNote();
         if (failed) {
           showNote(IS_MAC
-            ? `画像${failed}枚を読み込めませんでした。もう一度選び直してください。それでも入らないときは、写真アプリで画像を選んで ⌘C を押し、ここの「📋 貼り付け」を押すか、写真アプリからここへドラッグしてください。`
+            ? (HAS_FSA
+              ? `画像${failed}枚を読み込めませんでした。もう一度選び直してください。それでも入らないときは、写真アプリで画像を選んで ⌘C を押し、ここで ⌘V を押してください。`
+              : `画像${failed}枚を読み込めませんでした。このブラウザでは、Macの「写真」から選んだ画像を読めないことがあります。Google Chromeでハチロク手帳を開いて添付するか、写真アプリで画像を選んで ⌘C を押し、ここで ⌘V を押してください。`)
             : `画像${failed}枚を読み込めませんでした。もう一度選び直すか、画像をコピーしてここの「📋 貼り付け」を押してください。`);
           showToast(`画像${failed}枚を読み込めませんでした`);
         }
@@ -1374,6 +1394,28 @@
       p.pending = p.pending.then(task, task);
     }
     let watchTimer = 0;
+    let fsaBroken = false;
+    if (IS_MAC && HAS_FSA) {
+      input.addEventListener("click", async (event) => {
+        if (fsaBroken) return; // 取っ手方式が使えなかったときは、いつもの選択画面
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        filePickerOpenedAt = Date.now();
+        hideNote();
+        attachLog(`${name}: 写真の選択を開いた（取っ手方式）`);
+        let handles;
+        try {
+          handles = await window.showOpenFilePicker({ multiple: true, types: [{ description: "画像", accept: { "image/*": [".png", ".jpg", ".jpeg", ".heic", ".heif", ".gif", ".webp"] } }] });
+        } catch (error) {
+          if (error?.name === "AbortError") { attachLog(`${name}: 選択をキャンセル`); return; }
+          fsaBroken = true;
+          attachLog(`${name}: 取っ手方式が使えない（${error?.name || error}）`);
+          showNote("もう一度「📷 画像・スクショを添付」を押してください。");
+          return;
+        }
+        addFiles(handles.map((handle) => ({ name: handle.name, type: "", readHandle: () => readHandle(handle) })), "取っ手方式", false);
+      });
+    }
     input.addEventListener("click", () => {
       filePickerOpenedAt = Date.now();
       attachLog(`${name}: 写真の選択を開いた`);
@@ -1489,7 +1531,7 @@
         attachLog("写真を選んでいる間にアプリが再起動された");
         showToast("写真を選んでいる間にアプリが再起動されました。もう一度選んでください");
       }
-      attachLog(`起動（v${APP_VERSION}）`);
+      attachLog(`起動（v${APP_VERSION}、取っ手方式${HAS_FSA ? "あり" : "なし"}）`);
     } catch (error) { /* 無視 */ }
   })();
   const imageErrorText = (error) => `画像を保存できませんでした${error?.name ? `（${error.name}）` : ""}`;
@@ -1991,12 +2033,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=86"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=87"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 86;
+  const APP_VERSION = 87;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
