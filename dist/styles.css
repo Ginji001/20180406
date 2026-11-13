@@ -338,7 +338,8 @@ body.dark .img-picker-note { background: #3a2f1d; color: #f0d9a8; }
   body.menu-open .sidebar { transform: none; }
   .mobile-menu { display: block; }
   .content { padding: 16px 14px calc(96px + env(safe-area-inset-bottom, 0px)); }
-  input, select, textarea { font-size: 16px; }
+  /* iOSの自動ズーム防止に16px。個別指定より優先させるため同じ詳細度で後勝ちにする */
+  input, select, textarea, .journal-form > input, .journal-form select, .journal-form textarea, .field input, .field select, .field textarea, .collection-form input, .mini-form input, .month-goal-form input, .search input, .daily-filter input, .event-field input, .google-calendar-controls input, .google-calendar-help input { font-size: 16px; }
   .mobile-nav { display: grid; grid-template-columns: repeat(6, 1fr); align-items: end; position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px)); background: var(--paper); border-top: 1px solid var(--line); }
   .mobile-nav button { display: grid; justify-items: center; gap: 1px; padding: 4px 0; color: var(--muted); font-size: .62rem; border-radius: 8px; }
   .mobile-nav button span { font-size: 1rem; line-height: 1.2; }
