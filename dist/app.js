@@ -90,7 +90,8 @@
   const elements = {
     taskWorkspace: $("#taskWorkspace"),
     habitsWorkspace: $("#habitsWorkspace"),
-    recordsWorkspace: $("#recordsWorkspace"),
+    dailyWorkspace: $("#dailyWorkspace"),
+    taskSection: $("#taskSection"),
     calendarWorkspace: $("#calendarWorkspace"),
     collectionsWorkspace: $("#collectionsWorkspace"),
     dataWorkspace: $("#dataWorkspace"),
@@ -124,7 +125,7 @@
     completed: "完了"
   };
   const descriptions = {
-    inbox: "思いついたことを集める場所。",
+    inbox: "記号を選んで一行で書く。",
     inboxList: "INBOXのタスク。",
     next: "次に行動するタスク。",
     remind: "指定日に思い出すタスク。",
@@ -136,7 +137,7 @@
   const moodFaces = { 1: "😣", 2: "😕", 3: "😐", 4: "🙂", 5: "😊" };
   const moodNames = { 1: "重い", 2: "いまひとつ", 3: "普通", 4: "良い", 5: "とても良い" };
   const logTypeNames = { memo: "メモ", idea: "アイデア", schedule: "予定", event: "出来事", completed: "完了したこと", postponed: "先送りしたこと", cancelled: "キャンセルしたこと", todo: "やること", good: "よかったこと", learned: "気づいたこと", tomorrow: "明日やること", action: "行動" };
-  const logSymbols = { memo: "📝", idea: "💡", schedule: "▦", event: "○", completed: "×", postponed: "＞", cancelled: "－", todo: "☐", good: "◎", learned: "！", tomorrow: "→", action: "⏱" };
+  const logSymbols = { memo: "–", idea: "！", schedule: "○", event: "●", completed: "×", postponed: "＞", cancelled: "－", todo: "•", good: "♡", learned: "＊", tomorrow: "→", action: "◷" }; // v89：バレットジャーナルの記号に統一
   const reflectionLogTypes = ["good", "learned", "tomorrow"]; // v59：振り返りの中身は記録から
   const checkLogTypes = ["completed", "cancelled", "todo"]; // v50：チェックBOXで表示する種類（v61からは新規に作らない）
 
@@ -377,18 +378,16 @@
     const remaining = daysText(task.due);
     const remainingClass = remaining.startsWith("期限超過") ? "days-over" : remaining === "今日まで" || remaining === "残り1日" ? "days-soon" : "";
     return `<article class="task-row ${task.completed ? "completed" : ""}" draggable="true" data-id="${task.id}">
-      <input class="select-task" type="checkbox" ${state.selected.has(task.id) ? "checked" : ""} aria-label="${escapeHTML(task.title)}を選択" />
-      <input class="complete-task" type="checkbox" ${task.completed ? "checked" : ""} aria-label="${escapeHTML(task.title)}を完了にする" />
+      <button type="button" class="bullet-check" data-bullet-task="${task.id}" aria-label="${escapeHTML(task.title)}を${task.completed ? "未完了に戻す" : "完了にする"}">${task.completed ? "×" : "•"}</button>
       <div class="task-body" tabindex="0" role="button" aria-label="${escapeHTML(task.title)}を編集">
-        <p class="task-title">${escapeHTML(task.title)}</p>${taskImageIds(task).length ? `<div class="log-images">${taskImageIds(task).map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}
+        <p class="task-title">${task.priority === "high" ? '<span class="priority-star" title="優先度 高">＊</span>' : ""}${escapeHTML(task.title)}</p>${taskImageIds(task).length ? `<div class="log-images">${taskImageIds(task).map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}
         <div class="task-meta">
           <span>${formatDate(task.due)}${task.time ? ` ${task.time}` : ""}</span>
           ${remaining ? `<span class="${remainingClass}">${remaining}</span>` : ""}
           <span class="pill">${folderNames[task.folder] || "INBOX"}</span>
-          ${task.priority === "high" || task.priority === "low" ? `<span class="pill priority-${task.priority}">優先度 ${priorityNames[task.priority]}</span>` : ""}
         </div>
       </div>
-      <button class="task-menu" aria-label="${escapeHTML(task.title)}を編集">•••</button>
+      <input class="select-task" type="checkbox" ${state.selected.has(task.id) ? "checked" : ""} aria-label="${escapeHTML(task.title)}を一括操作用に選択" />
     </article>`;
   }
 
@@ -422,15 +421,17 @@
 
   function renderHeading() {
     const home = state.view === "inbox";
-    elements.viewTitle.textContent = home ? "ホーム" : viewNames[state.view] || "INBOX";
-    elements.viewDescription.textContent = home ? "INBOXと記録をここから入力。" : descriptions[state.view] || "";
+    elements.viewTitle.textContent = home ? "デイリーログ" : viewNames[state.view] || "INBOX";
+    elements.viewDescription.textContent = home ? descriptions.inbox : descriptions[state.view] || "";
     elements.dateLabel.textContent = new Intl.DateTimeFormat("ja-JP", { year: "numeric", month: "long", day: "numeric", weekday: "long" }).format(today);
   }
 
+  const taskViews = ["inboxList", "next", "remind", "waiting", "wish", "completed"];
   function renderNavigation() {
-    $$("[data-view]").forEach((button) => button.classList.toggle("active", (button.dataset.view === state.view || (state.view === "inboxList" && button.dataset.view === "inbox"))));
-    $$(".nav-group").forEach((group) => {
-      if (group.querySelector(`[data-view="${state.view}"]`)) group.open = true;
+    $$("[data-view]").forEach((button) => {
+      const inMainNav = Boolean(button.closest(".nav-list, .mobile-nav"));
+      const active = button.dataset.view === state.view || (inMainNav && button.dataset.view === "inboxList" && taskViews.includes(state.view));
+      button.classList.toggle("active", active);
     });
   }
 
@@ -442,9 +443,9 @@
     $("#habitCalendarMonthLabel").textContent = `${year}年${month}月`;
     $("#habitCalendar").innerHTML = `<div class="calendar habit-calendar-grid">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
       const iso = toISO(date);
-      const completed = state.data.habits.filter((item) => Array.isArray(item.dates) && item.dates.includes(iso));
       const future = iso > todayISO;
-      return `<button type="button" class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""} ${iso === state.habitDate ? "selected" : ""}" data-habit-day="${iso}" ${future ? "disabled" : ""} aria-label="${formatFullDate(iso)}のハビットを編集"><span class="day-number">${date.getDate()}</span>${completed.slice(0, 4).map((item) => `<span class="habit-calendar-item">✓ ${escapeHTML(item.name)}</span>`).join("") || '<span class="habit-calendar-empty">—</span>'}</button>`;
+      const dots = state.data.habits.map((item, index) => `<span class="habit-dot habit-color-${index % 8} ${Array.isArray(item.dates) && item.dates.includes(iso) ? "filled" : ""}" title="${escapeHTML(item.name)}"></span>`).join("");
+      return `<button type="button" class="calendar-day habit-calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""} ${iso === state.habitDate ? "selected" : ""}" data-habit-day="${iso}" ${future ? "disabled" : ""} aria-label="${formatFullDate(iso)}のハビットを編集"><span class="day-number">${date.getDate()}</span><span class="habit-dots">${dots || '<span class="habit-calendar-empty">—</span>'}</span></button>`;
     }).join("")}</div>`;
   }
 
@@ -471,10 +472,6 @@
     return record;
   }
 
-  function renderHomeJournal() {
-    $("#quickDate").value ||= todayISO;
-  }
-
   function renderLogs() {
     // v56：記録する日付は「表示する日」に合わせる（表示中の日が変わったときだけ）
     if (state.logFormDate !== state.logDate) {
@@ -483,17 +480,21 @@
     }
     if (document.activeElement !== $("#logFilterDate")) $("#logFilterDate").value = state.logDate;
     $("#logTodayBtn").hidden = !state.showAllLogs && state.logDate === currentISO();
+    $("#dailyDateLabel").textContent = state.showAllLogs ? "すべての日" : formatFullDate(state.logDate);
     const logs = [...state.data.logs].filter((item) => state.showAllLogs || item.date === state.logDate).sort((a, b) => b.date.localeCompare(a.date) || String(b.time || "").localeCompare(String(a.time || "")) || String(b.createdAt).localeCompare(String(a.createdAt)));
     const taskMap = new Map(state.data.tasks.map((task) => [task.id, task]));
+    let lastDate = "";
     $("#logList").innerHTML = logs.map((item) => {
       const check = checkLogTypes.includes(item.type);
       const task = item.taskId && taskMap.get(item.taskId);
       const route = !task ? "" : task.completed ? '<em class="journal-route">→ 完了</em>' : task.folder === "inbox" ? '<em class="journal-route">未振り分け</em>' : `<em class="journal-route">→ ${escapeHTML(folderNames[task.folder] || "")}</em>`;
       const pick = item.type === "memo";
-      // v70：四角（チェックBOX）からの振り分けはなし。振り分けは「編集」の種類から
-      const mark = check ? `<label class="journal-check" title="${logTypeNames[item.type]}"><input type="checkbox" data-check-log="${item.id}" ${item.done ? "checked" : ""} aria-label="${escapeHTML(item.text.split("\n")[0])}をチェック" /></label>` : `<span class="journal-symbol">${logSymbols[item.type] || "・"}</span>`;
-      return `<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}">${mark}<div><strong>${escapeHTML(item.text)}</strong>${(item.images || []).length ? `<div class="log-images">${item.images.map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}<small>${formatFullDate(item.date)}${logTimeText(item) ? ` ${escapeHTML(logTimeText(item))}` : ""}・${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div><div class="journal-actions"><button type="button" data-edit-log="${item.id}">編集</button><button type="button" data-delete-log="${item.id}">削除</button></div></article>`;
-    }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>メモや出来事を残しましょう。</span></div>';
+      // v89：チェック式は • を押すと × 。それ以外は記号。行を押すと編集（削除も編集画面から）
+      const mark = check ? `<button type="button" class="bullet-check" data-bullet-log="${item.id}" aria-label="${escapeHTML(item.text.split("\n")[0])}を${item.done ? "未完了に戻す" : "完了にする"}">${item.done ? "×" : "•"}</button>` : `<span class="journal-symbol">${logSymbols[item.type] || "–"}</span>`;
+      const heading = state.showAllLogs && item.date !== lastDate ? `<h3 class="daily-date-heading">${formatFullDate(item.date)}</h3>` : "";
+      lastDate = item.date;
+      return `${heading}<article class="journal-row ${check && item.done ? "is-done" : ""} ${pick && state.pickedLogs.has(item.id) ? "is-picked" : ""}" data-edit-log="${item.id}" tabindex="0" role="button" aria-label="記録を編集">${mark}<div class="journal-body"><strong>${escapeHTML(item.text)}</strong>${(item.images || []).length ? `<div class="log-images">${item.images.map((imgId) => `<img data-img-id="${escapeHTML(imgId)}" alt="添付画像" />`).join("")}</div>` : ""}<small>${logTimeText(item) ? `${escapeHTML(logTimeText(item))}・` : ""}${logTypeNames[item.type] || "記録"}${route ? " " : ""}${route}</small></div></article>`;
+    }).join("") || '<div class="empty-state"><strong>記録はまだありません</strong><span>記号を選んで一行で書きましょう。</span></div>';
     const actionMinutes = logs.reduce((sum, item) => sum + durationMinutes(item), 0);
     const actionCount = logs.filter((item) => item.type === "action").length;
     $("#logActionTotal").hidden = !actionCount;
@@ -506,6 +507,36 @@
     $("#logPickCount").textContent = `${state.pickedLogs.size}件を`;
   }
 
+  // v89：記録の削除。INBOXに残っているタスクは一緒に消す（v88まではタスクが残り、記録が作り直されて消せなかった）
+  function deleteLog(id) {
+    const record = state.data.logs.find((item) => item.id === id);
+    if (!record || !window.confirm("この記録を削除しますか？")) return;
+    (record.images || []).forEach((imgId) => removeImage(imgId));
+    const linked = record.taskId && state.data.tasks.find((task) => task.id === record.taskId);
+    state.data.logs = state.data.logs.filter((item) => item.id !== id);
+    if (linked && linked.folder === "inbox" && !linked.completed) {
+      state.data.tasks = state.data.tasks.filter((task) => task.id !== linked.id);
+      state.selected.delete(linked.id);
+    }
+    persist();
+    render();
+    showToast("記録を削除しました");
+  }
+
+  function openLogEditor(id) {
+    const record = state.data.logs.find((item) => item.id === id);
+    if (!record) return;
+    $("#logEditId").value = record.id;
+    $("#logEditDate").value = record.date || todayISO;
+    $("#logEditTime").value = record.time || "";
+    $("#logEditType").value = logTypeNames[record.type] ? record.type : "memo";
+    $("#logEditText").value = record.text || "";
+    $("#logEditEnd").value = record.end || "";
+    syncActionField("#logEditType", "#logEditEndField");
+    pickers.logEdit.set(record.images || []);
+    $("#logEditDialog").showModal();
+  }
+
   function changeMonth(month, amount) {
     const [year, value] = month.split("-").map(Number);
     const date = new Date(year, value - 1 + amount, 1);
@@ -514,21 +545,25 @@
 
   function renderCombinedCalendar() {
     const [year, month] = state.calendarMonth.split("-").map(Number);
-    const first = new Date(year, month - 1, 1);
-    const start = addDays(first, -first.getDay());
-    const days = Array.from({ length: 42 }, (_, index) => addDays(start, index));
+    const lastDay = new Date(year, month, 0).getDate();
     $("#calendarMonthLabel").textContent = `${year}年${month}月`;
     $("#monthGoal").value = state.data.monthlyGoals[state.calendarMonth] || "";
     $("#eventDate").value ||= todayISO;
     $("#eventMonth").value = state.calendarMonth;
     const undatedEvents = state.data.events.filter((item) => !item.date && item.month === state.calendarMonth);
-    const undatedMarkup = undatedEvents.length ? `<div class="calendar-undated"><strong>日付未定</strong><div>${undatedEvents.map((item) => `<button type="button" data-edit-event="${item.id}">◷ ${escapeHTML(item.title)}</button>`).join("")}</div></div>` : "";
-    $("#combinedCalendar").innerHTML = `${undatedMarkup}<div class="calendar">${"日月火水木金土".split("").map((day) => `<div class="calendar-head">${day}</div>`).join("")}${days.map((date) => {
+    const undatedMarkup = undatedEvents.length ? `<section class="month-undated"><h3>今月のどこかで</h3><div>${undatedEvents.map((item) => `<button type="button" data-edit-event="${item.id}">○ ${escapeHTML(item.title)}</button>`).join("")}</div></section>` : "";
+    const dayRows = Array.from({ length: lastDay }, (_, index) => {
+      const date = new Date(year, month - 1, index + 1);
       const iso = toISO(date);
       const tasks = state.data.tasks.filter((task) => !task.completed && task.due === iso);
       const events = state.data.events.filter((item) => item.date === iso).sort((a, b) => String(a.time || "").localeCompare(String(b.time || "")));
-      return `<div class="calendar-day ${date.getMonth() !== month - 1 ? "outside" : ""} ${iso === todayISO ? "today" : ""}"><span class="day-number">${date.getDate()}</span>${events.map((item) => `<button type="button" class="calendar-task calendar-event" data-edit-event="${item.id}">○ ${item.time ? `${escapeHTML(item.time)} ` : ""}${escapeHTML(item.title)}</button>`).join("")}${tasks.slice(0, 2).map((task) => `<button type="button" class="calendar-task" data-id="${task.id}">・ ${escapeHTML(task.title)}</button>`).join("")}</div>`;
-    }).join("")}</div>`;
+      const lines = [
+        ...events.map((item) => `<button type="button" class="month-line" data-edit-event="${item.id}">○ ${item.time ? `${escapeHTML(item.time)} ` : ""}${escapeHTML(item.title)}</button>`),
+        ...tasks.map((task) => `<button type="button" class="month-line calendar-task" data-id="${task.id}">• ${escapeHTML(task.title)}</button>`)
+      ];
+      return `<section class="month-day ${iso === todayISO ? "today" : ""}"><button type="button" class="month-day-head" data-day-add="${iso}" aria-label="${formatFullDate(iso)}の予定を書く"><span class="day-number">${date.getDate()}</span><span class="day-week">${"日月火水木金土"[date.getDay()]}</span></button><div class="month-day-lines">${lines.join("") || '<span class="month-empty">—</span>'}</div></section>`;
+    }).join("");
+    $("#combinedCalendar").innerHTML = `${undatedMarkup}<div class="monthly-list">${dayRows}</div>`;
   }
 
   function renderCollections() {
@@ -647,7 +682,7 @@
     elements.selectedCount.textContent = `${visibleSelected.length}件選択`;
   }
 
-  const specialViews = ["habits", "records", "calendar", "collections", "data", "reflection", "help"];
+  const specialViews = ["habits", "calendar", "collections", "data", "reflection", "help"]; // v89：recordsはデイリーログ（inbox）に一本化
   function render() {
     setTimeout(() => fillLogImages(), 0);
     renderCounts();
@@ -657,30 +692,34 @@
     elements.taskWorkspace.classList.toggle("home-mode", home);
     const special = specialViews.includes(state.view);
     elements.taskWorkspace.hidden = special;
+    elements.dailyWorkspace.hidden = state.view !== "inbox";
+    elements.taskSection.hidden = state.view === "inbox";
     elements.habitsWorkspace.hidden = state.view !== "habits";
-    elements.recordsWorkspace.hidden = state.view !== "records";
     elements.calendarWorkspace.hidden = state.view !== "calendar";
     elements.collectionsWorkspace.hidden = state.view !== "collections";
     elements.dataWorkspace.hidden = state.view !== "data";
     elements.reflectionWorkspace.hidden = state.view !== "reflection";
     elements.helpWorkspace.hidden = state.view !== "help";
     if (state.view === "habits") renderHabits();
-    else if (state.view === "records") renderLogs();
     else if (state.view === "calendar") renderCombinedCalendar();
     else if (state.view === "collections") renderCollections();
     else if (state.view === "data") renderDataSummary();
     else if (state.view === "reflection") renderReflection();
+    else if (state.view === "inbox") {
+      renderHeading();
+      renderLogs();
+    }
     else if (state.view !== "help") {
       renderHeading();
       renderGtdPanel();
       renderTasks();
-      renderHomeJournal();
     }
   }
 
   function setView(view) {
-    // v56：記録を開いたときは、いつも今日の記録を表示する
-    if (view === "records" && state.view !== "records") {
+    // v89：旧「記録」はデイリーログに一本化。デイリーを開くときは今日に戻る
+    if (view === "records") view = "inbox";
+    if (view === "inbox") {
       state.logDate = currentISO();
       state.showAllLogs = false;
     }
@@ -897,22 +936,8 @@
     return true;
   }
 
-  $("#quickAddForm").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const count = pickers.quick.count();
-    if (!$("#quickTaskInput").value.trim() && !count) { $("#quickTaskInput").focus(); showToast("内容を入力するか、画像を添付してください"); return; }
-    let images = [];
-    try { images = await pickers.quick.commit(); } catch (error) { showToast(imageErrorText(error)); return; }
-    const ok = addInboxEntry({ title: $("#quickTaskInput").value.trim() || imageTitle(count), detail: $("#quickDetail").value, date: $("#quickDate").value, time: $("#quickTime").value, end: $("#quickEnd").value, type: $("#quickType").value, images });
-    if (!ok) { images.forEach((id) => removeImage(id)); return; }
-    $("#quickTaskInput").value = "";
-    $("#quickDetail").value = "";
-    $("#quickTime").value = "";
-    $("#quickEnd").value = "";
-  });
-
-  $("#quickType").addEventListener("change", () => syncActionField("#quickType", "#quickEnd"));
   $("#logType").addEventListener("change", () => syncActionField("#logType", "#logEnd"));
+
   $("#logEditType").addEventListener("change", () => syncActionField("#logEditType", "#logEditEndField"));
 
   $("#taskForm").addEventListener("submit", async (event) => {
@@ -957,6 +982,15 @@
     render();
     elements.taskDialog.close();
     showToast("タスクを削除しました");
+  });
+
+  elements.taskContent.addEventListener("click", (event) => {
+    const bulletId = event.target.closest("[data-bullet-task]")?.dataset.bulletTask;
+    if (!bulletId) return;
+    const task = state.data.tasks.find((item) => item.id === bulletId);
+    if (!task) return;
+    completeTask(bulletId, !task.completed);
+    showToast(task.completed ? "完了しました" : "未完了に戻しました");
   });
 
   elements.taskContent.addEventListener("change", (event) => {
@@ -1497,14 +1531,13 @@
       }
     };
   }
-  const pickers = { quick: makeImagePicker($("#quickImages"), "quick"), log: makeImagePicker($("#logImages"), "log"), logEdit: makeImagePicker($("#logEditImages"), "logEdit"), task: makeImagePicker($("#taskImages"), "task") };
+  const pickers = { log: makeImagePicker($("#logImages"), "log"), logEdit: makeImagePicker($("#logEditImages"), "logEdit"), task: makeImagePicker($("#taskImages"), "task") }; // v89：旧ホームの添付欄（quick）は廃止
   // v78：画像の貼り付けで添付（写真の選択が使えないときの確実な方法）
   function activePicker() {
     if (document.querySelector("#taskDialog[open]")) return pickers.task;
     if (document.querySelector("#logEditDialog[open]")) return pickers.logEdit;
     if (document.querySelector("dialog[open]")) return null;
     if (pickers.log.visible()) return pickers.log;
-    if (pickers.quick.visible()) return pickers.quick;
     return null;
   }
   document.addEventListener("paste", (event) => {
@@ -1519,8 +1552,16 @@
   // 起動時：ホームと記録の添付欄は下書きを戻す。編集画面（タスク・記録の編集）の下書きは閉じたあとなので片付ける
   (async () => {
     try {
+      // v89：旧ホーム（quick）に残っていた下書きはデイリーログ（log）へ引き継ぐ
+      try {
+        const drafts = readDrafts();
+        if ((drafts.quick || []).length) {
+          writeDrafts("log", [...new Set([...(drafts.log || []), ...drafts.quick])]);
+          writeDrafts("quick", []);
+        }
+      } catch (error) { /* 無視 */ }
       let restored = 0;
-      for (const key of ["quick", "log"]) restored += await pickers[key].restore();
+      restored += await pickers.log.restore();
       for (const key of ["task", "logEdit"]) await pickers[key].discardDrafts();
       if (restored) { attachLog(`起動時に下書き${restored}枚を戻した`); showToast(`選んでいた画像${restored}枚を添付欄に戻しました`); }
       const openedAt = Number(localStorage.getItem(PICKER_OPEN_KEY) || 0);
@@ -1575,6 +1616,14 @@
     state.showAllLogs = false;
     renderLogs();
   });
+  const shiftLogDay = (amount) => {
+    const base = fromISO(state.logDate) || new Date();
+    state.logDate = toISO(addDays(base, amount));
+    state.showAllLogs = false;
+    renderLogs();
+  };
+  $("#logPrevDay").addEventListener("click", () => shiftLogDay(-1));
+  $("#logNextDay").addEventListener("click", () => shiftLogDay(1));
   $("#showAllLogs").addEventListener("click", () => {
     state.showAllLogs = !state.showAllLogs;
     renderLogs();
@@ -1593,7 +1642,7 @@
     }
     if (!log) return;
     $("#taskDialog").close();
-    setView("records");
+    setView("inbox");
     state.logDate = log.date; state.showAllLogs = false;
     state.pickedLogs.clear();
     if (log.type === "memo") state.pickedLogs.add(log.id);
@@ -1670,28 +1719,33 @@
     renderLogs();
   });
   $("#logList").addEventListener("click", (event) => {
-    const editId = event.target.closest("[data-edit-log]")?.dataset.editLog;
-    if (editId) {
-      const record = state.data.logs.find((item) => item.id === editId);
+    const bulletId = event.target.closest("[data-bullet-log]")?.dataset.bulletLog;
+    if (bulletId) {
+      const record = state.data.logs.find((item) => item.id === bulletId);
       if (!record) return;
-      $("#logEditId").value = record.id;
-      $("#logEditDate").value = record.date || todayISO;
-      $("#logEditTime").value = record.time || "";
-      $("#logEditType").value = logTypeNames[record.type] ? record.type : "memo";
-      $("#logEditText").value = record.text || "";
-      $("#logEditEnd").value = record.end || "";
-      syncActionField("#logEditType", "#logEditEndField");
-      pickers.logEdit.set(record.images || []);
-      $("#logEditDialog").showModal();
+      record.done = !record.done;
+      record.updatedAt = new Date().toISOString();
+      persist();
+      renderLogs();
       return;
     }
+    if (event.target.closest(".log-images img")) return;
+    const editId = event.target.closest("[data-edit-log]")?.dataset.editLog;
+    if (editId) { openLogEditor(editId); return; }
     const id = event.target.closest("[data-delete-log]")?.dataset.deleteLog;
-    if (!id || !window.confirm("この記録を削除しますか？")) return;
-    (state.data.logs.find((item) => item.id === id)?.images || []).forEach((imgId) => removeImage(imgId));
-    state.data.logs = state.data.logs.filter((item) => item.id !== id);
-    persist();
-    renderLogs();
-    showToast("記録を削除しました");
+    if (id) deleteLog(id);
+  });
+  $("#logList").addEventListener("keydown", (event) => {
+    if ((event.key === "Enter" || event.key === " ") && event.target.matches(".journal-row")) {
+      event.preventDefault();
+      openLogEditor(event.target.dataset.editLog);
+    }
+  });
+  $("#deleteLogBtn").addEventListener("click", () => {
+    const id = $("#logEditId").value;
+    if (!id) return;
+    $("#logEditDialog").close();
+    deleteLog(id);
   });
   $("#logEditForm").addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -1781,7 +1835,16 @@
   $("#eventEditTiming").addEventListener("change", (event) => setEventEditTiming(event.target.value));
   $("#combinedCalendar").addEventListener("click", (event) => {
     const editId = event.target.closest("[data-edit-event]")?.dataset.editEvent;
-    if (editId) openEventEditor(editId);
+    if (editId) { openEventEditor(editId); return; }
+    const dayIso = event.target.closest("[data-day-add]")?.dataset.dayAdd;
+    if (dayIso) {
+      $("#eventTiming").value = "date";
+      $("#eventTiming").dispatchEvent(new Event("change"));
+      $("#eventDate").value = dayIso;
+      state.calendarMonth = dayIso.slice(0, 7);
+      $("#eventForm").scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(() => $("#eventTitle").focus(), 350);
+    }
   });
   $("#eventEditForm").addEventListener("submit", (event) => {
     event.preventDefault();
@@ -2031,12 +2094,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=88"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=89"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 88;
+  const APP_VERSION = 89;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
@@ -2044,7 +2107,7 @@
     if (document.querySelector("dialog[open]")) return true;
     if (Date.now() - filePickerOpenedAt < 10 * 60 * 1000) return true;
     if (Object.values(pickers).some((pk) => pk.hasUnsaved())) return true;
-    if (["#quickTaskInput", "#logText", "#logDetail", "#quickDetail"].some((sel) => ($(sel)?.value || "").trim())) return true;
+    if (["#logText", "#logDetail"].some((sel) => ($(sel)?.value || "").trim())) return true;
     const el = document.activeElement;
     return Boolean(el && el.matches("input, textarea, select") && (el.value || "").trim() && el.type !== "checkbox" && el.type !== "date" && el.type !== "time" && el.tagName !== "SELECT");
   }

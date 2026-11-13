@@ -4,49 +4,36 @@
     <meta charset="UTF-8" />
     <meta name="google-site-verification" content="wtSCDToB6Esr571PVkL2zQRouOPWFA_mretsvdyL7zU" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#b2553f" />
-    <meta name="description" content="タスク、予定、記録、ハビットを一つにまとめる日本語のデジタル手帳" />
+    <meta name="theme-color" content="#fdfbf7" />
+    <meta name="description" content="バレットジャーナル風の日本語のデジタル手帳" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="ハチロク手帳" />
     <title>ハチロク手帳</title>
-    <link rel="manifest" href="./manifest.webmanifest?v=88" />
+    <link rel="manifest" href="./manifest.webmanifest?v=89" />
     <link rel="icon" type="image/png" href="./favicon-anime.png" />
     <link rel="apple-touch-icon" href="./apple-touch-icon-anime.png" />
-    <link rel="stylesheet" href="./styles.css?v=88" />
+    <link rel="stylesheet" href="./styles.css?v=89" />
     <script src="https://accounts.google.com/gsi/client" defer></script>
   </head>
   <body>
     <div class="app-shell">
-      <aside class="sidebar" aria-label="メインメニュー">
+      <aside class="sidebar" aria-label="目次">
         <div class="brand">
           <img src="./icon-anime-192.png" alt="" width="34" height="34" style="border-radius:9px" />
-          <div><strong>ハチロク手帳</strong><small>やることと毎日を記録する</small></div>
+          <div><strong>ハチロク手帳</strong><small>バレットジャーナル風</small></div>
         </div>
-        <button class="new-task-button" id="newTaskBtn"><span>＋</span> INBOXに追加</button>
-        <nav class="nav-list" id="sideNav">
-          <button class="nav-item active" data-view="inbox"><span>↓</span>INBOX<em data-count="inbox" title="INBOXの一覧を開く">0</em></button>
-          <button class="nav-item" data-view="calendar"><span>▦</span>予定</button>
-          <details class="nav-group">
-            <summary>タスク</summary>
-            <button class="nav-item" data-view="next"><span>→</span>次にやる<em data-count="next">0</em></button>
-            <button class="nav-item" data-view="remind"><span>◷</span>リマインダー<em data-count="remind">0</em></button>
-            <button class="nav-item" data-view="waiting"><span>⌛</span>待ち状況<em data-count="waiting">0</em></button>
-            <button class="nav-item" data-view="wish"><span>☆</span>いつかやりたい<em data-count="wish">0</em></button>
-            <button class="nav-item" data-view="completed"><span>✓</span>完了<em data-count="completed">0</em></button>
-          </details>
-          <details class="nav-group">
-            <summary>手帳</summary>
-            <button class="nav-item" data-view="records"><span>✎</span>記録</button>
-            <button class="nav-item" data-view="habits"><span>◉</span>ハビット</button>
-            <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
-            <button class="nav-item" data-view="reflection"><span>☾</span>振り返り</button>
-          </details>
-          <details class="nav-group">
-            <summary>その他</summary>
-            <button class="nav-item" data-view="data"><span>⇩</span>データ管理</button>
-            <button class="nav-item" data-view="help"><span>?</span>使い方</button>
-          </details>
+        <button class="new-task-button" id="newTaskBtn"><span>＋</span>タスクを書く</button>
+        <nav class="nav-list" id="sideNav" aria-label="目次">
+          <p class="side-heading">目次</p>
+          <button class="nav-item active" data-view="inbox"><span>–</span>デイリーログ</button>
+          <button class="nav-item" data-view="calendar"><span>○</span>マンスリーログ</button>
+          <button class="nav-item" data-view="inboxList"><span>•</span>タスク<em data-count="inbox">0</em></button>
+          <button class="nav-item" data-view="habits"><span>◉</span>ハビット</button>
+          <button class="nav-item" data-view="collections"><span>▤</span>コレクション</button>
+          <button class="nav-item" data-view="reflection"><span>☾</span>振り返り</button>
+          <button class="nav-item" data-view="data"><span>⇩</span>データ管理</button>
+          <button class="nav-item" data-view="help"><span>?</span>使い方</button>
         </nav>
         <div class="sidebar-footer">
           <a href="./about.html">アプリについて</a>
@@ -59,75 +46,78 @@
 
       <main class="main">
         <header class="topbar">
-          <button class="mobile-menu" id="mobileMenu" aria-label="メニューを開く">☰</button>
+          <button class="mobile-menu" id="mobileMenu" aria-label="目次を開く">☰</button>
           <label class="search"><span>⌕</span><input id="searchInput" type="search" placeholder="タスクを検索" aria-label="タスクを検索" /></label>
         </header>
 
         <div class="content">
           <section id="taskWorkspace">
             <div class="page-heading">
-              <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">今日</h1><p id="viewDescription"></p></div>
-              <button class="outline-button" id="headingAddBtn">＋ INBOXに追加</button>
+              <div><p class="eyebrow" id="dateLabel"></p><h1 id="viewTitle">デイリーログ</h1><p id="viewDescription"></p></div>
+              <button class="outline-button" id="headingAddBtn">＋ タスクを書く</button>
             </div>
-            <div class="home-columns">
-              <section class="home-section inbox-home" id="inboxHome">
-                <div class="home-section-head"><div><p class="help-kicker">タスク・記録</p><h2>INBOX</h2></div><button type="button" data-view="records">記録一覧</button></div>
-                <form class="capture" id="quickAddForm">
-                  <span class="capture-icon">＋</span>
-                  <select id="quickType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="schedule">▦ 予定</option><option value="event">○ 出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
-                  <input id="quickTaskInput" maxlength="300" autocomplete="off" placeholder="内容（INBOXと記録に入ります）" aria-label="内容" />
-                  <button type="submit">追加</button>
-                  <textarea id="quickDetail" rows="3" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
-                  <div class="img-picker" id="quickImages"><div class="img-picker-actions"><label class="log-photo-btn" title="画像をコピーして貼り付け（⌘V）・ドラッグでも添付できます">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><button type="button" class="img-paste-btn log-photo-btn" title="コピーした画像を貼り付け">📋 貼り付け</button></div><div class="img-picker-list"></div></div>
-                  <div class="capture-when" id="quickWhen"><label class="event-field" id="quickDateField"><span>日付</span><input id="quickDate" type="date" aria-label="記録する日付" /></label><label class="event-field" id="quickTimeField"><span data-start-for="quickEnd">時刻</span><input id="quickTime" type="time" aria-label="時刻（任意）" /></label><label class="event-field" id="quickEndField" hidden><span>終了</span><input id="quickEnd" type="time" aria-label="終了時刻" /></label></div>
-                </form>
-                <div class="gtd-panel" id="gtdPanel">
-                  
-                  <button type="button" id="todayAllBtn">⤓ 期限切れを今日に<em id="todayAllCount"></em></button>
-                  <button type="button" id="habitTasksBtn">◉ ハビットを今日のタスクに</button>
-                </div>
-                <div class="bulk-bar" id="bulkBar" hidden>
-                  <strong id="selectedCount">0件選択</strong>
-                  
-                  <button data-bulk="today">今日にする</button><button data-bulk="tomorrow">明日へ先送り</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
-                </div>
-                <div id="taskContent"></div>
-              </section>
-            </div>
+
+            <section id="dailyWorkspace">
+              <div class="daily-head">
+                <button type="button" id="logPrevDay" aria-label="前の日">‹</button>
+                <strong id="dailyDateLabel"></strong>
+                <button type="button" id="logNextDay" aria-label="次の日">›</button>
+                <span class="daily-head-spacer"></span>
+                <label class="daily-filter">表示する日<input id="logFilterDate" type="date" /></label>
+                <button type="button" id="logTodayBtn" hidden>今日に戻る</button>
+                <button type="button" id="showAllLogs">すべて表示</button>
+              </div>
+              <form class="journal-form" id="logForm">
+                <select id="logType" aria-label="記号（種類）"><option value="memo">– メモ</option><option value="todo">• やること</option><option value="idea">！ アイデア</option><option value="schedule">○ 予定</option><option value="event">● 出来事</option><option value="good">♡ よかったこと</option><option value="learned">＊ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">◷ 行動</option></select>
+                <input id="logText" maxlength="300" placeholder="一行で書く（INBOXと記録に入ります）" aria-label="内容" />
+                <button type="submit">書く</button>
+                <label class="event-field" id="logDateField"><span>日付</span><input id="logDate" type="date" required aria-label="記録する日付" /></label>
+                <label class="event-field" id="logTimeField"><span data-start-for="logEnd">時刻</span><input id="logTime" type="time" aria-label="時刻（任意）" /></label>
+                <label class="event-field" id="logEndField" hidden><span>終了</span><input id="logEnd" type="time" aria-label="終了時刻" /></label>
+                <textarea id="logDetail" rows="2" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
+                <div class="img-picker" id="logImages"><div class="img-picker-actions"><label class="log-photo-btn" title="画像をコピーして貼り付け（⌘V）・ドラッグでも添付できます">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><button type="button" class="img-paste-btn log-photo-btn" title="コピーした画像を貼り付け">📋 貼り付け</button></div><div class="img-picker-list"></div></div>
+              </form>
+              <p class="log-action-total" id="logActionTotal" hidden></p>
+              <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件を</strong><button type="button" data-pick-type="schedule">○ 予定</button><button type="button" data-pick-type="event">● 出来事</button><button type="button" data-pick-type="good">♡ よかったこと</button><button type="button" data-pick-type="learned">＊ 気づいたこと</button><button type="button" data-pick-type="tomorrow">→ 明日やること</button><button type="button" data-pick-type="action">◷ 行動</button><button type="button" data-pick-folder="next">→ 次にやる</button><button type="button" data-pick-folder="remind">◷ リマインダー</button><button type="button" data-pick-folder="waiting">⌛ 待ち状況</button><button type="button" data-pick-folder="wish">☆ いつかやりたい</button><button type="button" data-pick-type="clear">解除</button></div>
+              <div class="journal-list" id="logList"></div>
+            </section>
+
+            <section id="taskSection">
+              <nav class="task-tabs" aria-label="タスクの切り替え">
+                <button type="button" data-view="inboxList">INBOX<em data-count="inbox">0</em></button>
+                <button type="button" data-view="next">次にやる<em data-count="next">0</em></button>
+                <button type="button" data-view="remind">リマインダー<em data-count="remind">0</em></button>
+                <button type="button" data-view="waiting">待ち状況<em data-count="waiting">0</em></button>
+                <button type="button" data-view="wish">いつかやりたい<em data-count="wish">0</em></button>
+                <button type="button" data-view="completed">完了<em data-count="completed">0</em></button>
+              </nav>
+              <div class="gtd-panel" id="gtdPanel">
+                <button type="button" id="todayAllBtn">⤓ 期限切れを今日に<em id="todayAllCount"></em></button>
+                <button type="button" id="habitTasksBtn">◉ ハビットを今日のタスクに</button>
+              </div>
+              <div class="bulk-bar" id="bulkBar" hidden>
+                <strong id="selectedCount">0件選択</strong>
+                <button data-bulk="today">今日にする</button><button data-bulk="tomorrow">明日へ</button><button data-bulk="complete">完了</button><button data-bulk="clear">選択解除</button>
+              </div>
+              <div id="taskContent"></div>
+            </section>
           </section>
 
           <section id="habitsWorkspace" class="special-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>ハビット</h1><p>達成日を見て、今日のハビットをチェック。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">毎日の記録</p><h1>ハビット</h1><p>点が埋まれば達成です。</p></div></div>
             <div class="calendar-controls habit-calendar-controls"><button type="button" id="habitCalendarPrev" aria-label="前の月">‹</button><strong id="habitCalendarMonthLabel"></strong><button type="button" id="habitCalendarNext" aria-label="次の月">›</button></div>
-            <p class="habit-calendar-help">✓は達成。日にちを押すとその日を編集。</p>
+            <p class="habit-calendar-help">日にちを押すとその日を編集できます。</p>
             <div id="habitCalendar" class="habit-calendar"></div>
             <form class="mini-form" id="habitForm"><input id="habitName" required maxlength="60" placeholder="新しいハビット" /><button>追加</button></form>
             <div class="habit-day-head"><strong id="habitDayLabel">今日のハビット</strong><input id="habitDate" type="date" aria-label="編集する日付" /><button type="button" id="habitTodayBtn" hidden>今日に戻る</button></div>
             <div id="habitList" class="habit-list"></div>
           </section>
 
-          <section id="recordsWorkspace" class="special-workspace journal-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">デイリーログ</p><h1>記録</h1><p>INBOXの内容。振り分けは「編集」から。</p></div></div>
-            <form class="journal-form" id="logForm">
-              <label class="event-field" id="logDateField"><span>日付</span><input id="logDate" type="date" required aria-label="記録する日付" /></label>
-              <label class="event-field" id="logTimeField"><span data-start-for="logEnd">時刻</span><input id="logTime" type="time" aria-label="時刻（任意）" /></label><label class="event-field" id="logEndField" hidden><span>終了</span><input id="logEnd" type="time" aria-label="終了時刻" /></label>
-              <select id="logType" aria-label="記録の種類"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="schedule">▦ 予定</option><option value="event">○ 出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select>
-              <input id="logText" maxlength="300" placeholder="内容（INBOXと記録に入ります）" />
-              <button type="submit">記録する</button>
-              <textarea id="logDetail" rows="2" maxlength="1000" placeholder="くわしく（任意）" aria-label="くわしく"></textarea>
-              <div class="img-picker" id="logImages"><div class="img-picker-actions"><label class="log-photo-btn" title="画像をコピーして貼り付け（⌘V）・ドラッグでも添付できます">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><button type="button" class="img-paste-btn log-photo-btn" title="コピーした画像を貼り付け">📋 貼り付け</button></div><div class="img-picker-list"></div></div>
-            </form>
-            <div class="log-filter"><label>表示する日<input id="logFilterDate" type="date" /></label><button type="button" id="logTodayBtn" hidden>今日に戻る</button><button type="button" id="showAllLogs">すべて表示</button></div>
-            <p class="log-action-total" id="logActionTotal" hidden></p>
-            <div class="bulk-bar log-pick-bar" id="logPickBar" hidden><strong id="logPickCount">0件を</strong><button type="button" data-pick-type="schedule">▦ 予定</button><button type="button" data-pick-type="event">○ 出来事</button><button type="button" data-pick-type="good">◎ よかったこと</button><button type="button" data-pick-type="learned">！ 気づいたこと</button><button type="button" data-pick-type="tomorrow">→ 明日やること</button><button type="button" data-pick-type="action">⏱ 行動</button><button type="button" data-pick-folder="next">→ 次にやる</button><button type="button" data-pick-folder="remind">◷ リマインダー</button><button type="button" data-pick-folder="waiting">⌛ 待ち状況</button><button type="button" data-pick-folder="wish">☆ いつかやりたい</button><button type="button" data-pick-type="clear">解除</button></div>
-            <div class="journal-list" id="logList"></div>
-          </section>
-
           <section id="calendarWorkspace" class="special-workspace calendar-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">日付あり・日付未定</p><h1>予定</h1><p>日付ありも月だけの予定もここで管理。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">マンスリーログ</p><h1>マンスリーログ</h1><p>ひと月の予定と期限のあるタスク。</p></div></div>
             <div class="calendar-controls"><button type="button" id="calendarPrev" aria-label="前の月">‹</button><strong id="calendarMonthLabel"></strong><button type="button" id="calendarNext" aria-label="次の月">›</button></div>
             <form class="month-goal-form" id="monthGoalForm"><label><span>今月の目標</span><input id="monthGoal" maxlength="200" placeholder="今月大切にすること" /></label><button type="submit">保存</button></form>
-            <p class="calendar-help">予定を押すと編集できます。</p>
+            <p class="calendar-help">日にちを押すと、その日の予定を書けます。</p>
             <div class="combined-calendar" id="combinedCalendar"></div>
             <form class="journal-form event-form" id="eventForm">
               <select id="eventTiming" aria-label="予定の日程"><option value="date">日付を指定</option><option value="month">月だけ指定</option></select>
@@ -154,7 +144,7 @@
           </section>
 
           <section id="collectionsWorkspace" class="special-workspace collections-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">自由な一覧</p><h1>コレクション</h1><p>欲しい物・読みたい物の一覧。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">コレクション</p><h1>コレクション</h1><p>欲しい物・読みたい物の一覧。</p></div></div>
             <form class="journal-form collection-form" id="collectionForm"><input id="collectionCategory" required maxlength="50" placeholder="一覧の名前（例：読みたい本）" /><input id="collectionItem" required maxlength="180" placeholder="追加する内容" /><input id="collectionImage" type="file" accept="image/*" aria-label="画像ファイル（任意）" /><input id="collectionUrl" type="url" maxlength="500" placeholder="URL（任意）" /><button type="submit">追加</button></form>
             <div class="collection-grid" id="collectionList"></div>
           </section>
@@ -181,18 +171,14 @@
           </section>
 
           <section id="reflectionWorkspace" class="special-workspace reflection-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">一日の記録</p><h1>振り返り</h1><p>できたことを確認し、明日へつなげます。</p></div></div>
-
+            <div class="page-heading"><div><p class="eyebrow">一日の記録</p><h1>振り返り</h1><p>気分だけを残します。</p></div></div>
             <div class="reflection-week" id="reflectionWeek" aria-label="直近7日間の振り返り"></div>
-
             <div class="reflection-summary" id="reflectionSummary"></div>
-
             <form class="reflection-form" id="reflectionForm">
               <div class="reflection-form-head">
                 <div><p class="help-kicker">記録する日</p><input id="reflectionDate" type="date" required /></div>
                 <button class="primary-save" type="submit">気分を保存</button>
               </div>
-
               <fieldset class="mood-field">
                 <legend>今日の気分</legend>
                 <div class="mood-options">
@@ -203,11 +189,9 @@
                   <label><input type="radio" name="reflectionMood" value="5" /><span>😊<small>とても良い</small></span></label>
                 </div>
               </fieldset>
-
               <div class="reflection-fields" id="reflectionFields"></div>
               <p class="reflection-save-note" id="reflectionSaveNote">記録から振り分けるとここに載ります。</p>
             </form>
-
             <section class="reflection-history-section">
               <div class="reflection-history-head"><div><p class="help-kicker">これまでの記録</p><h2>振り返り履歴</h2></div><span id="reflectionHistoryCount"></span></div>
               <div class="reflection-history" id="reflectionHistory"></div>
@@ -215,12 +199,12 @@
           </section>
 
           <section id="helpWorkspace" class="special-workspace help-workspace" hidden>
-            <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>INBOXに入れ、記録から振り分け。</p></div></div>
+            <div class="page-heading"><div><p class="eyebrow">操作ガイド</p><h1>使い方</h1><p>書いて、振り分けて、夜に振り返る。</p></div></div>
             <div class="help-section help-details">
-              <article><h2>1. INBOXに入れる</h2><p>ホームで入力。INBOXと記録に入ります。</p></article>
-              <article><h2>2. 記録から振り分ける</h2><p>記録の「編集」で種類を変えます。</p></article>
-              <article><h2>3. 夜に振り返る</h2><p>よかったこと等が「振り返り」に載ります。</p></article>
-              <article><h2>予定・ハビット・コレクション</h2><p>メニューから各画面を開きます。</p></article>
+              <article><h2>1. デイリーログに書く</h2><p>記号を選んで一行で。INBOXと記録に入ります。</p></article>
+              <article><h2>2. 行を押して振り分ける</h2><p>種類を変えると振り分け。削除もここから。</p></article>
+              <article><h2>記号</h2><p>– メモ ／ • やること（押すと × 完了）／ ○ 予定 ／ ● 出来事 ／ ♡ よかったこと ／ ＊ 気づいたこと・優先度「高」／ → 明日やること ／ ＞ 先送り ／ ◷ 行動</p></article>
+              <article><h2>マンスリーログ・タスク・ハビット</h2><p>目次から各画面を開きます。</p></article>
               <article><h2>データを守る</h2><p>「データ管理」で同期とバックアップ。</p></article>
             </div>
             <div class="help-note">
@@ -234,14 +218,14 @@
     </div>
 
     <nav class="mobile-nav" aria-label="モバイルメニュー">
-      <button class="active" data-view="inbox"><span>↓</span>INBOX</button><button data-view="records"><span>✎</span>記録</button><button data-view="calendar"><span>▦</span>予定</button>
-      <button class="mobile-add" id="mobileAdd" aria-label="INBOXに追加">＋</button>
-      <button data-view="next"><span>→</span>次にやる</button><button data-view="reflection"><span>☾</span>振り返り</button>
+      <button class="active" data-view="inbox"><span>–</span>デイリー</button><button data-view="calendar"><span>○</span>マンスリー</button><button data-view="inboxList"><span>•</span>タスク</button>
+      <button class="mobile-add" id="mobileAdd" aria-label="タスクを書く">＋</button>
+      <button data-view="habits"><span>◉</span>ハビット</button><button data-view="reflection"><span>☾</span>振り返り</button>
     </nav>
 
     <dialog id="taskDialog">
       <form id="taskForm">
-        <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">INBOXに追加</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
+        <div class="dialog-head"><div><small id="dialogKicker">タスク</small><h2 id="dialogTitle">タスクを書く</h2></div><button type="button" class="icon-button" data-close="task">×</button></div>
         <input type="hidden" id="taskId" />
         <label class="field"><span>内容</span><input id="taskTitle" required maxlength="120" /></label>
         <div class="field-grid">
@@ -256,20 +240,19 @@
       </form>
     </dialog>
 
-
     <dialog id="logEditDialog">
       <form id="logEditForm">
-        <div class="dialog-head"><div><small>手帳の記録</small><h2>記録を編集</h2></div><button type="button" class="icon-button" data-close="logEdit" aria-label="閉じる">×</button></div>
+        <div class="dialog-head"><div><small>デイリーログ</small><h2>記録を編集</h2></div><button type="button" class="icon-button" data-close="logEdit" aria-label="閉じる">×</button></div>
         <input type="hidden" id="logEditId" />
         <div class="field-grid">
           <label class="field"><span>日付</span><input id="logEditDate" type="date" required /></label>
           <label class="field"><span>時刻</span><input id="logEditTime" type="time" /></label>
           <label class="field" id="logEditEndField" hidden><span>終了</span><input id="logEditEnd" type="time" /></label>
         </div>
-        <label class="field"><span>種類</span><select id="logEditType"><option value="memo">📝 メモ</option><option value="idea">💡 アイデア</option><option value="schedule">▦ 予定</option><option value="event">○ 出来事</option><option value="good">◎ よかったこと</option><option value="learned">！ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">⏱ 行動</option></select></label>
+        <label class="field"><span>種類（振り分け）</span><select id="logEditType"><option value="memo">– メモ</option><option value="todo">• やること</option><option value="idea">！ アイデア</option><option value="schedule">○ 予定</option><option value="event">● 出来事</option><option value="good">♡ よかったこと</option><option value="learned">＊ 気づいたこと</option><option value="tomorrow">→ 明日やること</option><option value="action">◷ 行動</option></select></label>
         <label class="field"><span>内容</span><textarea id="logEditText" required maxlength="1200" rows="5"></textarea></label>
         <div class="img-picker" id="logEditImages"><div class="img-picker-actions"><label class="log-photo-btn" title="画像をコピーして貼り付け（⌘V）・ドラッグでも添付できます">📷 画像・スクショを添付<input type="file" accept="image/*" multiple /></label><button type="button" class="img-paste-btn log-photo-btn" title="コピーした画像を貼り付け">📋 貼り付け</button></div><div class="img-picker-list"></div></div>
-        <div class="dialog-actions"><button type="button" data-close="logEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
+        <div class="dialog-actions"><button type="button" class="danger" id="deleteLogBtn">削除</button><button type="button" data-close="logEdit">キャンセル</button><button class="primary" type="submit">変更を保存</button></div>
       </form>
     </dialog>
 
@@ -297,8 +280,8 @@
     <div class="image-viewer" id="imageViewer" hidden><img alt="添付画像" /></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <button type="button" class="cloud-sync-pill" id="cloudSyncPill" hidden>☁ タップして同期</button>
-    <script src="./app.js?v=88"></script>
-    <script src="./cloud-sync.js?v=88" defer></script>
-    <script src="./google-calendar.js?v=88"></script>
+    <script src="./app.js?v=89"></script>
+    <script src="./cloud-sync.js?v=89" defer></script>
+    <script src="./google-calendar.js?v=89"></script>
   </body>
 </html>
