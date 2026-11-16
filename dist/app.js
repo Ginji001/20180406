@@ -530,7 +530,9 @@
     $("#logEditDate").value = record.date || todayISO;
     $("#logEditTime").value = record.time || "";
     $("#logEditType").value = logTypeNames[record.type] ? record.type : "memo";
-    $("#logEditText").value = record.text || "";
+    const [editHead, ...editRest] = (record.text || "").split("\n");
+    $("#logEditText").value = editHead || "";
+    $("#logEditDetail").value = editRest.join("\n").trim();
     $("#logEditEnd").value = record.end || "";
     syncActionField("#logEditType", "#logEditEndField");
     pickers.logEdit.set(record.images || []);
@@ -1753,8 +1755,10 @@
     try { editImages = await pickers.logEdit.commit(); } catch (error) { showToast(imageErrorText(error)); return; }
     const record = state.data.logs.find((item) => item.id === $("#logEditId").value);
     const date = $("#logEditDate").value;
-    const text = $("#logEditText").value.trim();
-    if (!record || !date || !text) return;
+    const headText = $("#logEditText").value.trim();
+    const detailText = $("#logEditDetail").value.trim();
+    const text = detailText ? `${headText}\n${detailText}` : headText;
+    if (!record || !date || !headText) return;
     const time = $("#logEditTime").value;
     const linked = record.taskId && state.data.tasks.find((task) => task.id === record.taskId);
     if (linked) {
@@ -2094,12 +2098,12 @@
     document.body.classList.add("has-move-notice");
   }
 
-  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=91"));
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("./sw.js?v=92"));
 
   // v53：アプリに戻ったとき・開いたときに新しい版があれば更新する
   // v77：使っている途中（アプリに戻ったとき・写真選択から戻ったとき）は自動で再読み込みしない。
   //      自動の再読み込みは「起動直後」か「10分以上離れていて、何も編集・添付していないとき」だけ。それ以外は更新バーを出す
-  const APP_VERSION = 91;
+  const APP_VERSION = 92;
   let updateChecking = false;
   let hiddenAt = 0;
   let awayLong = false;
