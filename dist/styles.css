@@ -90,6 +90,11 @@ body.dark .journal-form > button { color: #1b1915; }
 .journal-form .img-picker { grid-column: 1 / -1; }
 .event-field { display: grid; gap: 3px; color: var(--muted); font-size: .7rem; font-weight: 700; }
 .event-field input { min-height: 38px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); padding: 0 8px; font-size: .84rem; }
+/* 日付・開始・終了は専用の横並び行にして、開始と終了を同じ幅にする（フォーム本体の3列グリッドに乗せると開始だけ広くなるため） */
+.log-subfields { grid-column: 1 / -1; display: flex; gap: 8px; }
+.log-subfields .event-field { flex: 1 1 0; min-width: 0; margin-top: 0; }
+.log-subfields #logDateField { flex-grow: 1.3; }
+.log-subfields .event-field input { width: 100%; min-width: 0; }
 .event-field[hidden] { display: none; }
 .journal-list { margin-top: 8px; }
 .daily-date-heading { margin: 20px 0 4px; padding-bottom: 4px; border-bottom: 1px solid var(--line); font-size: .92rem; }
