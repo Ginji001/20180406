@@ -142,27 +142,31 @@ body.dark .journal-form > button { color: #1b1915; }
 
 /* マンスリーログ */
 .calendar-controls { display: flex; align-items: center; gap: 14px; margin: 6px 0 10px; }
-.calendar-controls button { width: 36px; height: 36px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); font-size: 1.1rem; }
-.calendar-controls strong { font-size: 1.05rem; }
+.calendar-controls button { width: 40px; height: 40px; border: 1px solid var(--line); border-radius: 50%; background: var(--paper); font-size: 1.15rem; }
+.calendar-controls strong { font-size: 1.25rem; }
 .month-goal-form { display: flex; gap: 8px; align-items: end; margin-bottom: 8px; }
 .month-goal-form label { flex: 1; display: grid; gap: 3px; color: var(--muted); font-size: .72rem; font-weight: 700; }
 .month-goal-form input { min-height: 40px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--paper); padding: 0 10px; font-size: .9rem; }
 .month-goal-form button, .mini-form button { min-height: 40px; padding: 0 16px; border-radius: var(--radius); background: var(--ink); color: var(--bg); font-weight: 700; font-size: .84rem; }
 .calendar-help, .habit-calendar-help { color: var(--muted); font-size: .78rem; }
 .month-undated { margin: 10px 0; padding: 10px 12px; border: 1px dashed var(--strong-line); border-radius: var(--radius); }
-.month-undated h3 { margin: 0 0 6px; font-size: .86rem; }
-.month-undated button { display: block; padding: 3px 0; text-align: left; font-size: .9rem; }
+.month-undated h3 { margin: 0 0 6px; font-size: .95rem; }
+.month-undated button { display: block; padding: 5px 0; text-align: left; font-size: 1rem; }
 .monthly-list { display: grid; gap: 0; }
-.month-day { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; padding: 7px 4px; border-bottom: 1px dotted var(--line); }
+.month-day { display: grid; grid-template-columns: 60px minmax(0, 1fr); gap: 10px; padding: 10px 6px; border-bottom: 1px dotted var(--line); }
 .month-day.today { background: var(--mark-soft); border-radius: 8px; }
-.month-day-head { display: flex; align-items: baseline; gap: 4px; padding: 2px 4px; text-align: left; border-radius: 6px; }
-.month-day-head .day-number { font-size: 1.02rem; font-weight: 700; }
-.month-day-head .day-week { color: var(--muted); font-size: .72rem; }
-.month-day-lines { display: grid; gap: 1px; align-content: start; }
-.month-line { padding: 2px 4px; text-align: left; font-size: .9rem; border-radius: 5px; word-break: break-word; }
+.month-day-head { display: flex; align-items: baseline; gap: 5px; padding: 3px 4px; text-align: left; border-radius: 6px; }
+.month-day-head .day-number { font-size: 1.3rem; font-weight: 700; }
+.month-day-head .day-week { color: var(--muted); font-size: .8rem; }
+.month-day-lines { display: grid; gap: 3px; align-content: start; }
+.month-line { padding: 5px 6px; text-align: left; font-size: 1rem; line-height: 1.5; border-radius: 5px; word-break: break-word; }
 .month-line:hover { background: var(--paper-2); }
-.month-empty { color: var(--line); padding: 2px 4px; }
+.month-empty { color: var(--line); padding: 5px 6px; font-size: 1rem; }
 .event-form { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+/* 予定フォームは専用の並び：1段目＝日程・日付・時刻、2段目＝内容（広く）と追加ボタン（文字幅だけ） */
+.journal-form.event-form { grid-template-columns: auto 1fr 1fr; align-items: end; }
+.event-form #eventTitle { grid-column: 1 / 3; font-size: 1rem; }
+.journal-form.event-form > button { justify-self: end; padding: 0 22px; }
 
 /* ハビット */
 .habit-calendar-grid, .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
@@ -353,6 +357,9 @@ body.dark .img-picker-note { background: #3a2f1d; color: #f0d9a8; }
   body.dark .mobile-nav .mobile-add { color: #1b1915; }
   .journal-form { grid-template-columns: minmax(0, 1fr) auto; }
   .journal-form select { grid-column: 1 / -1; }
+  .journal-form.event-form { grid-template-columns: 1fr 1fr; }
+  .event-form #eventTitle { grid-column: 1 / -1; }
+  .journal-form.event-form > button { grid-column: 1 / -1; }
   .collection-form { grid-template-columns: 1fr; }
   .field-grid { grid-template-columns: 1fr; }
   .calendar-day { min-height: 46px; padding: 4px; }
