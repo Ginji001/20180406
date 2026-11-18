@@ -121,7 +121,8 @@
     connectButton.disabled = googleState.syncing;
     disconnectButton.disabled = googleState.syncing;
     connectButton.textContent = connected() ? "接続を更新" : "Googleカレンダーに接続";
-    syncButton.disabled = !connected() || googleState.syncing;
+    // 接続したことがあれば、期限切れでも押せるようにする（押したときに再接続してから同期する）
+    syncButton.disabled = googleState.syncing || (!connected() && !settings.google.consented);
     disconnectButton.hidden = !googleState.token;
     if (googleState.syncing) {
       setStatus("同期中…", "syncing");
@@ -130,7 +131,9 @@
     } else if (connected() && !googleState.statusMessage) {
       setStatus("接続中。自動で同期します。", "connected");
     } else if (!connected() && googleState.token) {
-      setStatus("期限切れ。もう一度接続してください。", "");
+      setStatus("期限切れです。今すぐ同期で再接続できます。", "");
+    } else if (!connected() && settings.google.consented && !googleState.statusMessage) {
+      setStatus("期限切れです。今すぐ同期で再接続できます。", "");
     } else if (!connected() && !googleState.statusMessage) {
       setStatus("未接続です。", "");
     }
@@ -785,7 +788,21 @@
         window.alert("接続できませんでした：" + error.message);
       }
     });
-    syncButton.addEventListener("click", () => syncGoogleCalendar(false));
+    syncButton.addEventListener("click", async () => {
+      // 期限切れのときは、先に再接続してから同期する（以前はボタン自体が押せなかった）
+      if (!connected()) {
+        try {
+          setStatus("Googleの認証を確認しています…", "syncing");
+          await requestGoogleAccessToken();
+        } catch (error) {
+          setStatus("接続できませんでした：" + error.message, "");
+          renderPanel();
+          window.alert("接続できませんでした：" + error.message);
+          return;
+        }
+      }
+      await syncGoogleCalendar(false);
+    });
     disconnectButton.addEventListener("click", () => {
       if (googleState.token && window.google?.accounts?.oauth2?.revoke) window.google.accounts.oauth2.revoke(googleState.token, () => {});
       googleState.token = null;
@@ -794,6 +811,7 @@
       saveToken();
       const stopped = appSettings();
       stopped.google.autoSync = false;
+      stopped.google.consented = false;
       saveSettings(stopped);
       renderResumeBar();
       googleState.statusMessage = "接続を解除しました。";
