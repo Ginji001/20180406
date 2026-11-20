@@ -685,30 +685,10 @@
     }
   }
 
-  // v83：接続の期限が切れたら、タップ1回で再接続できるバーを出す
+  // v94：期限切れを知らせる浮きバーは出さない（ユーザー指示で廃止）。再接続はマンスリーログの「今すぐ同期」で行う
   function renderResumeBar() {
-    let bar = document.getElementById("googleResumeBar");
-    const show = Boolean(appSettings().google.autoSync) && !connected() && !googleState.syncing;
-    if (!bar && !show) return;
-    if (!bar) {
-      bar = document.createElement("button");
-      bar.type = "button";
-      bar.id = "googleResumeBar";
-      bar.className = "google-resume-bar";
-      bar.textContent = "Googleカレンダーと同期（タップ）";
-      bar.addEventListener("click", async () => {
-        bar.hidden = true;
-        try {
-          await requestGoogleAccessToken();
-          await syncGoogleCalendar(true);
-        } catch (error) {
-          setStatus("接続できませんでした：" + error.message, "");
-          renderResumeBar();
-        }
-      });
-      document.body.appendChild(bar);
-    }
-    bar.hidden = !show;
+    const bar = document.getElementById("googleResumeBar");
+    if (bar) bar.remove();
   }
 
   function startAutoSync() {
